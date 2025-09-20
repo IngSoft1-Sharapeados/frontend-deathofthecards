@@ -1,12 +1,48 @@
-# React + Vite
+Death On The Cards
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Primeros Pasos
 
-Currently, two official plugins are available:
+Requisitos Previos
+Asegúrate de tener instalado:
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+Node.js (versión 18 o superior recomendada)
 
-## Expanding the ESLint configuration
+npm o yarn
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Instalación
+Clona el repositorio
+
+git clone https://github.com/IngSoft1-Sharapeados/frontend-deathofthecards
+
+Navega al directorio del proyecto
+
+Instala las dependencias
+
+npm install
+
+Configuración
+
+Para que la aplicación pueda comunicarse con el backend, necesitas configurar la URL base de la API.
+
+Crea un archivo de entorno local en la raíz del proyecto:
+
+Bash
+
+touch .env.local
+Abre el archivo .env.local y añade la siguiente variable, reemplazando la URL con la de tu backend:
+
+# URL del servidor backend
+VITE_API_BASE_URL=http://localhost:8000
+Uso
+Inicia el servidor de desarrollo:
+
+Bash
+
+npm run dev
+Abre tu navegador y visita http://localhost:5173 (o la URL que indique la consola).
+
+Estructura Clave
+Toda la lógica para la comunicación con el backend está centralizada en:
+src/services/apiService.js.
+
+Las variables de entorno se gestionan a través de archivos .env y se acceden en el código mediante import.meta.env.
