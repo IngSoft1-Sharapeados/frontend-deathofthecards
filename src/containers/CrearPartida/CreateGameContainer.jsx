@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { apiService } from "@/services/apiService";
-import GameCreateForm from "@/components/GameCreateForm";
+import GameCreateForm from "@/components/CrearPartida/GameCreateForm";
 // import { useNavigate } from "react-router-dom";
 export default function GameCreateFormContainer() {
   const [form, setForm] = useState({

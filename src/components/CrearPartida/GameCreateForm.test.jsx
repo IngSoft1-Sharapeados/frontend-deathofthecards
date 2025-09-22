@@ -1,8 +1,8 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import * as matchers from "@testing-library/jest-dom/matchers";
-import GameCreateForm from "./GameCreateForm.jsx"; // ajustá la ruta según tu proyecto
-// Configura los matchers de jest-dom
+import GameCreateForm from "@/components/CrearPartida/GameCreateForm.jsx"; 
+
 expect.extend(matchers);
 
 beforeEach(() => {
