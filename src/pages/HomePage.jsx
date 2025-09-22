@@ -9,7 +9,7 @@ const HomePage = () => {
     const fetchGames = async () => {
       try {
         setIsLoading(true);
-        //const gamesData = await gameService.getGames(); TO BE DONE
+        //const gamesData = await apiService.getGames(); TO BE DONE
         const gamesData = []
         setGames(gamesData);
       } catch (error) {
