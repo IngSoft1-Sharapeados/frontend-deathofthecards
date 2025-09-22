@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import GameList from '../components/GameList/GameList';
+import GameList from '@/components/GameList/GameList.jsx';
 
 const HomePage = () => {
   const [games, setGames] = useState([]);

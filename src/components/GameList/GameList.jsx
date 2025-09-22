@@ -1,7 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import GameCard from '../GameCard/GameCard';
-import styles from './GameList.module.css';
+import GameCard from '@/components/GameCard/GameCard.jsx';
+import styles from '@/components/GameList/GameList.module.css';
 
 const GameList = ({ games = [] }) => {
   if (games.length === 0) {

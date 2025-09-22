@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import * as matchers from '@testing-library/jest-dom/matchers';
-import GameCard from './GameCard';
+import GameCard from '@/components/GameCard/GameCard.jsx';
 
 // Línea clave: Le decimos a Vitest que use los "matchers" de jest-dom
 expect.extend(matchers);

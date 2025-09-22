@@ -1,6 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import styles from './GameCard.module.css';
+import styles from '@/components/GameCard/GameCard.module.css';
 
 const GameCard = ({ game }) => {
   const { name, minPlayers, maxPlayers, currentPlayers } = game;
