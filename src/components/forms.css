@@ -1,0 +1,131 @@
+/* FormCreateRoom.css */
+
+form {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  margin-top: 10%;
+}
+
+.form-container {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  padding: 20px 60px;
+  border: 1px solid #a5a5a5;
+  border-radius: 20px;
+  max-width: 100%;
+  background-color: #f9f9f8;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+h3 {
+  font-size: 20px;
+  margin: 10px;
+  width: 100%;
+  text-align: center;
+}
+
+input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #b6b5b5;
+  border-radius: 5px; 
+}
+
+.buttons-container {
+  display: flex;
+  flex-direction: row;
+  align-items: baseline;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.buttons-container button {
+  background-color: #504f4f;
+  padding: 10px;
+  border: none;
+  border-radius: 5px;
+  width: 42%;
+  color: #ffffff;
+}
+
+.buttons-container button:hover {
+  background-color: #ffaa64;
+}
+
+.buttons-container span{
+  font-size: 15px;
+}
+
+.password {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+}
+
+.password #password {
+  width: 80%;
+}
+
+.password #enable-password {
+  width: 10%;
+  margin-right: 10px;
+}
+
+.input-invalid {
+  border-color: red !important;
+}
+
+#submit-button button {
+  background-color: #ffaa64;
+  padding: 7%;
+  border: none;
+  border-radius: 5px;
+  width: 100%;
+  color: #ffffff;
+}
+
+button[type="submit"] {
+width: auto; 
+padding: 10px 20px; 
+margin-top: 20px;
+border: none;
+border-radius: 5px;
+background-color: #ffaa64;
+color: white;
+}
+
+#enable-password:hover {
+  cursor: pointer;
+}
+
+button:hover {
+  cursor: pointer;
+}
+
+input:hover {
+  cursor: text;
+}
+
+.input-group {
+  width: 100%;        /* que todos los inputs tengan la misma anchura */
+  margin-bottom: 15px; /* espacio entre un grupo de input y el siguiente */
+}
+
+.input-group label {
+  margin-bottom: 5px; /* separa el label del input */
+  font-weight: bold;
+}
+
+.input-group input {
+  width: 100%;         /* que el input ocupe todo el ancho del grupo */
+}
+
+.error-text {
+  color: red;
+  font-size: 13px;
+  margin-top: 4px;     /* separa el mensaje del input */
+  align-self: flex-start; /* alinea el mensaje a la izquierda */
+}
