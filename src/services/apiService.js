@@ -15,7 +15,7 @@ const createHttpService = () => {
       const response = await fetch(url, config);
       return await response.json();
     } catch (error) {
-      console.error('API request failed:', error);
+      console.error('API request fail: ', error);
       return { error: true, message: error.message }; 
     }
   };
