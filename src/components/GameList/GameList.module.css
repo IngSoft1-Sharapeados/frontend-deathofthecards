@@ -1,0 +1,24 @@
+.listContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  max-width: 800px; 
+  margin: 0 auto; 
+  overflow-y: auto; /* Permitir scroll si excede el tamaño */
+  max-height: 80vh; 
+}
+
+.emptyState {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px;
+  border: 2px dashed #444;
+  border-radius: 8px;
+  color: #888;
+  font-size: 1.2rem;
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+}

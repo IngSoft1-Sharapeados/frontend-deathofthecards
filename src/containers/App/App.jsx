@@ -1,8 +1,14 @@
-import CreateGameFormContainer from "@/containers/CreateGameContainer.jsx";
-export default function App() {
+import React from 'react';
+import './App.css';
+import HomePage from '@/pages/HomePage.jsx';
+
+function App() {
   return (
-    <div>
+    <main className="App-container">
+      <HomePage />
       <CreateGameFormContainer />
-    </div>
+    </main>
   );
 }
+
+export default App;
