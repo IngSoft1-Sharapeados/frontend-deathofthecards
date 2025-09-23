@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import './UserForm.css'; 
+import '@/components/UserForm/UserForm.css'; 
 
 // --- Componente del Formulario ---
 const UserForm = ({ onSubmit, onClose }) => {
