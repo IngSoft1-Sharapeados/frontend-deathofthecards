@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { apiService } from "@/services/apiService";
 import GameCreateForm from "@/components/CrearPartida/GameCreateForm";
-// import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 export default function GameCreateFormContainer() {
   const [form, setForm] = useState({
     nombrePartida: "",
@@ -35,7 +35,7 @@ export default function GameCreateFormContainer() {
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
-  // const navigate = useNavigate();
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -47,9 +47,10 @@ export default function GameCreateFormContainer() {
         "dia-nacimiento": form.fechaNacimiento,
       });
       setMessage(`Partida creada con id: ${result.partida_id}`);
-      /*if (result["id-partida"]) {
+      // Redirigir a la nueva partida
+      if (result["id-partida"]) {
         navigate(`/partidas/${result["id-partida"]}`);
-      }*/
+      }
     } catch {
       setMessage(" Error al crear partida");
     }

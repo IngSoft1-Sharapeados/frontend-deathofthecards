@@ -10,7 +10,19 @@ const HomePage = () => {
       try {
         setIsLoading(true);
         //const gamesData = await apiService.getGames(); TO BE DONE
-        const gamesData = []
+        const gamesData = [{
+          id: 'g1',
+          name: 'Partida Test',
+          minPlayers: 2,
+          maxPlayers: 5,
+          currentPlayers: 4,
+        },{
+          id: 'g1',
+          name: 'Partida Test',
+          minPlayers: 2,
+          maxPlayers: 5,
+          currentPlayers: 4,
+        }];
         setGames(gamesData);
       } catch (error) {
         console.error("Error al obtener las partidas:", error);

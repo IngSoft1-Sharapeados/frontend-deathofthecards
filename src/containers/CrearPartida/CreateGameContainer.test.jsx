@@ -7,10 +7,19 @@ expect.extend(matchers);
 // Mock del servicio API
 vi.mock("@/services/apiService", () => ({
   apiService: {
-    createGame: vi.fn().mockResolvedValue({ partida_id: 123 }),
+    createGame: vi.fn().mockResolvedValue({ "id-partida": 123, partida_id: 123 }),
   },
 }));
 
+// Mock de useNavigate
+const mockNavigate = vi.fn();
+vi.mock("react-router-dom", async () => {
+  const actual = await vi.importActual("react-router-dom");
+  return {
+    ...actual,
+    useNavigate: () => mockNavigate,
+  };
+});
 describe("GameCreateFormContainer", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -56,6 +65,7 @@ describe("GameCreateFormContainer", () => {
     await waitFor(() => {
       expect(apiService.createGame).toHaveBeenCalled();
       expect(screen.getByText(/Partida creada con id: 123/)).toBeInTheDocument();
+      expect(mockNavigate).toHaveBeenCalledWith("/partidas/123");
     });
   });
 });
