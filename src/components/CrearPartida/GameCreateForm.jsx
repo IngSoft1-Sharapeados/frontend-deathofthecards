@@ -1,5 +1,5 @@
-import "@/components/forms.css";
-import FormInput from "@/components/FormInput";
+import "@/components/UI/BasicForm.css";
+import FormInput from "@/components/UI/FormInput";
 
 export default function GameCreateForm({ form, onChange, onSubmit, message, errors }) {
   return (

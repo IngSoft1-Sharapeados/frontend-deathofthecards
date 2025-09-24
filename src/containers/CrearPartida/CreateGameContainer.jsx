@@ -65,12 +65,29 @@ export default function GameCreateFormContainer() {
   }
 
   return (
-    <GameCreateForm
-      form={form}
-      onChange={handleChange}
-      onSubmit={handleSubmit}
-      message={message}
-      errors={errors} 
-    />
+    <div className="modal-overlay">
+      <div className="modal-card">
+        <div className="modal-header">
+          <h2 className="modal-title">Completa tu información</h2>
+          <button
+            onClick={() => setShowForm(false)}
+            className="modal-close-btn"
+            aria-label="Cerrar modal"
+            type="button"
+          >
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <GameCreateForm
+          form={form}
+          onChange={handleChange}
+          onSubmit={handleSubmit}
+          message={message}
+          errors={errors}
+        />
+      </div>
+    </div>
   );
 }
