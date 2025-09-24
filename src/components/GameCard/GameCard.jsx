@@ -2,11 +2,16 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import styles from '@/components/GameCard/GameCard.module.css';
 
-const GameCard = ({ game }) => {
+const GameCard = ({ game, index }) => { 
   const { name, minPlayers, maxPlayers, currentPlayers } = game;
 
+  
+  const cardStyle = {
+    animationDelay: `${index * 100}ms` 
+  };
+
   return (
-    <div className={styles.card}>
+    <div className={`${styles.card} ${styles.cardAnimated}`} style={cardStyle}>
       <h3 className={styles.gameName}>{name}</h3>
       <div className={styles.details}>
         <p>Jugadores: {currentPlayers}</p>
@@ -25,6 +30,8 @@ GameCard.propTypes = {
     maxPlayers: PropTypes.number.isRequired,
     currentPlayers: PropTypes.number.isRequired,
   }).isRequired,
+  
+  index: PropTypes.number.isRequired, 
 };
 
 export default GameCard;
