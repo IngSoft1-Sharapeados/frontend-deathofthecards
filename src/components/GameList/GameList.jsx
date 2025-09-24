@@ -11,7 +11,7 @@ const GameList = ({ games = [] }) => {
       </div>
     );
   }
-
+console.log("Partidas recibidas:", games);
   return (
     <div className={styles.listContainer}>
       {games.map((game) => (

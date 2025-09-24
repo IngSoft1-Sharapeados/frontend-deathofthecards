@@ -17,7 +17,7 @@ const HomePage = () => {
           maxPlayers: 5,
           currentPlayers: 4,
         },{
-          id: 'g1',
+          id: 'g3',
           name: 'Partida Test',
           minPlayers: 2,
           maxPlayers: 5,

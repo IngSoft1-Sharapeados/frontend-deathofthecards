@@ -7,7 +7,7 @@ expect.extend(matchers);
 // Mock del servicio API
 vi.mock("@/services/apiService", () => ({
   apiService: {
-    createGame: vi.fn().mockResolvedValue({ "id-partida": 123, partida_id: 123 }),
+    createGame: vi.fn().mockResolvedValue({ partida_id: 123, player_id: 456 }),
   },
 }));
 
@@ -63,8 +63,14 @@ describe("GameCreateFormContainer", () => {
     fireEvent.click(screen.getByText("Crear partida"));
 
     await waitFor(() => {
-      expect(apiService.createGame).toHaveBeenCalled();
-      expect(screen.getByText(/Partida creada con id: 123/)).toBeInTheDocument();
+      expect(apiService.createGame).toHaveBeenCalledWith({
+      "nombre-partida": "Test",
+      "nombre-jugador": "Jugador",
+      "dia-nacimiento": "2000-01-01",
+      "min-jugadores": 2,  
+      "max-jugadores": 4   
+    });
+      
       expect(mockNavigate).toHaveBeenCalledWith("/partidas/123");
     });
   });

@@ -31,7 +31,7 @@ export default function GameCreateFormContainer() {
     if (!newErrors.minJugadores && !newErrors.maxJugadores && min > max) {
       newErrors.maxJugadores = "Debe ser ≥ mínimo";
     }
-    console.log("Errores detectados:", newErrors);
+    console.log("Errores detectados:", newErrors, "¿Válido?", Object.keys(newErrors).length === 0);
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -41,15 +41,26 @@ export default function GameCreateFormContainer() {
     e.preventDefault();
     if (!validate()) return;
     try {
+      console.log("Enviando al backend:", {
+        "nombre-partida": form.nombrePartida,
+        "nombre-jugador": form.nombreJugador,
+        "dia-nacimiento": form.fechaNacimiento,
+        "min-jugadores": parseInt(form.minJugadores), 
+        "max-jugadores": parseInt(form.maxJugadores),
+      });
+      //Aca le mandamos los datos al Backend 
       const result = await apiService.createGame({
         "nombre-partida": form.nombrePartida,
         "nombre-jugador": form.nombreJugador,
         "dia-nacimiento": form.fechaNacimiento,
+        "min-jugadores": parseInt(form.minJugadores), 
+        "max-jugadores": parseInt(form.maxJugadores),
       });
+      
       setMessage(`Partida creada con id: ${result.partida_id}`);
       // Redirigir a la nueva partida
-      if (result["id-partida"]) {
-        navigate(`/partidas/${result["id-partida"]}`);
+      if (result["partida_id"]) {
+       // window.location.href = `/partidas/${result.partida_id}`;
       }
     } catch {
       setMessage(" Error al crear partida");
@@ -68,7 +79,7 @@ export default function GameCreateFormContainer() {
     <div className="modal-overlay">
       <div className="modal-card">
         <div className="modal-header">
-          <h2 className="modal-title">Completa tu información</h2>
+          <h2 className="modal-title">completar</h2>
           <button
             onClick={() => setShowForm(false)}
             className="modal-close-btn"
