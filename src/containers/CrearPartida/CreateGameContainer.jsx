@@ -60,7 +60,7 @@ export default function GameCreateFormContainer() {
       setMessage(`Partida creada con id: ${result.partida_id}`);
       // Redirigir a la nueva partida
       if (result["partida_id"]) {
-       // window.location.href = `/partidas/${result.partida_id}`;
+       navigate(`/partidas/${result.partida_id}`);
       }
     } catch {
       setMessage(" Error al crear partida");
