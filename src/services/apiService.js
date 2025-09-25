@@ -20,6 +20,17 @@ const createHttpService = () => {
     }
   };
 
+  // Aca van nuestros servicios
+  const createGame = async (gameData) => {
+    return request("/partidas", {
+      method: "POST",
+      body: JSON.stringify(gameData),
+    });
+  };
+
+  return {
+    createGame,
+  };
 };
 
 export const apiService = createHttpService();

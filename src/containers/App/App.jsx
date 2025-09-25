@@ -1,15 +1,27 @@
-
-
 import React from 'react';
+import { Routes, Route, useParams } from "react-router-dom";
 import './App.css';
 import HomePage from '@/pages/HomePage/HomePage.jsx';
-
+import GameLobbyPage from "@/pages/gameLobby.jsx";
 
 function App() {
+
   return (
     <main className="App-container">
-      <HomePage />
+      <Routes>
+        {/* Ruta Home */}
+        <Route
+          path="/"
+          element={
+            <>
+              <HomePage />
+            </>
+          }
+        />
 
+        {/* Ruta página del juego */}
+        <Route path="/partidas/:id" element={<GameLobbyPage />} />
+      </Routes>
     </main>
   );
 }
