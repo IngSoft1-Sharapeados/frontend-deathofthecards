@@ -57,10 +57,10 @@ export default function GameCreateFormContainer() {
         "max-jugadores": parseInt(form.maxJugadores),
       });
       
-      setMessage(`Partida creada con id: ${result.partida_id}`);
+      setMessage(`Partida creada con id: ${result.id_partida}`);
       // Redirigir a la nueva partida
-      if (result["partida_id"]) {
-       navigate(`/partidas/${result.partida_id}`);
+      if (result["id_partida"]) {
+       navigate(`/partidas/${result.id_partida}`);
       }
     } catch {
       setMessage(" Error al crear partida");

@@ -7,7 +7,7 @@ expect.extend(matchers);
 // Mock del servicio API
 vi.mock("@/services/apiService", () => ({
   apiService: {
-    createGame: vi.fn().mockResolvedValue({ partida_id: 123, player_id: 456 }),
+    createGame: vi.fn().mockResolvedValue({ id_partida: 123, id_jugador: 456 }),
   },
 }));
 
