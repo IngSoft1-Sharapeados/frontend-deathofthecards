@@ -1,16 +1,10 @@
 import React from 'react';
 import { Routes, Route, useParams } from "react-router-dom";
 import './App.css';
-import HomePage from '@/pages/HomePage.jsx';
-import GameCreateFormContainer from '@/containers/CrearPartida/CreateGameContainer';
+import HomePage from '@/pages/HomePage/HomePage.jsx';
+import GameLobbyPage from "@/pages/gameLobby.jsx";
 
 function App() {
-
-    // borrar cuando PartidaPage real exista
-  const PartidaPage = () => {
-    const { id } = useParams();
-    return <>lobby falso: {id}</>;
-  };
 
   return (
     <main className="App-container">
@@ -21,13 +15,12 @@ function App() {
           element={
             <>
               <HomePage />
-              <GameCreateFormContainer />
             </>
           }
         />
 
         {/* Ruta página del juego */}
-        <Route path="/partidas/:id" element={<PartidaPage />} />
+        <Route path="/partidas/:id" element={<GameLobbyPage />} />
       </Routes>
     </main>
   );

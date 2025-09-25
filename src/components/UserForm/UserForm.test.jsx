@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
-import UserForm from './UserForm.jsx'; // Asegúrate que la ruta al componente sea correcta
+import UserForm from '@/components/UserForm/UserForm.jsx'; // Asegúrate que la ruta al componente sea correcta
 
 // Mock de las props que el componente espera (funciones onSubmit y onClose)
 const mockOnSubmit = vi.fn();

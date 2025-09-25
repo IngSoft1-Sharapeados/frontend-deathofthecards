@@ -25,24 +25,15 @@ describe("GameCreateFormContainer", () => {
     vi.clearAllMocks();
   });
 
-  it("muestra solo el botón al inicio", () => {
-    render(<GameCreateFormContainer />);
-    expect(screen.getByText("Crear partida")).toBeInTheDocument();
-    // No debe haber inputs
-    expect(screen.queryByLabelText("Nombre de la partida")).not.toBeInTheDocument();
-  });
-
-  it("muestra el formulario al hacer click en el botón", () => {
-    render(<GameCreateFormContainer />);
-    fireEvent.click(screen.getByText("Crear partida"));
-    expect(screen.getByLabelText("Nombre de la partida")).toBeInTheDocument();
-    expect(screen.getByLabelText("Nombre del jugador")).toBeInTheDocument();
+  it("muestra el formulario al inicio (CAMBIO: usamos showForm para tests)", () => {
+    render(<GameCreateFormContainer showForm={true} onClose={vi.fn()} />); 
+    expect(screen.getByLabelText("Nombre de la partida")).toBeInTheDocument(); 
+    expect(screen.getByLabelText("Nombre del jugador")).toBeInTheDocument(); 
   });
 
   it("valida los campos y muestra errores si están vacíos", async () => {
-    render(<GameCreateFormContainer />);
-    fireEvent.click(screen.getByText("Crear partida"));
-    fireEvent.click(screen.getByText("Crear partida")); // submit
+    render(<GameCreateFormContainer showForm={true} onClose={vi.fn()} />);
+    fireEvent.click(screen.getByText("Crear partida")); 
 
     expect(await screen.findAllByText("Requerido")).toHaveLength(3); // nombrePartida, nombreJugador, fechaNacimiento
     expect(screen.getByText(/Mínimos Jugadores debe ser mayor igual que 2/i)).toBeInTheDocument();
@@ -51,7 +42,7 @@ describe("GameCreateFormContainer", () => {
 
   it("envía el formulario correctamente si los datos son válidos", async () => {
     const { apiService } = await import("@/services/apiService");
-    render(<GameCreateFormContainer />);
+    render(<GameCreateFormContainer showForm={true} onClose={vi.fn()} />);
     fireEvent.click(screen.getByText("Crear partida"));
 
     fireEvent.change(screen.getByLabelText("Nombre de la partida"), { target: { value: "Test" } });

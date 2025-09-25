@@ -2,7 +2,8 @@ import { useState } from "react";
 import { apiService } from "@/services/apiService";
 import GameCreateForm from "@/components/CrearPartida/GameCreateForm";
 import { useNavigate } from "react-router-dom";
-export default function GameCreateFormContainer() {
+export default function GameCreateFormContainer({ showForm, onClose }) {
+ 
   const [form, setForm] = useState({
     nombrePartida: "",
     nombreJugador: "",
@@ -10,12 +11,10 @@ export default function GameCreateFormContainer() {
     minJugadores: "",
     maxJugadores: "",
   });
-  const [message, setMessage] = useState("");
-  const [showForm, setShowForm] = useState(false);
+  const [message, setMessage] = useState("");  
   const [errors, setErrors] = useState({});
-
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
-  
+
   const validate = () => {
     const newErrors = {};
 
@@ -35,8 +34,8 @@ export default function GameCreateFormContainer() {
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
+  
   const navigate = useNavigate();
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
@@ -67,13 +66,7 @@ export default function GameCreateFormContainer() {
     }
   };
 
-  if (!showForm) {
-    return (
-      <button onClick={() => setShowForm(true)}>
-        Crear partida
-      </button>
-    );
-  }
+ if (!showForm) return null;
 
   return (
     <div className="modal-overlay">
@@ -81,7 +74,7 @@ export default function GameCreateFormContainer() {
         <div className="modal-header">
           <h2 className="modal-title">completar</h2>
           <button
-            onClick={() => setShowForm(false)}
+            onClick={onClose}
             className="modal-close-btn"
             aria-label="Cerrar modal"
             type="button"

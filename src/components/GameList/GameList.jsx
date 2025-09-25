@@ -14,8 +14,9 @@ const GameList = ({ games = [] }) => {
 console.log("Partidas recibidas:", games);
   return (
     <div className={styles.listContainer}>
-      {games.map((game) => (
-        <GameCard key={game.id} game={game} />
+      
+      {games.map((game, index) => (
+        <GameCard key={game.id} game={game} index={index} />
       ))}
     </div>
   );

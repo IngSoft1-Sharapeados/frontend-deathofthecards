@@ -3,9 +3,7 @@
   flex-direction: column;
   gap: 16px;
   width: 100%;
-  max-width: 800px; 
-  margin: 0 auto; 
-  overflow-y: auto; /* Permitir scroll si excede el tamaño */
+  overflow-y: auto;
   max-height: 80vh; 
 }
 
@@ -19,6 +17,4 @@
   color: #888;
   font-size: 1.2rem;
   width: 100%;
-  max-width: 800px;
-  margin: 0 auto;
 }
