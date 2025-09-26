@@ -2,7 +2,7 @@ import React from 'react';
 import { Routes, Route, useParams } from "react-router-dom";
 import './App.css';
 import HomePage from '@/pages/HomePage/HomePage.jsx';
-import GameLobbyPage from "@/pages/gameLobby.jsx";
+import GameLobbyPage from "@/pages/gameLobby/gameLobby.jsx";
 
 function App() {
 

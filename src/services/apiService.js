@@ -4,20 +4,17 @@ const createHttpService = () => {
   const request = async (endpoint, options = {}) => {
     const url = `${baseUrl}${endpoint}`;
     const config = {
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
+      headers: { 'Content-Type': 'application/json', ...options.headers },
       ...options,
     };
 
-    try {
-      const response = await fetch(url, config);
-      return await response.json();
-    } catch (error) {
-      console.error('API request fail: ', error);
-      return { error: true, message: error.message }; 
+    const response = await fetch(url, config);
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || `Error ${response.status}`);
     }
+    return response.json();
   };
 
   // Aca van nuestros servicios
@@ -28,23 +25,30 @@ const createHttpService = () => {
     });
   };
 
-  const listGames = async (playerData) =>{
+  const listGames = async (playerData) => {
     return request("/partidas", {
       method: "GET",
     });
   };
 
-  const joinGame = async (gameId, playerData) =>{
+  const joinGame = async (gameId, playerData) => {
     return request(`/partidas/${gameId}`, {
       method: "POST",
       body: JSON.stringify(playerData),
     });
   }
 
+  const getGameDetails = async (gameId) => {
+    return request(`/partidas/${gameId}`, {
+      method: "GET",
+    });
+  }
+
   return {
     createGame,
     listGames,
-    joinGame
+    joinGame,
+    getGameDetails
   };
 };
 
