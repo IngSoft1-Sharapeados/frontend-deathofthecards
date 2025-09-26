@@ -4,116 +4,9 @@ import GameList from "@/components/GameList/GameList.jsx";
 import PropTypes from 'prop-types';
 
 
-const mockGames = [
-  {
-    id: 1,
-    name: "Partida de Prueba 1",
-    minPlayers: 2,
-    maxPlayers: 4,
-    currentPlayers: 1,
-  },
-  {
-    id: 2,
-    name: "La Venganza del Mock",
-    minPlayers: 3,
-    maxPlayers: 6,
-    currentPlayers: 4,
-  },
-  {
-    id: 3,
-    name: "Aventura en Frontend",
-    minPlayers: 2,
-    maxPlayers: 2,
-    currentPlayers: 2,
-  },
-    {
-    id: 1,
-    name: "Partida de Prueba 1",
-    minPlayers: 2,
-    maxPlayers: 4,
-    currentPlayers: 1,
-  },
-  {
-    id: 2,
-    name: "La Venganza del Mock",
-    minPlayers: 3,
-    maxPlayers: 6,
-    currentPlayers: 4,
-  },
-  {
-    id: 3,
-    name: "Aventura en Frontend",
-    minPlayers: 2,
-    maxPlayers: 2,
-    currentPlayers: 2,
-  },
 
-    {
-    id: 1,
-    name: "Partida de Prueba 1",
-    minPlayers: 2,
-    maxPlayers: 4,
-    currentPlayers: 1,
-  },
-  {
-    id: 2,
-    name: "La Venganza del Mock",
-    minPlayers: 3,
-    maxPlayers: 6,
-    currentPlayers: 4,
-  },
-  {
-    id: 3,
-    name: "Aventura en Frontend",
-    minPlayers: 2,
-    maxPlayers: 2,
-    currentPlayers: 2,
-  },  {
-    id: 1,
-    name: "Partida de Prueba 1",
-    minPlayers: 2,
-    maxPlayers: 4,
-    currentPlayers: 1,
-  },
-  {
-    id: 2,
-    name: "La Venganza del Mock",
-    minPlayers: 3,
-    maxPlayers: 6,
-    currentPlayers: 4,
-  },
-  {
-    id: 3,
-    name: "Aventura en Frontend",
-    minPlayers: 2,
-    maxPlayers: 2,
-    currentPlayers: 2,
-  },
-    {
-    id: 1,
-    name: "Partida de Prueba 1",
-    minPlayers: 2,
-    maxPlayers: 4,
-    currentPlayers: 1,
-  },
-  {
-    id: 2,
-    name: "La Venganza del Mock",
-    minPlayers: 3,
-    maxPlayers: 6,
-    currentPlayers: 4,
-  },
-  {
-    id: 3,
-    name: "Aventura en Frontend",
-    minPlayers: 2,
-    maxPlayers: 2,
-    currentPlayers: 2,
-  }
-];
 
 const GameListContainer = ({ onJoinClick }) => {
-/*
 
   const [games, setGames] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -125,6 +18,7 @@ const GameListContainer = ({ onJoinClick }) => {
         const data = await apiService.listGames();
         if (!data.error) {
             setGames(
+                // mapeo a lo que espera GameCard
                 data.map((p) => ({
                     id: p.id,
                     name: p.nombre,
@@ -145,27 +39,13 @@ const GameListContainer = ({ onJoinClick }) => {
     fetchGames();
   }, []);
 
-
-  // 1. Muestra "Cargando..." mientras la petición está en curso.
-  if (loading) return <p>Cargando partidas...</p>;
-
-  // 2. Muestra el error si la petición falló.
   if (error) return <p>Error: {error}</p>;
-  
-  // 3. Si no está cargando y no hay error, pero la lista está vacía, muestra un mensaje.
-  if (games.length === 0) return <p>No hay partidas disponibles en este momento.</p>;
 
-  // 4. Si todo lo anterior es falso, renderiza la lista de partidas.
   return <GameList games={games} onJoinClick={onJoinClick}/>;
-
 };
 
 GameListContainer.propTypes = {
   onJoinClick: PropTypes.func.isRequired
 };
 
-*/
-
-  return <GameList games={mockGames} onJoinClick={onJoinClick}/>;
-};
 export default GameListContainer;
