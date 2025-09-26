@@ -1,15 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import GameList from '@/components/GameList/GameList.jsx';
+import React, { useState } from 'react'; 
 import styles from './HomePage.module.css';
 import GameCreateFormContainer from '@/containers/CrearPartida/CreateGameContainer';
 import GameListContainer from '@/containers/ListarPartida/GameListContainer';
 import UserForm from '@/components/UserForm/UserForm.jsx';
 
 const HomePage = () => {
-  const [games, setGames] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [gameToJoinId, setGameToJoinId] = useState(null);
+
 
   const handleJoinClick = (gameId) => {
     setGameToJoinId(gameId);
@@ -20,13 +19,18 @@ const HomePage = () => {
       <div className={styles.contentWrapper}>
         <div className={styles.header}>
           <h1 className={styles.title}>Partidas Disponibles</h1>
-          <button className={styles.createButton}onClick={() => setShowCreateForm(true)}>
+          <button 
+            className={styles.createButton} 
+            onClick={() => setShowCreateForm(true)}
+          >
             Crear Partida
           </button>
         </div>
-      <GameListContainer onJoinClick={handleJoinClick}/>
-        {isLoading ? <p>Cargando partidas...</p> : <GameList games={games} onJoinClick={handleJoinClick} />}
+
+        <GameListContainer onJoinClick={handleJoinClick} />
+
       </div>
+
       <GameCreateFormContainer 
         showForm={showCreateForm}
         onClose={() => setShowCreateForm(false)}

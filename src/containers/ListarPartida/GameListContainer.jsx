@@ -3,7 +3,113 @@ import { apiService } from "@/services/apiService.js";
 import GameList from "@/components/GameList/GameList.jsx";
 import PropTypes from 'prop-types';
 
+const mockGames = [
+  {
+    id: 1,
+    name: "Partida de Prueba 1",
+    minPlayers: 2,
+    maxPlayers: 4,
+    currentPlayers: 1,
+  },
+  {
+    id: 2,
+    name: "La Venganza del Mockcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    minPlayers: 3,
+    maxPlayers: 6,
+    currentPlayers: 4,
+  },
+  {
+    id: 3,
+    name: "Aventura en Frontend",
+    minPlayers: 2,
+    maxPlayers: 2,
+    currentPlayers: 2,
+  },
+    {
+    id: 1,
+    name: "Partida de Prueba 1",
+    minPlayers: 2,
+    maxPlayers: 4,
+    currentPlayers: 1,
+  },
+  {
+    id: 2,
+    name: "La Venganza del Mock",
+    minPlayers: 3,
+    maxPlayers: 6,
+    currentPlayers: 4,
+  },
+  {
+    id: 3,
+    name: "Aventura en Frontend",
+    minPlayers: 2,
+    maxPlayers: 2,
+    currentPlayers: 2,
+  },
 
+    {
+    id: 1,
+    name: "Partida de Prueba 1",
+    minPlayers: 2,
+    maxPlayers: 4,
+    currentPlayers: 1,
+  },
+  {
+    id: 2,
+    name: "La Venganza del Mock",
+    minPlayers: 3,
+    maxPlayers: 6,
+    currentPlayers: 4,
+  },
+  {
+    id: 3,
+    name: "Aventura en Frontend",
+    minPlayers: 2,
+    maxPlayers: 2,
+    currentPlayers: 2,
+  },  {
+    id: 1,
+    name: "Partida de Prueba 1",
+    minPlayers: 2,
+    maxPlayers: 4,
+    currentPlayers: 1,
+  },
+  {
+    id: 2,
+    name: "La Venganza del Mock",
+    minPlayers: 3,
+    maxPlayers: 6,
+    currentPlayers: 4,
+  },
+  {
+    id: 3,
+    name: "Aventura en Frontend",
+    minPlayers: 2,
+    maxPlayers: 2,
+    currentPlayers: 2,
+  },
+    {
+    id: 1,
+    name: "Partida de Prueba 1",
+    minPlayers: 2,
+    maxPlayers: 4,
+    currentPlayers: 1,
+  },
+  {
+    id: 2,
+    name: "La Venganza del Mock",
+    minPlayers: 3,
+    maxPlayers: 6,
+    currentPlayers: 4,
+  },
+  {
+    id: 3,
+    name: "Aventura en Frontend",
+    minPlayers: 2,
+    maxPlayers: 2,
+    currentPlayers: 2,
+  }
+];
 
 
 const GameListContainer = ({ onJoinClick }) => {
@@ -39,7 +145,9 @@ const GameListContainer = ({ onJoinClick }) => {
     fetchGames();
   }, []);
 
+  if (loading) return <p>Cargando partidas...</p>;
   if (error) return <p>Error: {error}</p>;
+  if (games.length === 0) return <p>No hay partidas disponibles...</p>;
 
   return <GameList games={games} onJoinClick={onJoinClick}/>;
 };
