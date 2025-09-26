@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { apiService } from "@/services/apiService.js";
 import GameList from "@/components/GameList/GameList.jsx";
+import PropTypes from 'prop-types';
 
 
 
-const GameListContainer = () => {
+
+const GameListContainer = ({ onJoinClick }) => {
 
   const [games, setGames] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -39,7 +41,11 @@ const GameListContainer = () => {
 
   if (error) return <p>Error: {error}</p>;
 
-  return <GameList games={games} />;
+  return <GameList games={games} onJoinClick={onJoinClick}/>;
+};
+
+GameListContainer.propTypes = {
+  onJoinClick: PropTypes.func.isRequired
 };
 
 export default GameListContainer;

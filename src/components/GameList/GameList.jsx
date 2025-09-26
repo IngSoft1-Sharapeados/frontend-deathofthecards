@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import GameCard from '@/components/GameCard/GameCard.jsx';
 import styles from '@/components/GameList/GameList.module.css';
 
-const GameList = ({ games = [] }) => {
+const GameList = ({ games = [], onJoinClick }) => {
   if (games.length === 0) {
     return (
       <div className={styles.emptyState}>
@@ -16,7 +16,7 @@ console.log("Partidas recibidas:", games);
     <div className={styles.listContainer}>
       
       {games.map((game, index) => (
-        <GameCard key={game.id} game={game} index={index} />
+        <GameCard key={game.id} game={game} index={index} onJoinClick={onJoinClick} />
       ))}
     </div>
   );

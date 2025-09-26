@@ -34,9 +34,17 @@ const createHttpService = () => {
     });
   };
 
+  const joinGame = async (gameId, playerData) =>{
+    return request(`/partidas/${gameId}`, {
+      method: "POST",
+      body: JSON.stringify(playerData),
+    });
+  }
+
   return {
     createGame,
-    listGames
+    listGames,
+    joinGame
   };
 };
 

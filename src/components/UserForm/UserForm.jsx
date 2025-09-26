@@ -1,32 +1,42 @@
 import React, { useState } from 'react';
-import '@/components/UI/BasicForm.css'; 
-
+import '@/components/UI/BasicForm.css';
+import { Navigate, useNavigate } from 'react-router-dom';
+import { apiService } from '@/services/apiService';
 // --- Componente del Formulario ---
-const UserForm = ({ onSubmit, onClose }) => {
+const UserForm = ({ gameId, onClose }) => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    username: '',
-    birthday: '',
+    nombreJugador: '',
+    fechaNacimiento: '',
   });
 
   const [errors, setErrors] = useState({});
 
   const validateForm = () => {
     const newErrors = {};
-    if (!formData.username.trim()) {
-      newErrors.username = 'El nombre de usuario es obligatorio.';
+    if (!formData.nombreJugador.trim()) {
+      newErrors.nombreJugador = 'El nombre de usuario es obligatorio.';
     }
-    if (!formData.birthday) {
-      newErrors.birthday = 'La fecha de cumpleaños es obligatoria.';
+    if (!formData.fechaNacimiento) {
+      newErrors.fechaNacimiento = 'La fecha de cumpleaños es obligatoria.';
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (validateForm()) {
-      onSubmit(formData);
-      onClose();
+      try {
+        const response = await apiService.joinGame(gameId, formData)
+        console.log("Respuesta del joinGame:", response);
+        onClose();
+        navigate(`/partidas/${gameId}`);
+      } catch (error) {
+        console.error("Error al unirse a la partida:", error);
+        alert(`Error al unirse a la partida: ${error.message || "No se pudo unir a la partida"} `);
+      }
+
     }
   };
 
@@ -55,28 +65,28 @@ const UserForm = ({ onSubmit, onClose }) => {
               <div className="form-group">
                 <input
                   type="text"
-                  id="username"
-                  name="username"
-                  value={formData.username}
+                  id="nombreJugador"
+                  name="nombreJugador"
+                  value={formData.nombreJugador}
                   onChange={handleChange}
-                  className={`form-input ${errors.username ? 'input-error' : ''}`}
-                  placeholder=" " 
+                  className={`form-input ${errors.nombreJugador ? 'input-error' : ''}`}
+                  placeholder=" "
                 />
-                <label htmlFor="username" className="form-label">Nombre de Usuario</label>
-                {errors.username && <p className="error-message">{errors.username}</p>}
+                <label htmlFor="nombreJugador" className="form-label">Nombre de Usuario</label>
+                {errors.nombreJugador && <p className="error-message">{errors.nombreJugador}</p>}
               </div>
               <div className="form-group">
                 <input
                   type="date"
-                  id="birthday"
-                  name="birthday"
-                  value={formData.birthday}
+                  id="fechaNacimiento"
+                  name="fechaNacimiento"
+                  value={formData.fechaNacimiento}
                   onChange={handleChange}
-                  className={`form-input ${errors.birthday ? 'input-error' : ''}`}
+                  className={`form-input ${errors.fechaNacimiento ? 'input-error' : ''}`}
                   placeholder=" "
                 />
-                <label htmlFor="birthday" className="form-label">Fecha de Cumpleaños</label>
-                {errors.birthday && <p className="error-message">{errors.birthday}</p>}
+                <label htmlFor="fechaNacimiento" className="form-label">Fecha de Cumpleaños</label>
+                {errors.fechaNacimiento && <p className="error-message">{errors.fechaNacimiento}</p>}
               </div>
             </div>
             <div className="form-actions">
