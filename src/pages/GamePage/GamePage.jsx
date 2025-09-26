@@ -12,7 +12,7 @@ const GamePage = () => {
     setHand(initialHand);
   }, []);
 
-    useEffect(() => {
+  useEffect(() => {
     console.log('Cartas seleccionadas:', selectedCards);
   }, [selectedCards]);
 
@@ -27,6 +27,13 @@ const GamePage = () => {
     });
   };
 
+  const handleDiscard = () => {
+    setHand((currentHand) => currentHand.filter((card) => !selectedCards.includes(card)));
+    setSelectedCards([]);
+  }
+
+  const isDiscardButtonEnabled = selectedCards.length > 0;
+
   return (
     <div className={styles.gameContainer}>
       <h1 className={styles.title}>Tu Mano</h1>
@@ -40,8 +47,23 @@ const GamePage = () => {
           />
         ))}
       </div>
+
+      <div className={styles.actionsContainer}>
+        <button
+          disabled={true}
+          className={styles.playButton}
+        >
+          Jugar cartas
+        </button>
+        <button
+          onClick={handleDiscard}
+          disabled={!isDiscardButtonEnabled}
+          className={`${styles.discardButton} ${isDiscardButtonEnabled ? styles.enabled : ''}`}
+        >
+          Descartar
+        </button>
+      </div>
     </div>
   );
 };
-
 export default GamePage;
