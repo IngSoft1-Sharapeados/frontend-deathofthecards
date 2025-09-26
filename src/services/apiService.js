@@ -28,8 +28,15 @@ const createHttpService = () => {
     });
   };
 
+  const listGames = async (playerData) =>{
+    return request("/partidas", {
+      method: "GET",
+    });
+  };
+
   return {
     createGame,
+    listGames
   };
 };
 
