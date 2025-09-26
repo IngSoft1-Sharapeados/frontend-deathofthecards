@@ -2,8 +2,9 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import styles from '@/components/GameCard/GameCard.module.css';
 
-const GameCard = ({ game, index }) => { 
-  const { name, minPlayers, maxPlayers, currentPlayers } = game;
+const GameCard = ({ game, index, onJoinClick }) => { 
+  console.log("Renderizando GameCard para:", game);
+  const {name, minPlayers, maxPlayers, currentPlayers } = game;
 
   
   const cardStyle = {
@@ -17,7 +18,7 @@ const GameCard = ({ game, index }) => {
         <p>Jugadores: {currentPlayers}</p>
         <p>Límite: {minPlayers} - {maxPlayers}</p>
       </div>
-      <button className={styles.joinButton}>Unirse</button>
+      <button className={styles.joinButton} onClick={() => onJoinClick(game.id)}>Unirse</button>
     </div>
   );
 };
@@ -32,6 +33,7 @@ GameCard.propTypes = {
   }).isRequired,
   
   index: PropTypes.number.isRequired, 
+  onJoinClick: PropTypes.func.isRequired
 };
 
 export default GameCard;
