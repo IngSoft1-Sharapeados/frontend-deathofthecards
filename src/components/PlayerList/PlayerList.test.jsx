@@ -8,9 +8,9 @@ expect.extend(matchers);
 
 describe('PlayerList', () => {
   const mockPlayers = [
-    { id: 1, name: 'Andrés' },
-    { id: 2, name: 'Fran' },
-    { id: 3, name: 'Santi' },
+    { id_jugador: 1, nombre_jugador: 'Andrés' },
+    { id_jugador: 2, nombre_jugador: 'Fran' },
+    { id_jugador: 3, nombre_jugador: 'Santi' },
   ];
 
   describe('Data Rendering', () => {
