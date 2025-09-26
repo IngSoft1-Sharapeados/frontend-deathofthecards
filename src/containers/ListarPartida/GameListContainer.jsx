@@ -4,8 +4,6 @@ import GameList from "@/components/GameList/GameList.jsx";
 import PropTypes from 'prop-types';
 
 
-
-
 const GameListContainer = ({ onJoinClick }) => {
 
   const [games, setGames] = useState([]);
@@ -39,7 +37,9 @@ const GameListContainer = ({ onJoinClick }) => {
     fetchGames();
   }, []);
 
+  if (loading) return <p>Cargando partidas...</p>;
   if (error) return <p>Error: {error}</p>;
+  if (games.length === 0) return <p>No hay partidas disponibles...</p>;
 
   return <GameList games={games} onJoinClick={onJoinClick}/>;
 };
