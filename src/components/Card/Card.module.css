@@ -1,0 +1,27 @@
+.card {
+  perspective: 1000px;
+  cursor: pointer;
+  transition: transform 0.3s ease; 
+}
+
+.cardImage {
+  width: 150px;
+  height: auto;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  transition: transform 0.2s ease, box-shadow 0.3s ease;
+}
+
+.card:hover .cardImage {
+  transform: translateY(-10px) scale(1.05);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.4);
+}
+
+.card.selected {
+  transform: translateY(-25px); 
+}
+
+.card.selected:hover .cardImage {
+  transform: translateY(0) scale(1.05);
+}
+

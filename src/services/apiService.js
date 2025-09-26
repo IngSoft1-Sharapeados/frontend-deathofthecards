@@ -23,7 +23,7 @@ const createHttpService = () => {
       method: "POST",
       body: JSON.stringify(gameData),
     });
-  };
+  };  
 
   const listGames = async (playerData) => {
     return request("/partidas", {

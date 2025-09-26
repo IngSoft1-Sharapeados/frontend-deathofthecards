@@ -1,0 +1,28 @@
+html, body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden; /* evita scroll */
+}
+
+.gameContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end; 
+  height: 100vh;
+  padding: 0;
+}
+
+.title {
+  margin-bottom: 1rem;
+  font-size: 2.5rem;
+  color: #e0e0e0;
+}
+
+.handContainer {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr); /* 6 cartas en una fila */
+  gap: 5px;
+  justify-items: center;
+  margin-bottom: 0.5rem; 
+}
