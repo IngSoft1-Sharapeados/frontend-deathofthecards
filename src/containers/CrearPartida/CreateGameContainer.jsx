@@ -60,6 +60,7 @@ export default function GameCreateFormContainer({ showForm, onClose }) {
       // Redirigir a la nueva partida
       if (result["id_partida"]) {
        localStorage.setItem('playerId', result.id_jugador); 
+       localStorage.setItem('hostId', result.id_jugador);
        navigate(`/partidas/${result.id_partida}`);
       }
       console.log("Resultado createGame:", result);
