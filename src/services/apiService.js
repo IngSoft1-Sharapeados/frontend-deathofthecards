@@ -43,12 +43,12 @@ const createHttpService = () => {
       method: "GET",
     });
   }
-  
+
   const startGame = async (gameId, playerId) => { 
     const gameIdInt = parseInt(gameId, 10);
-    return request(`/partidas/${gameId}`, { 
+    return request(`/partidas?id_partida=${gameIdInt}`, { 
       method: "PUT",
-      body: JSON.stringify({ id_jugador: playerId, id_partida: gameIdInt }),
+      body: JSON.stringify({ id_jugador: playerId }),
     }); 
   }; 
 
