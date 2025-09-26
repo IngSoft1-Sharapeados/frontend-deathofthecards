@@ -8,6 +8,7 @@ const HomePage = () => {
 
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [gameToJoinId, setGameToJoinId] = useState(null);
+  
   // Estado para forzar la actualización de la lista de partidas
   const [refreshKey, setRefreshKey] = useState(0);
 
@@ -15,7 +16,7 @@ const HomePage = () => {
     setGameToJoinId(gameId);
   };
 
-  // Función para cambiar el estado y disparar la actualización
+
   const handleRefresh = () => {
     setRefreshKey(prevKey => prevKey + 1);
   };
@@ -27,7 +28,7 @@ const HomePage = () => {
           <h1 className={styles.title}>Partidas Disponibles</h1>
           <div className={styles.buttonGroup}> {/* Contenedor para botones */}
             <button 
-              className={styles.refreshButton} // Asigna un estilo si lo deseas
+              className={styles.refreshButton}
               onClick={handleRefresh}
             >
               Actualizar
@@ -41,10 +42,9 @@ const HomePage = () => {
           </div>
         </div>
 
-        {/* Pasamos refreshKey como prop */}
         <GameListContainer 
             onJoinClick={handleJoinClick} 
-            key={refreshKey} // Usar key es una forma simple en React de forzar un re-montado y re-fetch
+            key={refreshKey} 
         />
 
       </div>
