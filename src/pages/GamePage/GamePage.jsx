@@ -49,12 +49,12 @@ const GamePage = () => {
       </div>
 
       <div className={styles.actionsContainer}>
-        <button
+        {/* <button
           disabled={true}
           className={styles.playButton}
         >
           Jugar cartas
-        </button>
+        </button> */}
         <button
           onClick={handleDiscard}
           disabled={!isDiscardButtonEnabled}
