@@ -18,17 +18,17 @@ const GameLobbyPage = () => {
     const [error, setError] = useState(null);
     const [starting, setStarting] = useState(false);
 
-    // 1️Cargar currentPlayerId y hostId desde localStorage
+    // 1️Cargar currentPlayerId y hostId desde sessionStorage
     useEffect(() => {
-        const savedPlayerId = localStorage.getItem('playerId');
-        const savedHostId = localStorage.getItem('hostId');
+        const savedPlayerId = sessionStorage.getItem('playerId');
+        const savedHostId = sessionStorage.getItem('hostId');
         if (savedPlayerId) {
             setCurrentPlayerId(parseInt(savedPlayerId, 10));
-            console.log("PlayerId encontrado en localStorage:", savedPlayerId);
+            console.log("PlayerId encontrado en sessionStorage:", savedPlayerId);
         }
         if (savedHostId) {
             setHostId(parseInt(savedHostId, 10));
-            console.log("HostId encontrado en localStorage:", savedHostId);
+            console.log("HostId encontrado en sessionStorage:", savedHostId);
         }
     }, []);
 
