@@ -18,7 +18,7 @@ const GameLobbyPage = () => {
     const [error, setError] = useState(null);
     const [starting, setStarting] = useState(false);
 
-    // 1️Cargar currentPlayerId y hostId desde sessionStorage
+    // Cargar currentPlayerId y hostId desde sessionStorage
     useEffect(() => {
         const savedPlayerId = sessionStorage.getItem('playerId');
         const savedHostId = sessionStorage.getItem('hostId');
@@ -57,7 +57,7 @@ const GameLobbyPage = () => {
         fetchLobbyData();
     }, [gameId]);
 
-    // 3 Derivar isHost solo cuando currentPlayerId y hostId estén definidos
+    //  Derivar isHost solo cuando currentPlayerId y hostId estén definidos
     useEffect(() => {
         if (currentPlayerId != null && hostId != null) {
             const hostStatus = currentPlayerId === hostId;
@@ -75,16 +75,10 @@ const GameLobbyPage = () => {
 
         try {
             setStarting(true);
-            const response = await apiService.startGame(gameId, currentPlayerId);
-            if (response.success) {
-                navigate(`/partidas/${gameId}/juego`);
-            } else {
-                alert("No se pudo iniciar la partida. Intente nuevamente.");
-            }
+            await apiService.startGame(gameId, currentPlayerId);
+            navigate(`/partidas/${gameId}/juego`);  
         } catch (err) {
             alert("No se pudo iniciar la partida. Intente nuevamente.");
-        } finally {
-            setStarting(false);
         }
     };
 
@@ -95,11 +89,6 @@ const GameLobbyPage = () => {
         <div className={styles.lobbyContainer}>
             <header className={styles.lobbyHeader}>
                 <h1 className={styles.gameTitle}>{gameName}</h1>
-                {currentPlayerId != null && (
-                    <p className={styles.playerInfo}>
-                        Tu ID: {currentPlayerId} | Host ID: {hostId}
-                    </p>
-                )}
             </header>
 
             <main className={styles.mainContent}>

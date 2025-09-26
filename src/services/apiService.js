@@ -44,7 +44,7 @@ const createHttpService = () => {
     });
   }
   const startGame = async (gameId, playerId) => { 
-    return request(`/partidas?id_partida=${gameId}`, { 
+    return request(`/partidas/${gameId}`, { 
       method: "PUT",
       body: JSON.stringify({ id_jugador: playerId }),
     }); 
