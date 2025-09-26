@@ -9,8 +9,8 @@ const PlayerList = ({ players }) => {
       {players.length > 0 ? (
         <ul className={styles.list}>
           {players.map((player) => (
-            <li key={player.id} className={styles.playerItem}>
-              {player.name}
+            <li key={player.id_jugador} className={styles.playerItem}>
+              {player.nombre_jugador}
             </li>
           ))}
         </ul>
