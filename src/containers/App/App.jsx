@@ -3,6 +3,7 @@ import { Routes, Route, useParams } from "react-router-dom";
 import './App.css';
 import HomePage from '@/pages/HomePage/HomePage.jsx';
 import GameLobbyPage from "@/pages/gameLobby.jsx";
+import GamePage from "@/pages/GamePage/GamePage.jsx";
 
 function App() {
 
@@ -14,7 +15,7 @@ function App() {
           path="/"
           element={
             <>
-              <HomePage />
+              <GamePage  />
             </>
           }
         />

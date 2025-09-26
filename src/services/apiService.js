@@ -26,7 +26,7 @@ const createHttpService = () => {
       method: "POST",
       body: JSON.stringify(gameData),
     });
-  };
+  };  
 
   return {
     createGame,
