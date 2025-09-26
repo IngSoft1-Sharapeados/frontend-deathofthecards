@@ -20,11 +20,11 @@ const HomePage = () => {
       <div className={styles.contentWrapper}>
         <div className={styles.header}>
           <h1 className={styles.title}>Partidas Disponibles</h1>
-            <GameListContainer onJoinClick={handleJoinClick}/>
           <button className={styles.createButton}onClick={() => setShowCreateForm(true)}>
             Crear Partida
           </button>
         </div>
+      <GameListContainer onJoinClick={handleJoinClick}/>
         {isLoading ? <p>Cargando partidas...</p> : <GameList games={games} onJoinClick={handleJoinClick} />}
       </div>
       <GameCreateFormContainer 
