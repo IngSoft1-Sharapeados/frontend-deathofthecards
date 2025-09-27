@@ -26,3 +26,46 @@ html, body {
   justify-items: center;
   margin-bottom: 0.5rem; 
 }
+
+.actionsContainer {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+}
+
+.discardButton {
+  padding: 12px 30px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  border-radius: 8px;
+  border: 2px solid #555;
+  color: #888;
+  background-color: #333;
+  cursor: not-allowed;
+  transition: all 0.2s ease-in-out;
+  margin-bottom: 20px;
+}
+
+.playButton {
+  padding: 12px 30px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  border-radius: 8px;
+  border: 2px solid #555;
+  color: #888;
+  background-color: #333;
+  cursor: not-allowed;
+  transition: all 0.2s ease-in-out;
+  margin-bottom: 20px;
+}
+
+.discardButton.enabled {
+  background-color: #b22222; 
+  border-color: #ff6347; 
+  color: white;
+  cursor: pointer;
+}
+
+.discardButton.enabled:hover {
+  transform: scale(1.05);
+}
