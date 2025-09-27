@@ -6,9 +6,6 @@ const eventHandlers = {
 
 const websocketService = {
   connect(gameId, playerId) {
-    if (socket) {
-      socket.close();
-    }
 
     const wsURL = `ws://localhost:8000/partidas/ws/${gameId}/${playerId}`;
     
