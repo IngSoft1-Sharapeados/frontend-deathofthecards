@@ -46,3 +46,51 @@
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
+
+.startButton {
+    padding: 12px 24px;
+    font-size: 16px;
+    font-weight: 600;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 200px;
+    margin: 20px auto;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.enabled {
+    background-color: #22c55e; /* Verde Tailwind green-500 */
+    color: white;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.enabled:hover {
+    background-color: #16a34a; /* Verde más oscuro Tailwind green-600 */
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.enabled:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.disabled {
+    background-color: #9ca3af; /* Gris Tailwind gray-400 */
+    color: #e5e7eb; /* Texto gris claro Tailwind gray-200 */
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.disabled:hover {
+    background-color: #9ca3af; /* Mismo gris, sin cambio en hover */
+    transform: none;
+    box-shadow: none;
+}

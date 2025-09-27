@@ -85,34 +85,37 @@ const GameLobbyPage = () => {
     if (isLoading) return <div className={styles.loadingSpinner}></div>;
     if (error) return <p>{error}</p>;
 
-    return (
-        <div className={styles.lobbyContainer}>
-            <header className={styles.lobbyHeader}>
-                <h1 className={styles.gameTitle}>{gameName}</h1>
-            </header>
+  return (
+    <div className={styles.lobbyContainer}>
+        <header className={styles.lobbyHeader}>
+            <h1 className={styles.gameTitle}>{gameName}</h1>
+        </header>
 
-            <main className={styles.mainContent}>
-                <PlayerList players={players} />
+        <main className={styles.mainContent}>
+            <PlayerList players={players} />
 
-                {isHost ? (
-                    <button
-                        className={styles.startButton}
-                        onClick={handleStartGame}
-                        disabled={players.length < minPlayers || starting}
-                    >
-                        {starting
-                            ? "Iniciando..."
-                            : `Iniciar partida (${players.length}/${minPlayers})`}
-                    </button>
-                ) : (
-                    <p>
-                        Esperando que el anfitrión inicie la partida... (
-                        {players.length}/{minPlayers} jugadores)
-                    </p>
-                )}
-            </main>
-        </div>
-    );
+            {isHost ? (
+                <button
+                    className={`${styles.startButton} ${
+                        players.length < minPlayers || starting
+                            ? styles.disabled
+                            : styles.enabled
+                    }`}
+                    onClick={handleStartGame}
+                    disabled={players.length < minPlayers || starting}
+                >
+                    {starting
+                        ? "Iniciando..."
+                        : `Iniciar partida (${players.length}/${minPlayers})`}
+                </button>
+            ) : (
+                <p>
+                    Esperando que el anfitrión inicie la partida... (
+                    {players.length}/{minPlayers} jugadores)
+                </p>
+            )}
+        </main>
+    </div>
+  );
 };
-
 export default GameLobbyPage;
