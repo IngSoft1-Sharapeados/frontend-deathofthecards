@@ -23,7 +23,7 @@ const createHttpService = () => {
       method: "POST",
       body: JSON.stringify(gameData),
     });
-  };  
+  };
 
   const listGames = async (playerData) => {
     return request("/partidas", {
@@ -44,14 +44,18 @@ const createHttpService = () => {
     });
   }
 
-  const startGame = async (gameId, playerId) => { 
+  const startGame = async (gameId, playerId) => {
     const gameIdInt = parseInt(gameId, 10);
-    return request(`/partidas?id_partida=${gameIdInt}`, { 
-      method: "PUT",
-      body: JSON.stringify({ id_jugador: playerId }),
-    }); 
-  }; 
+    console.log("startGame llamado con:", gameIdInt, playerId);
 
+    return request(`/partidas/${gameIdInt}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ id_jugador: playerId }),
+    });
+  };
   return {
     createGame,
     listGames,
