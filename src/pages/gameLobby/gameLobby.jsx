@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import PlayerList from '@/components/PlayerList/PlayerList';
 import { apiService } from '@/services/apiService';
-import websocketService from '@/services/websocketService'; // --- IMPORTANTE ---
+import websocketService from '@/services/websocketService'; 
 import { useParams, useNavigate } from 'react-router-dom';
 import styles from './gameLobby.module.css';
 
@@ -9,21 +9,18 @@ const GameLobbyPage = () => {
   const { id: gameId } = useParams();
   const navigate = useNavigate();
 
-  // --- 1. Simplificamos los estados ---
   const [gameDetails, setGameDetails] = useState(null);
   const [players, setPlayers] = useState([]);
   const [currentPlayerId, setCurrentPlayerId] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // --- 2. Unimos la lógica en un solo useEffect para claridad ---
   useEffect(() => {
     const storedPlayerId = sessionStorage.getItem('playerId');
     if (storedPlayerId) {
       setCurrentPlayerId(parseInt(storedPlayerId, 10));
     }
 
-    // Primero, cargamos los datos iniciales de la sala
     const fetchAndConnect = async () => {
       try {
         const data = await apiService.getGameDetails(gameId);
@@ -32,7 +29,6 @@ const GameLobbyPage = () => {
         setIsLoading(false);
         console.log("Datos de la sala cargados:", data);
 
-        // Una vez cargados los datos, nos conectamos al WebSocket
         if (storedPlayerId) {
           websocketService.connect(gameId, storedPlayerId);
         }
@@ -55,7 +51,8 @@ const GameLobbyPage = () => {
         return [...prevPlayers, newPlayer];
       });
     };
-   const handleGameStarted = () => {
+
+    const handleGameStarted = () => {
       navigate(`/partidas/${gameId}/juego`);
     };
 
@@ -90,40 +87,37 @@ const GameLobbyPage = () => {
   const isHost = currentPlayerId == gameDetails.id_anfitrion;
   const canStart = players.length >= gameDetails.minJugadores;
 
-  if (isLoading) return <div className={styles.loadingSpinner}></div>;
-  if (error) return <p>{error}</p>;
-
   return (
     <div className={styles.lobbyContainer}>
-        <header className={styles.lobbyHeader}>
-            <h1 className={styles.gameTitle}>{gameName}</h1>
-        </header>
+      <header className={styles.lobbyHeader}>
+        <h1 className={styles.gameTitle}>{gameDetails.nombre_partida}</h1>
+      </header>
 
-        <main className={styles.mainContent}>
-            <PlayerList players={players} />
-
-            {isHost ? (
-                <button
-                    className={`${styles.startButton} ${
-                        players.length < minPlayers || starting
-                            ? styles.disabled
-                            : styles.enabled
-                    }`}
-                    onClick={handleStartGame}
-                    disabled={players.length < minPlayers || starting}
-                >
-                    {starting
-                        ? "Iniciando..."
-                        : `Iniciar partida (${players.length}/${minPlayers})`}
-                </button>
-            ) : (
-                <p>
-                    Esperando que el anfitrión inicie la partida... (
-                    {players.length}/{minPlayers} jugadores)
-                </p>
+      <main className={styles.mainContent}>
+        <PlayerList players={players} />
+        {isHost ? (
+          <div className={styles.hostActions}>
+            <button
+              className={styles.startButton}
+              onClick={handleStartGame}
+              disabled={!canStart}
+            >
+              Iniciar Partida ({players.length}/{gameDetails.minJugadores})
+            </button>
+            {!canStart && (
+              <p className={styles.waitingMessage}>
+                Faltan {gameDetails.minJugadores - players.length} jugadores para comenzar.
+              </p>
             )}
-        </main>
+          </div>
+        ) : (
+          <p className={styles.waitingMessage}>
+            Esperando que el anfitrión inicie la partida... ({players.length}/{gameDetails.minJugadores} jugadores)
+          </p>
+        )}
+      </main>
     </div>
   );
 };
+
 export default GameLobbyPage;
