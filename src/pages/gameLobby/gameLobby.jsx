@@ -1,118 +1,127 @@
 import React, { useState, useEffect } from 'react';
 import PlayerList from '@/components/PlayerList/PlayerList';
 import { apiService } from '@/services/apiService';
+import websocketService from '@/services/websocketService'; // --- IMPORTANTE ---
 import { useParams, useNavigate } from 'react-router-dom';
 import styles from './gameLobby.module.css';
 
 const GameLobbyPage = () => {
-    const { id: gameId } = useParams();
-    const navigate = useNavigate();
+  const { id: gameId } = useParams();
+  const navigate = useNavigate();
 
-    const [gameName, setGameName] = useState('');
-    const [players, setPlayers] = useState([]);
-    const [minPlayers, setMinPlayers] = useState(2);
-    const [hostId, setHostId] = useState(null);
-    const [currentPlayerId, setCurrentPlayerId] = useState(null);
-    const [isHost, setIsHost] = useState(false);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const [starting, setStarting] = useState(false);
+  // --- 1. Simplificamos los estados ---
+  const [gameDetails, setGameDetails] = useState(null);
+  const [players, setPlayers] = useState([]);
+  const [currentPlayerId, setCurrentPlayerId] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-    // Cargar currentPlayerId y hostId desde sessionStorage
-    useEffect(() => {
-        const savedPlayerId = sessionStorage.getItem('playerId');
-        const savedHostId = sessionStorage.getItem('hostId');
-        if (savedPlayerId) {
-            setCurrentPlayerId(parseInt(savedPlayerId, 10));
-            console.log("PlayerId encontrado en sessionStorage:", savedPlayerId);
-        }
-        if (savedHostId) {
-            setHostId(parseInt(savedHostId, 10));
-            console.log("HostId encontrado en sessionStorage:", savedHostId);
-        }
-    }, []);
+  // --- 2. Unimos la lógica en un solo useEffect para claridad ---
+  useEffect(() => {
+    const storedPlayerId = sessionStorage.getItem('playerId');
+    if (storedPlayerId) {
+      setCurrentPlayerId(parseInt(storedPlayerId, 10));
+    }
 
-    //  Traer datos de la partida desde el backend
-    useEffect(() => {
-        if (!gameId) return;
+    // Primero, cargamos los datos iniciales de la sala
+    const fetchAndConnect = async () => {
+      try {
+        const data = await apiService.getGameDetails(gameId);
+        setGameDetails(data);
+        setPlayers(data.listaJugadores);
+        setIsLoading(false);
+        console.log("Datos de la sala cargados:", data);
 
-        const fetchLobbyData = async () => {
-            try {
-                setIsLoading(true);
-                const data = await apiService.getGameDetails(gameId);
-
-                setGameName(data.nombre_partida);
-                setPlayers(data.listaJugadores);
-                setMinPlayers(data.minJugadores);
-
-                console.log("Datos de partida cargados:", data);
-            } catch (err) {
-                console.error("Error al cargar la sala:", err);
-                setError("No se pudo cargar la sala.");
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        fetchLobbyData();
-    }, [gameId]);
-
-    //  Derivar isHost solo cuando currentPlayerId y hostId estén definidos
-    useEffect(() => {
-        if (currentPlayerId != null && hostId != null) {
-            const hostStatus = currentPlayerId === hostId;
-            setIsHost(hostStatus);
-            console.log({ currentPlayerId, hostId, isHost: hostStatus, isLoading });
-        }
-    }, [currentPlayerId, hostId, isLoading]);
-
-    //  Función para iniciar partida
-    const handleStartGame = async () => {
-        if (!currentPlayerId) {
-            alert("No se pudo identificar tu jugador. Recarga la página.");
-            return;
+        // Una vez cargados los datos, nos conectamos al WebSocket
+        if (storedPlayerId) {
+          websocketService.connect(gameId, storedPlayerId);
         }
 
-        try {
-            setStarting(true);
-            await apiService.startGame(gameId, currentPlayerId);
-            navigate(`/partidas/${gameId}/juego`);  
-        } catch (err) {
-            alert("No se pudo iniciar la partida. Intente nuevamente.");
-        }
+      } catch (err) {
+        console.error("Error al cargar la sala:", err);
+        setError("No se pudo cargar la sala.");
+        setIsLoading(false);
+      }
     };
 
-    if (isLoading) return <div className={styles.loadingSpinner}></div>;
-    if (error) return <p>{error}</p>;
+    fetchAndConnect();
 
-    return (
-        <div className={styles.lobbyContainer}>
-            <header className={styles.lobbyHeader}>
-                <h1 className={styles.gameTitle}>{gameName}</h1>
-            </header>
+    const handlePlayerJoined = (data) => {
+      const newPlayer = { id_jugador: data.id_jugador, nombre_jugador: data.nombre_jugador };
+      setPlayers(prevPlayers => {
+        if (prevPlayers.find(p => p.id_jugador === newPlayer.id_jugador)) {
+          return prevPlayers;
+        }
+        return [...prevPlayers, newPlayer];
+      });
+    };
 
-            <main className={styles.mainContent}>
-                <PlayerList players={players} />
+    const handleGameStarted = () => {
+      navigate(`/partidas/${gameId}/juego`);
+    };
 
-                {isHost ? (
-                    <button
-                        className={styles.startButton}
-                        onClick={handleStartGame}
-                        disabled={players.length < minPlayers || starting}
-                    >
-                        {starting
-                            ? "Iniciando..."
-                            : `Iniciar partida (${players.length}/${minPlayers})`}
-                    </button>
-                ) : (
-                    <p>
-                        Esperando que el anfitrión inicie la partida... (
-                        {players.length}/{minPlayers} jugadores)
-                    </p>
-                )}
-            </main>
-        </div>
-    );
+    websocketService.on('union-jugador', handlePlayerJoined);
+    websocketService.on('iniciar-partida', handleGameStarted);
+
+    return () => {
+      websocketService.off('union-jugador', handlePlayerJoined);
+      websocketService.off('iniciar-partida', handleGameStarted);
+      websocketService.disconnect();
+    };
+  }, [gameId, navigate]);
+
+  const handleStartGame = async () => {
+    if (!currentPlayerId) return;
+
+    try {
+      console.log(gameId, currentPlayerId);
+      await apiService.startGame(gameId, currentPlayerId);
+    } catch (err) {
+      alert(`Error al iniciar la partida: ${err.message}`);
+    }
+  };
+
+  if (isLoading || !gameDetails) {
+    return <div className={styles.loadingSpinner}></div>;
+  }
+  if (error) {
+    return <p>{error}</p>;
+  }
+
+  const isHost = currentPlayerId == gameDetails.id_anfitrion;
+  const canStart = players.length >= gameDetails.minJugadores;
+
+  return (
+    <div className={styles.lobbyContainer}>
+      <header className={styles.lobbyHeader}>
+        <h1 className={styles.gameTitle}>{gameDetails.nombre_partida}</h1>
+      </header>
+
+      <main className={styles.mainContent}>
+        <PlayerList players={players} />
+        {isHost ? (
+          <div className={styles.hostActions}>
+            <button
+              className={styles.startButton}
+              onClick={handleStartGame}
+              disabled={!canStart}
+            >
+              Iniciar Partida ({players.length}/{gameDetails.minJugadores})
+            </button>
+            {!canStart && (
+              <p className={styles.waitingMessage}>
+                Faltan {gameDetails.minJugadores - players.length} jugadores para comenzar.
+              </p>
+            )}
+          </div>
+        ) : (
+          <p className={styles.waitingMessage}>
+            Esperando que el anfitrión inicie la partida... ({players.length}/{gameDetails.minJugadores} jugadores)
+          </p>
+        )}
+      </main>
+    </div>
+  );
 };
 
 export default GameLobbyPage;
