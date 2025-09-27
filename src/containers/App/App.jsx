@@ -3,7 +3,7 @@ import { Routes, Route, useParams } from "react-router-dom";
 import './App.css';
 import HomePage from '@/pages/HomePage/HomePage.jsx';
 import GameLobbyPage from "@/pages/gameLobby/gameLobby.jsx";
-
+import GamePage from '@/pages/GamePage/GamePage.jsx';
 function App() {
 
   return (
@@ -21,6 +21,7 @@ function App() {
 
         {/* Ruta página del juego */}
         <Route path="/partidas/:id" element={<GameLobbyPage />} />
+        <Route path="/partidas/:id/juego" element={<GamePage />} />
       </Routes>
     </main>
   );
