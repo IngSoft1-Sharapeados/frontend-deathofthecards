@@ -8,10 +8,17 @@ const HomePage = () => {
 
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [gameToJoinId, setGameToJoinId] = useState(null);
-
+  
+  // Estado para forzar la actualización de la lista de partidas
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const handleJoinClick = (gameId) => {
     setGameToJoinId(gameId);
+  };
+
+
+  const handleRefresh = () => {
+    setRefreshKey(prevKey => prevKey + 1);
   };
 
   return (
@@ -19,15 +26,26 @@ const HomePage = () => {
       <div className={styles.contentWrapper}>
         <div className={styles.header}>
           <h1 className={styles.title}>Partidas Disponibles</h1>
-          <button 
-            className={styles.createButton} 
-            onClick={() => setShowCreateForm(true)}
-          >
-            Crear Partida
-          </button>
+          <div className={styles.buttonGroup}> {/* Contenedor para botones */}
+            <button 
+              className={styles.refreshButton}
+              onClick={handleRefresh}
+            >
+              Actualizar
+            </button>
+            <button 
+              className={styles.createButton} 
+              onClick={() => setShowCreateForm(true)}
+            >
+              Crear Partida
+            </button>
+          </div>
         </div>
 
-        <GameListContainer onJoinClick={handleJoinClick} />
+        <GameListContainer 
+            onJoinClick={handleJoinClick} 
+            key={refreshKey} 
+        />
 
       </div>
 
