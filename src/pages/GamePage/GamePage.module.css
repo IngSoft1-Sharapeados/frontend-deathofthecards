@@ -11,6 +11,51 @@ html, body {
   justify-content: flex-end; 
   height: 100vh;
   padding: 0;
+   position: relative;
+}
+.playersTableContainer {
+  position: absolute;
+  top: 50%;
+  right: 5%;
+  transform: translateY(-50%);
+  background: #222;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  padding: 18px 24px;
+  min-width: 220px;
+  z-index: 10;
+}
+
+.playersTableTitle {
+  color: #fff;
+  font-size: 1.2rem;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+.playersTable {
+  width: 100%;
+  border-collapse: collapse;
+  background: transparent;
+}
+.playersTable th, .playersTable td {
+  padding: 7px 12px;
+  text-align: left;
+  color: #e0e0e0;
+}
+.playersTable th {
+  background: #333;
+  font-weight: bold;
+}
+.playersTable tr {
+  border-bottom: 1px solid #444;
+}
+.playersTable tr:last-child {
+  border-bottom: none;
+}
+.currentPlayerRow {
+  background: #2e8b57 !important;
+  color: #fff !important;
 }
 
 .title {

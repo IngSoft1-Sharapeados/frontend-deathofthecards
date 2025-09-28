@@ -1,16 +1,39 @@
+
 import React, { useState, useEffect } from 'react';
 import Card from '@/components/Card/Card';
 import { cardService } from '@/services/cardService';
+import { apiService } from '@/services/apiService';
+import { useParams } from 'react-router-dom';
 import styles from './GamePage.module.css';
+
 
 const GamePage = () => {
   const [hand, setHand] = useState([]);
   const [selectedCards, setSelectedCards] = useState([]);
+  const [players, setPlayers] = useState([]);
+  const [currentPlayerId, setCurrentPlayerId] = useState(null);
+  const { id: gameId } = useParams();
 
   useEffect(() => {
     const initialHand = cardService.getRandomHand();
     setHand(initialHand);
   }, []);
+
+  useEffect(() => {
+    const storedPlayerId = sessionStorage.getItem('playerId');
+    if (storedPlayerId) {
+      setCurrentPlayerId(parseInt(storedPlayerId, 10));
+    }
+    const fetchPlayers = async () => {
+      try {
+        const data = await apiService.getGameDetails(gameId);
+        setPlayers(data.listaJugadores || []);
+      } catch (err) {
+        setPlayers([]);
+      }
+    };
+    if (gameId) fetchPlayers();
+  }, [gameId]);
 
   useEffect(() => {
     console.log('Cartas seleccionadas:', selectedCards);
@@ -49,12 +72,6 @@ const GamePage = () => {
       </div>
 
       <div className={styles.actionsContainer}>
-        {/* <button
-          disabled={true}
-          className={styles.playButton}
-        >
-          Jugar cartas
-        </button> */}
         <button
           onClick={handleDiscard}
           disabled={!isDiscardButtonEnabled}
@@ -62,6 +79,34 @@ const GamePage = () => {
         >
           Descartar
         </button>
+      </div>
+
+      {/* Tabla de jugadores */}
+      <div className={styles.playersTableContainer}>
+        <h2 className={styles.playersTableTitle}>Jugadores ({players.length})</h2>
+        <table className={styles.playersTable}>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Nombre</th>
+            </tr>
+          </thead>
+          <tbody>
+            {players.map((player, idx) => (
+              <tr
+                key={player.id_jugador}
+                className={
+                  player.id_jugador === currentPlayerId
+                    ? styles.currentPlayerRow
+                    : ''
+                }
+              >
+                <td>{idx + 1}</td>
+                <td>{player.nombre_jugador}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );
