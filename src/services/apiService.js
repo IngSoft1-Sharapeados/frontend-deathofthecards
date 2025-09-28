@@ -56,12 +56,22 @@ const createHttpService = () => {
       body: JSON.stringify({ id_jugador: playerId }),
     });
   };
+
+
+  const discardCards = async (gameId, playerId, cardIds) => {
+    return request(`/partidas/descarte/${gameId}?id_jugador=${playerId}`, {
+      method: "PUT",
+      body: JSON.stringify(cardIds),
+    });
+  };
+
   return {
     createGame,
     listGames,
     joinGame,
     getGameDetails,
-    startGame
+    startGame,
+    discardCards
   };
 };
 

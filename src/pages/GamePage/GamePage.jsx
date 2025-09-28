@@ -29,15 +29,39 @@ const GamePage = () => {
     });
   };
 
-  const handleDiscard = () => {
-    setHand((currentHand) => currentHand.filter((card) => !selectedCards.includes(card)));
-    setSelectedCards([]);
-  }
+  const handleDiscard = async () => {
+    if (selectedCards.length === 0) {
+      return;
+    }
+
+    try {
+      const storedPlayerId = sessionStorage.getItem('playerId');
+
+      // 2. Traduce los 'instanceId' del frontend a los 'id' de carta que el backend necesita.
+      const cardIdsToDiscard = selectedCards.map(instanceId => {
+        const card = hand.find(c => c.instanceId === instanceId);
+        return card ? card.id : null;
+      }).filter(id => id !== null); 
+
+      await apiService.discardCards(gameId, storedPlayerId, cardIdsToDiscard);
+
+      setHand(currentHand =>
+        currentHand.filter(card => !selectedCards.includes(card.instanceId))
+      );
+      setSelectedCards([]); 
+
+      console.log("Cartas descartadas con éxito.");
+
+    } catch (error) {
+      console.error("Error al descartar:", error);
+      alert(`Error: ${error.message}`); 
+    }
+  };
 
   const isDiscardButtonEnabled = selectedCards.length > 0;
   return (
     <div className={styles.gameContainer}>
-      <Deck count={deckCount} /> 
+      <Deck count={deckCount} />
       <h1 className={styles.title}>Tu Mano</h1>
       <div className={styles.handContainer}>
         {hand.map((cardName) => (
