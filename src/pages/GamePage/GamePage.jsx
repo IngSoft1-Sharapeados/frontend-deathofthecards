@@ -7,7 +7,7 @@ import Deck from '@/components/Deck/Deck.jsx';
 const GamePage = () => {
   const [hand, setHand] = useState([]);
   const [selectedCards, setSelectedCards] = useState([]);
-  const deckCount = 25; //cantidad de cartas en el mazo, luego abra que setear el valor real con ws o endpoint 
+  const deckCount = 25; //cantidad de cartas en el mazo, luego habra que setear el valor real con ws o endpoint 
 
   useEffect(() => {
     const initialHand = cardService.getRandomHand();
