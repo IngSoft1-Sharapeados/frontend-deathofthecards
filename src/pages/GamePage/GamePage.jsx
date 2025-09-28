@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import Card from '@/components/Card/Card';
 import { cardService } from '@/services/cardService';
 import styles from './GamePage.module.css';
+import Deck from '@/components/Deck/Deck.jsx';
 
 const GamePage = () => {
   const [hand, setHand] = useState([]);
   const [selectedCards, setSelectedCards] = useState([]);
+  const deckCount = 25; //cantidad de cartas en el mazo, luego abra que setear el valor real con ws o endpoint 
 
   useEffect(() => {
     const initialHand = cardService.getRandomHand();
@@ -33,9 +35,9 @@ const GamePage = () => {
   }
 
   const isDiscardButtonEnabled = selectedCards.length > 0;
-
   return (
     <div className={styles.gameContainer}>
+      <Deck count={deckCount} /> 
       <h1 className={styles.title}>Tu Mano</h1>
       <div className={styles.handContainer}>
         {hand.map((cardName) => (
