@@ -7,7 +7,9 @@ import GamePage from './GamePage';
 vi.mock('@/services/websocketService', () => {
   const on = vi.fn();
   const off = vi.fn();
-  return { default: { on, off } };
+  const disconnect = vi.fn();
+  const connect = vi.fn();
+  return { default: { on, off, disconnect, connect }};
 });
 
 import websocketService from '@/services/websocketService';
