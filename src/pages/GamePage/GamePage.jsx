@@ -44,6 +44,9 @@ const GamePage = () => {
     if (storedPlayerId) {
       setCurrentPlayerId(parseInt(storedPlayerId, 10));
     }
+    if (storedPlayerId) {
+      setCurrentPlayerId(parseInt(storedPlayerId, 10));
+    }
 
     const loadGameData = async () => {
       if (gameId && storedPlayerId) {
@@ -78,6 +81,7 @@ const GamePage = () => {
           setHand(handWithInstanceIds);
 
           // Conectamos el WebSocket para actualizaciones en tiempo real
+          // Conectamos el WebSocket para actualizaciones en tiempo real
           websocketService.connect(gameId, storedPlayerId);
 
           // --- Suscripción a eventos de WebSocket ---
@@ -94,11 +98,13 @@ const GamePage = () => {
 
         } catch (error) {
           console.error("Error al cargar los datos del juego:", error);
+          console.error("Error al cargar los datos del juego:", error);
         } finally {
           setIsLoading(false);
         }
       }
     };
+
 
     loadGameData();
 
@@ -129,6 +135,9 @@ const GamePage = () => {
     );
   };
 
+  // (Unificado) Robar cartas se hará automáticamente después de descartar
+
+  // Manejador para el descarte de cartas
   const handleDiscard = async () => {
     if (!isDiscardButtonEnabled) return;
 
@@ -158,6 +167,8 @@ const GamePage = () => {
       // El backend se encarga de pasar el turno después de esta secuencia.
 
     } catch (error) {
+      console.error("Error al descartar/robar:", error);
+      alert(`Error: ${error.message}`);
       console.error("Error al descartar/robar:", error);
       alert(`Error: ${error.message}`);
     }
@@ -201,6 +212,7 @@ const GamePage = () => {
         >
           Descartar
         </button>
+        {/* Botones de robar removidos: la acción de robar se ejecuta automáticamente tras descartar */}
       </div>
 
       {/* Tabla de jugadores */}
