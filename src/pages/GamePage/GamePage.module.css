@@ -11,6 +11,59 @@ html, body {
   justify-content: flex-end; 
   height: 100vh;
   padding: 0;
+   position: relative;
+}
+.playersTableContainer {
+  position: absolute;
+  top: 50%;
+  right: 5%;
+  transform: translateY(-50%);
+  background: #222;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  padding: 18px 24px;
+  min-width: 220px;
+  z-index: 10;
+}
+
+.playersTableTitle {
+  color: #fff;
+  font-size: 1.2rem;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+.playersTable {
+  width: 100%;
+  border-collapse: collapse;
+  background: transparent;
+}
+.playersTable th, .playersTable td {
+  padding: 7px 12px;
+  text-align: left;
+  color: #e0e0e0;
+}
+.playersTable th {
+  background: #333;
+  font-weight: bold;
+}
+.playersTable tr {
+  border-bottom: 1px solid #444;
+}
+.playersTable tr:last-child {
+  border-bottom: none;
+}
+.currentPlayerRow {
+  background: #2e8b57 !important;
+}
+
+.currentUserName {
+  text-decoration: underline;
+}
+
+.hostName {
+  font-weight: bold;
+  color: gold;
 }
 
 .title {
@@ -68,4 +121,14 @@ html, body {
 
 .discardButton.enabled:hover {
   transform: scale(1.05);
+}
+
+.loadingSpinner {
+  border: 6px solid #f3f3f3;
+  border-top: 6px solid #3498db; 
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin-bottom: 20px;
 }
