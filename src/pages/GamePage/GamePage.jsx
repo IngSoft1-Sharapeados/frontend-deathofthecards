@@ -90,6 +90,7 @@ const GamePage = () => {
     }
   };
 
+
   const isDiscardButtonEnabled = selectedCards.length > 0;
 
   if (isLoading) {
