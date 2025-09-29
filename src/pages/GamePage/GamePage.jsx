@@ -74,7 +74,13 @@ const GamePage = () => {
     console.log('Cartas seleccionadas:', selectedCards);
   }, [selectedCards]);
 
+  const isMyTurn = currentTurn === currentPlayerId;
+
   const handleCardClick = (instanceId) => {
+    if (!isMyTurn) {
+      console.log("No es tu turno para seleccionar cartas.");
+      return;
+    }
     setSelectedCards((prevSelected) => {
       if (prevSelected.includes(instanceId)) {
         return prevSelected.filter((id) => id !== instanceId);
@@ -151,45 +157,47 @@ const GamePage = () => {
           Descartar
         </button>
       </div>
+      {turnOrder.length > 0 && players.length > 0 && (
+        <div className={styles.playersTableContainer}>
+          <h2 className={styles.playersTableTitle}>Jugadores ({players.length})</h2>
+          <table className={styles.playersTable}>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Nombre</th>
+              </tr>
+            </thead>
+            <tbody>
+              {turnOrder.map((playerId, idx) => {
+                const player = players.find(p => p.id_jugador === playerId);
+                if (!player) return null;
 
-      <div className={styles.playersTableContainer}>
-        <h2 className={styles.playersTableTitle}>Jugadores ({players.length})</h2>
-        <table className={styles.playersTable}>
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Nombre</th>
-            </tr>
-          </thead>
-          <tbody>
-            {turnOrder.map((playerId, idx) => {
-              const player = players.find(p => p.id_jugador === playerId);
-              if (!player) return null;
+                const nameClasses = [];
+                if (player.id_jugador === hostId) {
+                  nameClasses.push(styles.hostName);
+                }
+                if (player.id_jugador === currentPlayerId) {
+                  nameClasses.push(styles.currentUserName);
+                }
 
-              const nameClasses = [];
-              if (player.id_jugador === hostId) {
-                nameClasses.push(styles.hostName);
-              }
-              if (player.id_jugador === currentPlayerId) {
-                nameClasses.push(styles.currentUserName);
-              }
-
-              return (
-                <tr
-                  key={player.id_jugador}
-                  className={player.id_jugador === currentTurn ? styles.currentPlayerRow : ''}
-                >
-                  <td>{idx + 1}</td>
-                  <td className={nameClasses.join(' ')}>
-                    {player.nombre_jugador}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+                return (
+                  <tr
+                    key={player.id_jugador}
+                    className={player.id_jugador === currentTurn ? styles.currentPlayerRow : ''}
+                  >
+                    <td>{idx + 1}</td>
+                    <td className={nameClasses.join(' ')}>
+                      {player.nombre_jugador}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+    )}
     </div>
+
   );
 };
 export default GamePage;
