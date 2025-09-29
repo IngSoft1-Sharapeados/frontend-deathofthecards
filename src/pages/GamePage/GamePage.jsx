@@ -2,8 +2,6 @@
 import React, { useState, useEffect } from 'react';
 import Card from '@/components/Card/Card';
 import { cardService } from '@/services/cardService';
-import { apiService } from '@/services/apiService';
-import { useParams } from 'react-router-dom';
 import styles from './GamePage.module.css';
 import websocketService from '@/services/websocketService';
 import { useParams } from 'react-router-dom';
@@ -15,25 +13,34 @@ const GamePage = () => {
   const [hand, setHand] = useState([]);
   const [selectedCards, setSelectedCards] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [ deckCount, setDeckCount] = useState(0);
-  const  [currentTurn, setCurrentTurn] = useState(null);
+  const [deckCount, setDeckCount] = useState(0);
+  const [currentTurn, setCurrentTurn] = useState(null);
   const [turnOrder, setTurnOrder] = useState([]);
-    const [players, setPlayers] = useState([]);
+  const [players, setPlayers] = useState([]);
   const [currentPlayerId, setCurrentPlayerId] = useState(null);
+  const [hostId, setHostId] = useState(null);
 
   useEffect(() => {
     const storedPlayerId = sessionStorage.getItem('playerId');
+    if (storedPlayerId) {
+      setCurrentPlayerId(parseInt(storedPlayerId, 10));
+    }
 
     const loadGameData = async () => {
       if (gameId && storedPlayerId) {
         try {
-          const handData = await apiService.getHand(gameId, storedPlayerId);
-          const turnData = await apiService.getTurn(gameId);
-          const deckData = await apiService.getDeckCount(gameId);
-          const turnOrderData = await apiService.getTurnOrder(gameId);
+          const [handData, turnData, deckData, turnOrderData, gameData] = await Promise.all([
+            apiService.getHand(gameId, storedPlayerId),
+            apiService.getTurn(gameId),
+            apiService.getDeckCount(gameId),
+            apiService.getTurnOrder(gameId),
+            apiService.getGameDetails(gameId)
+          ]);
           setDeckCount(deckData);
           setCurrentTurn(turnData);
           setTurnOrder(turnOrderData);
+          setHostId(gameData.id_anfitrion);
+          setPlayers(gameData.listaJugadores || []);
           console.log("Turno actual:", turnData);
           console.log("Datos del turno:", turnOrderData);
 
@@ -62,21 +69,6 @@ const GamePage = () => {
   }, [gameId]);
 
 
-  useEffect(() => {
-    const storedPlayerId = sessionStorage.getItem('playerId');
-    if (storedPlayerId) {
-      setCurrentPlayerId(parseInt(storedPlayerId, 10));
-    }
-    const fetchPlayers = async () => {
-      try {
-        const data = await apiService.getGameDetails(gameId);
-        setPlayers(data.listaJugadores || []);
-      } catch (err) {
-        setPlayers([]);
-      }
-    };
-    if (gameId) fetchPlayers();
-  }, [gameId]);
 
   useEffect(() => {
     console.log('Cartas seleccionadas:', selectedCards);
@@ -104,20 +96,20 @@ const GamePage = () => {
       const cardIdsToDiscard = selectedCards.map(instanceId => {
         const card = hand.find(c => c.instanceId === instanceId);
         return card ? card.id : null;
-      }).filter(id => id !== null); 
+      }).filter(id => id !== null);
 
       await apiService.discardCards(gameId, storedPlayerId, cardIdsToDiscard);
 
       setHand(currentHand =>
         currentHand.filter(card => !selectedCards.includes(card.instanceId))
       );
-      setSelectedCards([]); 
+      setSelectedCards([]);
 
       console.log("Cartas descartadas con éxito.");
 
     } catch (error) {
       console.error("Error al descartar:", error);
-      alert(`Error: ${error.message}`); 
+      alert(`Error: ${error.message}`);
     }
   };
 
@@ -128,6 +120,13 @@ const GamePage = () => {
     return <div className={styles.loadingSpinner}></div>;
   }
 
+  console.log('--- Estado para Renderizar la Tabla ---');
+  console.log(`ID del Jugador Actual (tú):`, { id: currentPlayerId, type: typeof currentPlayerId });
+  console.log(`ID del Anfitrión (host):`, { id: hostId, type: typeof hostId });
+  console.log(`ID del Turno Actual:`, { id: currentTurn, type: typeof currentTurn });
+  console.log(`Orden de Turnos:`, turnOrder);
+  console.log(`Lista de Jugadores:`, players);
+
   return (
     <div className={styles.gameContainer}>
       <Deck count={deckCount} />
@@ -135,14 +134,13 @@ const GamePage = () => {
       <div className={styles.handContainer}>
         {hand.map((card) => (
           <Card
-            key={card.instanceId} 
+            key={card.instanceId}
             imageName={card.url}
             isSelected={selectedCards.includes(card.instanceId)}
             onCardClick={() => handleCardClick(card.instanceId)}
           />
         ))}
       </div>
-
 
       <div className={styles.actionsContainer}>
         <button
@@ -154,7 +152,6 @@ const GamePage = () => {
         </button>
       </div>
 
-      {/* Tabla de jugadores */}
       <div className={styles.playersTableContainer}>
         <h2 className={styles.playersTableTitle}>Jugadores ({players.length})</h2>
         <table className={styles.playersTable}>
@@ -165,19 +162,30 @@ const GamePage = () => {
             </tr>
           </thead>
           <tbody>
-            {players.map((player, idx) => (
-              <tr
-                key={player.id_jugador}
-                className={
-                  player.id_jugador === currentPlayerId
-                    ? styles.currentPlayerRow
-                    : ''
-                }
-              >
-                <td>{idx + 1}</td>
-                <td>{player.nombre_jugador}</td>
-              </tr>
-            ))}
+            {turnOrder.map((playerId, idx) => {
+              const player = players.find(p => p.id_jugador === playerId);
+              if (!player) return null;
+
+              const nameClasses = [];
+              if (player.id_jugador === hostId) {
+                nameClasses.push(styles.hostName);
+              }
+              if (player.id_jugador === currentPlayerId) {
+                nameClasses.push(styles.currentUserName);
+              }
+
+              return (
+                <tr
+                  key={player.id_jugador}
+                  className={player.id_jugador === currentTurn ? styles.currentPlayerRow : ''}
+                >
+                  <td>{idx + 1}</td>
+                  <td className={nameClasses.join(' ')}>
+                    {player.nombre_jugador}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

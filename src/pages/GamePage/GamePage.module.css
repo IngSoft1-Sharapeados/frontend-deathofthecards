@@ -55,7 +55,15 @@ html, body {
 }
 .currentPlayerRow {
   background: #2e8b57 !important;
-  color: #fff !important;
+}
+
+.currentUserName {
+  text-decoration: underline;
+}
+
+.hostName {
+  font-weight: bold;
+  color: gold;
 }
 
 .title {
