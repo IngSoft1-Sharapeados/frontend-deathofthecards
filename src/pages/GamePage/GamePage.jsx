@@ -1,66 +1,26 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Card from '@/components/Card/Card';
 import { cardService } from '@/services/cardService';
 import styles from './GamePage.module.css';
 import Deck from '@/components/Deck/Deck.jsx';
 import { useNavigate } from 'react-router-dom';
 import GameOverScreen from '@/components/GameOver/GameOverModal.jsx';
-import websocketService from '@/services/websocketService';
+import { useGameWebSocket } from '@/hooks/useGameWebSocket';
+import { useHand } from '@/hooks/useHand';
+
 const GamePage = () => {
-  const [hand, setHand] = useState([]);
-  const [selectedCards, setSelectedCards] = useState([]);
-  const deckCount = 25; //cantidad de cartas en el mazo, luego habra que setear el valor real con ws o endpoint 
+  const { hand, selectedCards, handleCardClick, handleDiscard, isDiscardButtonEnabled } = useHand();
   const [winners, setWinners] = useState(null);
   const [asesinoGano, setAsesinoGano] = useState(false);
   const navigate = useNavigate();
+  const deckCount = 25;
 
-  useEffect(() => {
-    const initialHand = cardService.getRandomHand();
-    setHand(initialHand);
+  const handleGameEnd = useCallback((winners, asesinoGano) => {
+    setWinners(winners);
+    setAsesinoGano(asesinoGano);
   }, []);
 
-  useEffect(() => {
-    console.log('Cartas seleccionadas:', selectedCards);
-  }, [selectedCards]);
-
-  const handleCardClick = (cardName) => {
-    setSelectedCards((prevSelected) => {
-      if (prevSelected.includes(cardName)) {
-        return prevSelected.filter((name) => name !== cardName);
-      }
-      else {
-        return [...prevSelected, cardName];
-      }
-    });
-  };
-
-  const handleDiscard = () => {
-    setHand((currentHand) => currentHand.filter((card) => !selectedCards.includes(card)));
-    setSelectedCards([]);
-  }
-
-  const isDiscardButtonEnabled = selectedCards.length > 0;
-
-  useEffect(() => {
-  const handleFinPartida = (message) => {
-    // message = { evento: "fin-partida", payload: { ganadores: [...], asesinoGano: true/false } }
-    setWinners(message.payload.ganadores);
-    setAsesinoGano(message.payload.asesinoGano);
-  };
-    websocketService.on("fin-partida", handleFinPartida);
-    // Simulación: a los 5s mandamos un evento falso, descomentar para verificar pr
-    //descomentar para probar la pantalla de victoria
-  /*
-    const fakeTimeout = setTimeout(() => {
-      handleFinPartida({ payload: { ganadores: ["Alice", "Bob"], asesinoGano: true } });
-    }, 5000);
-    */
-    return () => {
-      websocketService.off("fin-partida", handleFinPartida);
-      // clearTimeout(fakeTimeout);
-    };
-  }, []);
-  
+  useGameWebSocket(handleGameEnd);
   return (
     <div className={styles.gameContainer}>
       <Deck count={deckCount} /> 
