@@ -8,9 +8,16 @@ html, body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-end; 
   height: 100vh;
-  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Contenedor exclusivo para centrar el Deck */
+.deckContainer {
+  flex: 1;                  /* ocupa el espacio disponible */
+  display: flex;
+  align-items: center;       /* centra verticalmente */
+  justify-content: center;   /* centra horizontalmente */
 }
 
 .title {
@@ -19,33 +26,42 @@ html, body {
   color: #e0e0e0;
 }
 
+.secretTitle {
+  margin-bottom: 1rem;
+  font-size: 2rem;
+  color: #e0e0e0;
+  text-align: center;
+}
+
+.playerArea {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 30px;
+  margin-top: 50px; /* baja las cartas sin empujar el deck */
+}
+
+.secretCardsContainer {
+  display: flex;
+  gap: 5px;
+}
+
 .handContainer {
   display: grid;
-  grid-template-columns: repeat(6, 1fr); /* 6 cartas en una fila */
+  grid-template-columns: repeat(6, 1fr);
   gap: 5px;
   justify-items: center;
-  margin-bottom: 0.5rem; 
+  margin-bottom: 0.5rem;
 }
 
 .actionsContainer {
+  margin-top: auto; /* empuja los botones al fondo */
   display: flex;
   justify-content: center;
   gap: 20px;
 }
 
-.discardButton {
-  padding: 12px 30px;
-  font-size: 1.1rem;
-  font-weight: bold;
-  border-radius: 8px;
-  border: 2px solid #555;
-  color: #888;
-  background-color: #333;
-  cursor: not-allowed;
-  transition: all 0.2s ease-in-out;
-  margin-bottom: 20px;
-}
-
+.discardButton,
 .playButton {
   padding: 12px 30px;
   font-size: 1.1rem;
@@ -72,7 +88,7 @@ html, body {
 
 .loadingSpinner {
   border: 6px solid #f3f3f3;
-  border-top: 6px solid #3498db; 
+  border-top: 6px solid #3498db;
   border-radius: 50%;
   width: 40px;
   height: 40px;

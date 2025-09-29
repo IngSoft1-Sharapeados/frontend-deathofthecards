@@ -12,7 +12,8 @@ const GamePage = () => {
   const [hand, setHand] = useState([]);
   const [selectedCards, setSelectedCards] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const deckCount = 25; //cantidad de cartas en el mazo, luego habra que setear el valor real con ws o endpoint 
+  const [secretCards, setSecretCards] = useState([]);
+  const deckCount = 25;
 
   useEffect(() => {
     const storedPlayerId = sessionStorage.getItem('playerId');
@@ -20,10 +21,12 @@ const GamePage = () => {
     const loadGameData = async () => {
       if (gameId && storedPlayerId) {
         try {
+          const secretCards = cardService.getSecretCards();
+          setSecretCards(secretCards);
+
           const handData = await apiService.getHand(gameId, storedPlayerId);
 
           let playingHand = cardService.getPlayingHand(handData);
-
 
           const handWithInstanceIds = playingHand.map((card, index) => ({
             ...card,
@@ -73,20 +76,20 @@ const GamePage = () => {
       const cardIdsToDiscard = selectedCards.map(instanceId => {
         const card = hand.find(c => c.instanceId === instanceId);
         return card ? card.id : null;
-      }).filter(id => id !== null); 
+      }).filter(id => id !== null);
 
       await apiService.discardCards(gameId, storedPlayerId, cardIdsToDiscard);
 
       setHand(currentHand =>
         currentHand.filter(card => !selectedCards.includes(card.instanceId))
       );
-      setSelectedCards([]); 
+      setSelectedCards([]);
 
       console.log("Cartas descartadas con éxito.");
 
     } catch (error) {
       console.error("Error al descartar:", error);
-      alert(`Error: ${error.message}`); 
+      alert(`Error: ${error.message}`);
     }
   };
 
@@ -98,27 +101,46 @@ const GamePage = () => {
 
   return (
     <div className={styles.gameContainer}>
-      <Deck count={deckCount} />
-      <h1 className={styles.title}>Tu Mano</h1>
-      <div className={styles.handContainer}>
-        {hand.map((card) => (
-          <Card
-            key={card.instanceId} 
-            imageName={card.url}
-            isSelected={selectedCards.includes(card.instanceId)}
-            onCardClick={() => handleCardClick(card.instanceId)}
-          />
-        ))}
+      <div className={styles.deckContainer}>
+        <Deck count={deckCount} />
+      </div>
+      <div className={styles.playerArea}>
+
+        {/* Contenedor de Secretos */}
+        <div>
+          <h2 className={styles.secretTitle}>Tus Secretos</h2>
+          <div className={styles.secretCardsContainer}>
+            {secretCards.map((card) => (
+              <div key={card.id} className={styles.secretCardWrapper}>
+                <Card
+                  imageName={card.url}
+                  subfolder="secret-cards" // Especifica la carpeta
+                // onCardClick se deja vacío por defecto, así que no hace nada
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Contenedor de la Mano */}
+        <div>
+          <h1 className={styles.title}>Tu Mano</h1>
+          <div className={styles.handContainer}>
+            {hand.map((card) => (
+              <Card
+                key={card.instanceId}
+                imageName={card.url}
+                isSelected={selectedCards.includes(card.instanceId)}
+                onCardClick={() => handleCardClick(card.instanceId)}
+                subfolder="game-cards" // Especifica la carpeta
+              />
+            ))}
+          </div>
+        </div>
       </div>
 
-
+      {/* Contenedor de Acciones */}
       <div className={styles.actionsContainer}>
-        {/* <button
-          disabled={true}
-          className={styles.playButton}
-        >
-          Jugar cartas
-        </button> */}
         <button
           onClick={handleDiscard}
           disabled={!isDiscardButtonEnabled}
