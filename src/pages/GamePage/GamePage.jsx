@@ -5,12 +5,14 @@ import styles from './GamePage.module.css';
 import websocketService from '@/services/websocketService';
 import { useParams } from 'react-router-dom';
 import { apiService } from '@/services/apiService';
+import Deck from '@/components/Deck/Deck.jsx';
 
 const GamePage = () => {
   const { id: gameId } = useParams();
   const [hand, setHand] = useState([]);
   const [selectedCards, setSelectedCards] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const deckCount = 25; //cantidad de cartas en el mazo, luego habra que setear el valor real con ws o endpoint 
 
   useEffect(() => {
     const storedPlayerId = sessionStorage.getItem('playerId');
@@ -72,8 +74,10 @@ const GamePage = () => {
   }
 
 
+  const isDiscardButtonEnabled = selectedCards.length > 0;
   return (
     <div className={styles.gameContainer}>
+      <Deck count={deckCount} /> 
       <h1 className={styles.title}>Tu Mano</h1>
       <div className={styles.handContainer}>
         {hand.map((card) => (
