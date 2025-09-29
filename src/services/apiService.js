@@ -71,6 +71,25 @@ const createHttpService = () => {
       method: "GET",
     });
   }
+
+  const getTurn = async (gameId) => {
+    return request(`/partidas/${gameId}/turno`, {
+      method: "GET",
+    });
+  }
+
+
+  const getDeckCount = async (gameId) => {
+    return request(`/partidas/${gameId}/mazo`, {
+      method: "GET",
+    });
+  }
+
+  const getTurnOrder = async (gameId) => {
+    return request(`/partidas/${gameId}/turnos`, { method: "GET" });
+  };
+
+
   return {
     createGame,
     listGames,
@@ -79,6 +98,9 @@ const createHttpService = () => {
     startGame,
     discardCards,
     getHand,
+    getTurn,
+    getDeckCount,
+    getTurnOrder,
   };
 };
 
