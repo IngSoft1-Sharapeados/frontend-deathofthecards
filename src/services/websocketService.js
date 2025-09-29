@@ -2,6 +2,8 @@ let socket = null;
 const eventHandlers = {
   'union-jugador': [],
   'iniciar-partida': [],
+  'actualizacion-mazo': [],
+  'turno-actual': [],
 };
 
 const websocketService = {
