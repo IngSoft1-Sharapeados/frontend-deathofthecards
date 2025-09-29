@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+// Archivo: /components/GamePage/GamePage.jsx
+
+import React, { useState, useEffect, useCallback } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 
 // Services
 import { cardService } from '@/services/cardService';
@@ -9,27 +11,39 @@ import { apiService } from '@/services/apiService';
 // Components
 import Card from '@/components/Card/Card';
 import Deck from '@/components/Deck/Deck.jsx';
+import GameOverScreen from '@/components/GameOver/GameOverModal.jsx';
 
 // Styles
 import styles from './GamePage.module.css';
 
 const GamePage = () => {
   const { id: gameId } = useParams();
+  const navigate = useNavigate();
 
-  // State
+  // --- State Management ---
+  // Estados de la UI y datos del jugador
   const [hand, setHand] = useState([]);
   const [selectedCards, setSelectedCards] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [currentPlayerId, setCurrentPlayerId] = useState(null);
+
+  // Estados globales del juego (turnos, jugadores, etc.)
   const [deckCount, setDeckCount] = useState(0);
-  const [currentTurn, setCurrentTurn] = useState(null); // ID del jugador cuyo turno es
+  const [currentTurn, setCurrentTurn] = useState(null);
   const [turnOrder, setTurnOrder] = useState([]);
   const [players, setPlayers] = useState([]);
-  const [currentPlayerId, setCurrentPlayerId] = useState(null); // ID del jugador que está viendo la página
   const [hostId, setHostId] = useState(null);
 
-  // Efecto para cargar todos los datos del juego al montar el componente
+  // Estados para el fin de la partida
+  const [winners, setWinners] = useState(null);
+  const [asesinoGano, setAsesinoGano] = useState(false);
+
+  // --- Data Loading and WebSockets ---
   useEffect(() => {
     const storedPlayerId = sessionStorage.getItem('playerId');
+    if (storedPlayerId) {
+      setCurrentPlayerId(parseInt(storedPlayerId, 10));
+    }
     if (storedPlayerId) {
       setCurrentPlayerId(parseInt(storedPlayerId, 10));
     }
@@ -37,7 +51,7 @@ const GamePage = () => {
     const loadGameData = async () => {
       if (gameId && storedPlayerId) {
         try {
-          // Usamos Promise.all para realizar todas las peticiones en paralelo
+          // Usamos Promise.all para cargar todos los datos iniciales en paralelo
           const [handData, turnData, deckData, turnOrderData, gameData] = await Promise.all([
             apiService.getHand(gameId, storedPlayerId),
             apiService.getTurn(gameId),
@@ -46,40 +60,44 @@ const GamePage = () => {
             apiService.getGameDetails(gameId)
           ]);
 
-          // Actualizamos el estado con los datos recibidos
+          // Actualizamos todo el estado del juego
           setDeckCount(deckData);
+          // Si al cargar el estado inicial el mazo ya está en 0, mostramos el fin de partida
+          if (deckData === 0) {
+            setWinners(["Nadie"]);
+            setAsesinoGano(false);
+          }
           setCurrentTurn(turnData);
           setTurnOrder(turnOrderData);
           setHostId(gameData.id_anfitrion);
           setPlayers(gameData.listaJugadores || []);
-
-          // Procesamos la mano para añadir un 'instanceId' único a cada carta
-          // Esto es crucial para manejar correctamente cartas duplicadas en el UI
-          let playingHand = cardService.getPlayingHand(handData);
+          
+          // Añadimos 'instanceId' a cada carta para manejar duplicados en el UI
+          const playingHand = cardService.getPlayingHand(handData);
           const handWithInstanceIds = playingHand.map((card, index) => ({
             ...card,
-            instanceId: `${card.id}-${index}` // Ej: "16-0", "7-1", "16-2"
+            instanceId: `${card.id}-${index}`
           }));
           setHand(handWithInstanceIds);
 
           // Conectamos el WebSocket para actualizaciones en tiempo real
+          // Conectamos el WebSocket para actualizaciones en tiempo real
           websocketService.connect(gameId, storedPlayerId);
 
-          // Suscribir a eventos de WS relevantes
-          const onDeckUpdate = (message) => {
-            if (typeof message?.["cantidad-restante-mazo"] === 'number') {
-              setDeckCount(message["cantidad-restante-mazo"]);
-            }
+          // --- Suscripción a eventos de WebSocket ---
+          const onDeckUpdate = (message) => setDeckCount(message["cantidad-restante-mazo"]);
+          const onTurnUpdate = (message) => setCurrentTurn(message["turno-actual"]);
+          const onGameEnd = (message) => {
+            setWinners(message.ganadores || []);
+            setAsesinoGano(message.asesino_gano || false);
           };
-          const onTurnUpdate = (message) => {
-            if (typeof message?.["turno-actual"] === 'number') {
-              setCurrentTurn(message["turno-actual"]);
-            }
-          };
+
           websocketService.on('actualizacion-mazo', onDeckUpdate);
           websocketService.on('turno-actual', onTurnUpdate);
+          websocketService.on('fin-partida', onGameEnd);
 
         } catch (error) {
+          console.error("Error al cargar los datos del juego:", error);
           console.error("Error al cargar los datos del juego:", error);
         } finally {
           setIsLoading(false);
@@ -87,90 +105,93 @@ const GamePage = () => {
       }
     };
 
+
     loadGameData();
 
-    // Función de limpieza para desconectar el WebSocket al desmontar el componente
+    // Función de limpieza para desconectar y desuscribir al desmontar
     return () => {
+      // Es importante remover los listeners para evitar memory leaks
+      websocketService.off('actualizacion-mazo', () => {});
+      websocketService.off('turno-actual', () => {});
+      websocketService.off('fin-partida', () => {});
       websocketService.disconnect();
     };
   }, [gameId]);
 
-  // Derivamos del estado si es el turno del jugador actual
+  // --- Derived State ---
   const isMyTurn = currentTurn === currentPlayerId;
+  const isDiscardButtonEnabled = selectedCards.length > 0 && isMyTurn;
 
-  // Manejador para la selección/deselección de cartas
+  // --- Event Handlers ---
   const handleCardClick = (instanceId) => {
     if (!isMyTurn) {
       console.log("No es tu turno para seleccionar cartas.");
-      return; // No permite seleccionar si no es su turno
+      return;
     }
-    setSelectedCards((prevSelected) => {
-      if (prevSelected.includes(instanceId)) {
-        return prevSelected.filter((id) => id !== instanceId);
-      } else {
-        return [...prevSelected, instanceId];
-      }
-    });
+    setSelectedCards((prev) => 
+      prev.includes(instanceId) 
+        ? prev.filter((id) => id !== instanceId)
+        : [...prev, instanceId]
+    );
   };
 
   // (Unificado) Robar cartas se hará automáticamente después de descartar
 
   // Manejador para el descarte de cartas
   const handleDiscard = async () => {
-    if (selectedCards.length === 0 || !isMyTurn) {
-      return; // No hace nada si no hay cartas seleccionadas o no es su turno
-    }
+    if (!isDiscardButtonEnabled) return;
 
     try {
-      const storedPlayerId = sessionStorage.getItem('playerId');
+      const cardIdsToDiscard = selectedCards
+        .map(instanceId => hand.find(c => c.instanceId === instanceId)?.id)
+        .filter(id => id !== undefined);
 
-      // Traduce los 'instanceId' del frontend a los 'id' de carta que el backend necesita
-      const cardIdsToDiscard = selectedCards.map(instanceId => {
-        const card = hand.find(c => c.instanceId === instanceId);
-        return card ? card.id : null;
-      }).filter(id => id !== null);
+      // 1. Descartar cartas en el backend
+      await apiService.discardCards(gameId, currentPlayerId, cardIdsToDiscard);
 
-      // 1) Descartar en backend
-      await apiService.discardCards(gameId, storedPlayerId, cardIdsToDiscard);
-
-      // 2) Actualizar mano local removiendo seleccionadas
+      // 2. Actualizar la mano localmente
       const newHand = hand.filter(card => !selectedCards.includes(card.instanceId));
       setHand(newHand);
-
-      // Limpiar selección
       setSelectedCards([]);
 
-      // 3) Calcular cuántas faltan para llegar a 6 y robar de una vez
+      // 3. Robar automáticamente hasta tener 6 cartas
       const needed = Math.max(0, 6 - newHand.length);
       if (needed > 0) {
-        const drawn = await apiService.drawCards(gameId, storedPlayerId, needed);
-        const mapped = cardService.getPlayingHand(drawn).map((card, index) => ({
+        const drawnCards = await apiService.drawCards(gameId, currentPlayerId, needed);
+        const mappedDrawn = cardService.getPlayingHand(drawnCards).map((card, index) => ({
           ...card,
-          instanceId: `${card.id}-draw-${Date.now()}-${index}`
+          instanceId: `${card.id}-draw-${Date.now()}-${index}` // Clave única para cartas nuevas
         }));
-        setHand(prev => [...prev, ...mapped]);
+        setHand(prev => [...prev, ...mappedDrawn]);
       }
-
-      // El backend avanza de turno automáticamente si la mano quedó en 6
-      console.log("Descartado y robado hasta 6 (si correspondía).");
+      // El backend se encarga de pasar el turno después de esta secuencia.
 
     } catch (error) {
+      console.error("Error al descartar/robar:", error);
+      alert(`Error: ${error.message}`);
       console.error("Error al descartar/robar:", error);
       alert(`Error: ${error.message}`);
     }
   };
 
-  // El botón de descarte se habilita solo si hay cartas seleccionadas Y es el turno del jugador
-  const isDiscardButtonEnabled = selectedCards.length > 0 && isMyTurn;
-
+  // --- Render Logic ---
   if (isLoading) {
     return <div className={styles.loadingSpinner}></div>;
   }
 
   return (
     <div className={styles.gameContainer}>
-      <Deck count={deckCount} />
+      {/* Muestra el modal de fin de partida cuando hay ganadores */}
+      {winners && (
+        <GameOverScreen 
+          winners={winners} 
+          asesinoGano={asesinoGano}
+          onReturnToMenu={() => navigate("/")} 
+        />
+      )}
 
+      <Deck count={deckCount} />
+      
       <h1 className={styles.title}>Tu Mano</h1>
       <div className={styles.handContainer}>
         {hand.map((card) => (
@@ -194,7 +215,7 @@ const GamePage = () => {
         {/* Botones de robar removidos: la acción de robar se ejecuta automáticamente tras descartar */}
       </div>
 
-      {/* Renderiza la tabla de jugadores si los datos están disponibles */}
+      {/* Tabla de jugadores */}
       {turnOrder.length > 0 && players.length > 0 && (
         <div className={styles.playersTableContainer}>
           <h2 className={styles.playersTableTitle}>Jugadores ({players.length})</h2>
@@ -208,21 +229,20 @@ const GamePage = () => {
             <tbody>
               {turnOrder.map((playerId, idx) => {
                 const player = players.find(p => p.id_jugador === playerId);
-                if (!player) return null; // Si por alguna razón el jugador no se encuentra
+                if (!player) return null;
 
-                // Construye las clases CSS dinámicamente
-                const nameClasses = [];
-                if (player.id_jugador === hostId) nameClasses.push(styles.hostName);
-                if (player.id_jugador === currentPlayerId) nameClasses.push(styles.currentUserName);
+                const nameClasses = [
+                  player.id_jugador === hostId ? styles.hostName : '',
+                  player.id_jugador === currentPlayerId ? styles.currentUserName : ''
+                ].join(' ');
 
                 return (
                   <tr
                     key={player.id_jugador}
-                    // Resalta la fila del jugador cuyo turno es
                     className={player.id_jugador === currentTurn ? styles.currentPlayerRow : ''}
                   >
                     <td>{idx + 1}</td>
-                    <td className={nameClasses.join(' ')}>
+                    <td className={nameClasses}>
                       {player.nombre_jugador}
                     </td>
                   </tr>
