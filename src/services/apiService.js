@@ -57,6 +57,15 @@ const createHttpService = () => {
     });
   };
 
+
+  const discardCards = async (gameId, playerId, cardIds) => {
+    return request(`/partidas/descarte/${gameId}?id_jugador=${playerId}`, {
+      method: "PUT",
+      body: JSON.stringify(cardIds),
+    });
+  };
+
+
   const getHand = async (gameId, playerId) => {
     return request(`/partidas/${gameId}/mano/?id_jugador=${playerId}`, {
       method: "GET",
@@ -68,6 +77,7 @@ const createHttpService = () => {
     joinGame,
     getGameDetails,
     startGame,
+    discardCards,
     getHand,
   };
 };
