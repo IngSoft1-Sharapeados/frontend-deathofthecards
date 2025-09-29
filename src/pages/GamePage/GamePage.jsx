@@ -92,6 +92,10 @@ const GamePage = () => {
 
   const isDiscardButtonEnabled = selectedCards.length > 0;
 
+  if (isLoading) {
+    return <div className={styles.loadingSpinner}></div>;
+  }
+
   return (
     <div className={styles.gameContainer}>
       <Deck count={deckCount} />
