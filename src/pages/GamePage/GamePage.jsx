@@ -65,6 +65,20 @@ const GamePage = () => {
           // Conectamos el WebSocket para actualizaciones en tiempo real
           websocketService.connect(gameId, storedPlayerId);
 
+          // Suscribir a eventos de WS relevantes
+          const onDeckUpdate = (message) => {
+            if (typeof message?.["cantidad-restante-mazo"] === 'number') {
+              setDeckCount(message["cantidad-restante-mazo"]);
+            }
+          };
+          const onTurnUpdate = (message) => {
+            if (typeof message?.["turno-actual"] === 'number') {
+              setCurrentTurn(message["turno-actual"]);
+            }
+          };
+          websocketService.on('actualizacion-mazo', onDeckUpdate);
+          websocketService.on('turno-actual', onTurnUpdate);
+
         } catch (error) {
           console.error("Error al cargar los datos del juego:", error);
         } finally {
@@ -99,6 +113,8 @@ const GamePage = () => {
     });
   };
 
+  // (Unificado) Robar cartas se hará automáticamente después de descartar
+
   // Manejador para el descarte de cartas
   const handleDiscard = async () => {
     if (selectedCards.length === 0 || !isMyTurn) {
@@ -114,18 +130,32 @@ const GamePage = () => {
         return card ? card.id : null;
       }).filter(id => id !== null);
 
+      // 1) Descartar en backend
       await apiService.discardCards(gameId, storedPlayerId, cardIdsToDiscard);
 
-      // Actualiza el estado local de la mano para una respuesta visual inmediata
-      setHand(currentHand =>
-        currentHand.filter(card => !selectedCards.includes(card.instanceId))
-      );
-      setSelectedCards([]); // Limpia la selección
+      // 2) Actualizar mano local removiendo seleccionadas
+      const newHand = hand.filter(card => !selectedCards.includes(card.instanceId));
+      setHand(newHand);
 
-      console.log("Cartas descartadas con éxito.");
+      // Limpiar selección
+      setSelectedCards([]);
+
+      // 3) Calcular cuántas faltan para llegar a 6 y robar de una vez
+      const needed = Math.max(0, 6 - newHand.length);
+      if (needed > 0) {
+        const drawn = await apiService.drawCards(gameId, storedPlayerId, needed);
+        const mapped = cardService.getPlayingHand(drawn).map((card, index) => ({
+          ...card,
+          instanceId: `${card.id}-draw-${Date.now()}-${index}`
+        }));
+        setHand(prev => [...prev, ...mapped]);
+      }
+
+      // El backend avanza de turno automáticamente si la mano quedó en 6
+      console.log("Descartado y robado hasta 6 (si correspondía).");
 
     } catch (error) {
-      console.error("Error al descartar:", error);
+      console.error("Error al descartar/robar:", error);
       alert(`Error: ${error.message}`);
     }
   };
@@ -161,6 +191,7 @@ const GamePage = () => {
         >
           Descartar
         </button>
+        {/* Botones de robar removidos: la acción de robar se ejecuta automáticamente tras descartar */}
       </div>
 
       {/* Renderiza la tabla de jugadores si los datos están disponibles */}
