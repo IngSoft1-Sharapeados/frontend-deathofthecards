@@ -56,12 +56,19 @@ const createHttpService = () => {
       body: JSON.stringify({ id_jugador: playerId }),
     });
   };
+
+  const getHand = async (gameId, playerId) => {
+    return request(`/partidas/${gameId}/mano/?id_jugador=${playerId}`, {
+      method: "GET",
+    });
+  }
   return {
     createGame,
     listGames,
     joinGame,
     getGameDetails,
-    startGame
+    startGame,
+    getHand,
   };
 };
 

@@ -20,7 +20,6 @@ const websocketService = {
         const message = JSON.parse(event.data);
         console.log('Mensaje recibido:', message);
 
-        // Si tenemos un manejador para este evento, lo ejecutamos.
         if (message.evento && eventHandlers[message.evento]) {
           eventHandlers[message.evento].forEach(callback => callback(message));
         }
@@ -46,9 +45,10 @@ const websocketService = {
   },
 
   on(eventName, callback) {
-    if (eventHandlers[eventName]) {
-      eventHandlers[eventName].push(callback);
+    if (!eventHandlers[eventName]) {
+      eventHandlers[eventName] = [];
     }
+    eventHandlers[eventName].push(callback);
   },
 
   off(eventName, callback) {
