@@ -41,6 +41,7 @@ vi.mock('react-router-dom', async () => {
   return {
     ...actual,
     useParams: () => ({ id: '123' }),
+    useNavigate: () => vi.fn(),
   };
 });
 
@@ -154,7 +155,7 @@ describe('GamePage', () => {
     await waitFor(() => {
       expect(apiService.discardCards).toHaveBeenCalledWith(
         MOCK_GAME_ID,
-        MOCK_PLAYER_ID.toString(),
+        MOCK_PLAYER_ID,
         [10, 25]
       );
     });
