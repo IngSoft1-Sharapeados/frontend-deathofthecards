@@ -5,19 +5,62 @@ import { cardService } from '@/services/cardService';
 import { apiService } from '@/services/apiService';
 import { useParams } from 'react-router-dom';
 import styles from './GamePage.module.css';
-
+import websocketService from '@/services/websocketService';
+import { useParams } from 'react-router-dom';
+import { apiService } from '@/services/apiService';
+import Deck from '@/components/Deck/Deck.jsx';
 
 const GamePage = () => {
+  const { id: gameId } = useParams();
   const [hand, setHand] = useState([]);
   const [selectedCards, setSelectedCards] = useState([]);
-  const [players, setPlayers] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [ deckCount, setDeckCount] = useState(0);
+  const  [currentTurn, setCurrentTurn] = useState(null);
+  const [turnOrder, setTurnOrder] = useState([]);
+    const [players, setPlayers] = useState([]);
   const [currentPlayerId, setCurrentPlayerId] = useState(null);
-  const { id: gameId } = useParams();
 
   useEffect(() => {
-    const initialHand = cardService.getRandomHand();
-    setHand(initialHand);
-  }, []);
+    const storedPlayerId = sessionStorage.getItem('playerId');
+
+    const loadGameData = async () => {
+      if (gameId && storedPlayerId) {
+        try {
+          const handData = await apiService.getHand(gameId, storedPlayerId);
+          const turnData = await apiService.getTurn(gameId);
+          const deckData = await apiService.getDeckCount(gameId);
+          const turnOrderData = await apiService.getTurnOrder(gameId);
+          setDeckCount(deckData);
+          setCurrentTurn(turnData);
+          setTurnOrder(turnOrderData);
+          console.log("Turno actual:", turnData);
+          console.log("Datos del turno:", turnOrderData);
+
+          let playingHand = cardService.getPlayingHand(handData);
+
+
+          const handWithInstanceIds = playingHand.map((card, index) => ({
+            ...card,
+            instanceId: `${card.id}-${index}` // Ej: "16-0", "7-1", "16-2"
+          }));
+          setHand(handWithInstanceIds);
+
+          websocketService.connect(gameId, storedPlayerId);
+
+        } catch (error) {
+          console.error("Error al cargar la mano:", error);
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    };
+    loadGameData();
+    return () => {
+      websocketService.disconnect();
+    };
+  }, [gameId]);
+
 
   useEffect(() => {
     const storedPlayerId = sessionStorage.getItem('playerId');
@@ -39,37 +82,67 @@ const GamePage = () => {
     console.log('Cartas seleccionadas:', selectedCards);
   }, [selectedCards]);
 
-  const handleCardClick = (cardName) => {
+  const handleCardClick = (instanceId) => {
     setSelectedCards((prevSelected) => {
-      if (prevSelected.includes(cardName)) {
-        return prevSelected.filter((name) => name !== cardName);
-      }
-      else {
-        return [...prevSelected, cardName];
+      if (prevSelected.includes(instanceId)) {
+        return prevSelected.filter((id) => id !== instanceId);
+      } else {
+        return [...prevSelected, instanceId];
       }
     });
   };
 
-  const handleDiscard = () => {
-    setHand((currentHand) => currentHand.filter((card) => !selectedCards.includes(card)));
-    setSelectedCards([]);
-  }
+  const handleDiscard = async () => {
+    if (selectedCards.length === 0) {
+      return;
+    }
+
+    try {
+      const storedPlayerId = sessionStorage.getItem('playerId');
+
+      // 2. Traduce los 'instanceId' del frontend a los 'id' de carta que el backend necesita.
+      const cardIdsToDiscard = selectedCards.map(instanceId => {
+        const card = hand.find(c => c.instanceId === instanceId);
+        return card ? card.id : null;
+      }).filter(id => id !== null); 
+
+      await apiService.discardCards(gameId, storedPlayerId, cardIdsToDiscard);
+
+      setHand(currentHand =>
+        currentHand.filter(card => !selectedCards.includes(card.instanceId))
+      );
+      setSelectedCards([]); 
+
+      console.log("Cartas descartadas con éxito.");
+
+    } catch (error) {
+      console.error("Error al descartar:", error);
+      alert(`Error: ${error.message}`); 
+    }
+  };
+
 
   const isDiscardButtonEnabled = selectedCards.length > 0;
 
+  if (isLoading) {
+    return <div className={styles.loadingSpinner}></div>;
+  }
+
   return (
     <div className={styles.gameContainer}>
+      <Deck count={deckCount} />
       <h1 className={styles.title}>Tu Mano</h1>
       <div className={styles.handContainer}>
-        {hand.map((cardName) => (
+        {hand.map((card) => (
           <Card
-            key={cardName}
-            imageName={cardName}
-            isSelected={selectedCards.includes(cardName)}
-            onCardClick={handleCardClick}
+            key={card.instanceId} 
+            imageName={card.url}
+            isSelected={selectedCards.includes(card.instanceId)}
+            onCardClick={() => handleCardClick(card.instanceId)}
           />
         ))}
       </div>
+
 
       <div className={styles.actionsContainer}>
         <button

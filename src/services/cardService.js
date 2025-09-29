@@ -1,10 +1,10 @@
 const HELP_CARDS = [
-  '00-help.png',
+  {id:0, url:'00-help.png'},
 ];
 
 const BACK_CARDS = [
-  '01-card_back.png',
-  '05-secret_front.png',
+  {id:1, url:'01-card_back.png'},
+  {id:5, url:'05-secret_front.png'},
   '06-secret_back.png',
 ];
 
@@ -15,36 +15,36 @@ const MURDER_SECRET_CARDS = [
 ];
 
 const DETECTIVE_CARDS = [
-  '07-detective_poirot.png',
-  '08-detective_marple.png',
-  '09-detective_satterthwaite.png',
-  '10-detective_pyne.png',
-  '11-detective_brent.png',
-  '12-detective_tommyberesford.png',
-  '13-detective_tuppenceberesford.png',
-  '14-detective_quin.png',
-  '15-detective_oliver.png',
+  {id: 7, url:'07-detective_poirot.png'},
+  {id:8, url:'08-detective_marple.png'},
+  {id:9, url:'09-detective_satterthwaite.png'},
+  {id:10, url:'10-detective_pyne.png'},
+  {id:11, url:'11-detective_brent.png'},
+  {id:12, url:'12-detective_tommyberesford.png'},
+  {id:13, url:'13-detective_tuppenceberesford.png'},
+  {id:14, url:'14-detective_quin.png'},
+  {id:15, url:'15-detective_oliver.png'},
 ];
 
 const INSTANT_CARDS = [
-  '16-Instant_notsofast.png',
+  {id:16, url:'16-Instant_notsofast.png'},
 ];
 
 const EVENT_CARDS = [
-  '17-event_cardsonthetable.png',
-  '18-event_anothervictim.png',
-  '19-event_deadcardfolly.png',
-  '20-event_lookashes.png',
-  '21-event_cardtrade.png',
-  '22-event_onemore.png',
-  '23-event_delayescape.png',
-  '24-event_earlytrain.png',
-  '25-event_pointsuspicions.png',
+  {id:17, url:'17-event_cardsonthetable.png'},
+  {id:18, url:'18-event_anothervictim.png'},
+  {id:19, url:'19-event_deadcardfolly.png'},
+  {id:20, url:'20-event_lookashes.png'},
+  {id:21, url:'21-event_cardtrade.png'},
+  {id:22, url:'22-event_onemore.png'},
+  {id:23, url:'23-event_delayescape.png'},
+  {id:24, url:'24-event_earlytrain.png'},
+  {id:25, url:'25-event_pointsuspicions.png'},
 ];
 
 const DEVIOUS_CARDS = [
-  '26-devious_blackmailed.png',
-  '27-devious_fauxpas.png',
+  {id:26, url:'26-devious_blackmailed.png'},
+  {id:27, url:'27-devious_fauxpas.png'},
 ];
 
 
@@ -61,6 +61,15 @@ const getRandomHand = () => {
   return shuffled.slice(0, 6);
 };
 
+const  getPlayingHand = (handData) => {
+  // Filtra las cartas de handdata en función de los IDs en GAME_CARDS
+  const playingHand = handData.map(card => 
+    GAME_CARDS.find(gameCard => gameCard.id === card.id)
+  );
+  return playingHand;
+}
+
 export const cardService = {
   getRandomHand,
+  getPlayingHand
 };

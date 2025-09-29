@@ -56,12 +56,51 @@ const createHttpService = () => {
       body: JSON.stringify({ id_jugador: playerId }),
     });
   };
+
+
+  const discardCards = async (gameId, playerId, cardIds) => {
+    return request(`/partidas/descarte/${gameId}?id_jugador=${playerId}`, {
+      method: "PUT",
+      body: JSON.stringify(cardIds),
+    });
+  };
+
+
+  const getHand = async (gameId, playerId) => {
+    return request(`/partidas/${gameId}/mano/?id_jugador=${playerId}`, {
+      method: "GET",
+    });
+  }
+
+  const getTurn = async (gameId) => {
+    return request(`/partidas/${gameId}/turno`, {
+      method: "GET",
+    });
+  }
+
+
+  const getDeckCount = async (gameId) => {
+    return request(`/partidas/${gameId}/mazo`, {
+      method: "GET",
+    });
+  }
+
+  const getTurnOrder = async (gameId) => {
+    return request(`/partidas/${gameId}/turnos`, { method: "GET" });
+  };
+
+
   return {
     createGame,
     listGames,
     joinGame,
     getGameDetails,
-    startGame
+    startGame,
+    discardCards,
+    getHand,
+    getTurn,
+    getDeckCount,
+    getTurnOrder,
   };
 };
 
