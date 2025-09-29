@@ -3,11 +3,15 @@ import Card from '@/components/Card/Card';
 import { cardService } from '@/services/cardService';
 import styles from './GamePage.module.css';
 import Deck from '@/components/Deck/Deck.jsx';
-
+import { useNavigate } from 'react-router-dom';
+import GameOverScreen from '@/components/GameOver/GameOverModal.jsx';
+import websocketService from '@/services/websocketService';
 const GamePage = () => {
   const [hand, setHand] = useState([]);
   const [selectedCards, setSelectedCards] = useState([]);
   const deckCount = 25; //cantidad de cartas en el mazo, luego habra que setear el valor real con ws o endpoint 
+  const [winners, setWinners] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const initialHand = cardService.getRandomHand();
@@ -35,6 +39,26 @@ const GamePage = () => {
   }
 
   const isDiscardButtonEnabled = selectedCards.length > 0;
+
+  useEffect(() => {
+    const handleFinPartida = (message) => {
+      setWinners(message.ganadores);
+    };
+    websocketService.on("fin-partida", handleFinPartida);
+
+    // Simulación: a los 5s mandamos un evento falso, descomentar para verificar pr
+    /*
+    //descomentar para probar la pantalla de victoria
+    const fakeTimeout = setTimeout(() => {
+      handleFinPartida({ ganadores: ["Alice", "Bob"] });
+    }, 5000);
+    */
+    return () => {
+      websocketService.off("fin-partida", handleFinPartida);
+      clearTimeout(fakeTimeout);
+    };
+  }, []);
+
   return (
     <div className={styles.gameContainer}>
       <Deck count={deckCount} /> 
@@ -65,6 +89,9 @@ const GamePage = () => {
           Descartar
         </button>
       </div>
+          {winners && (<GameOverScreen winners={winners}onReturnToMenu={() => navigate("/")} 
+        />
+      )}
     </div>
   );
 };
