@@ -12,8 +12,10 @@ const GamePage = () => {
   const [hand, setHand] = useState([]);
   const [selectedCards, setSelectedCards] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const deckCount = 25; //cantidad de cartas en el mazo, luego habra que setear el valor real con ws o endpoint 
-
+  const [ deckCount, setDeckCount] = useState(0);
+  const  [currentTurn, setCurrentTurn] = useState(null);
+  const [turnOrder, setTurnOrder] = useState([]);
+  
   useEffect(() => {
     const storedPlayerId = sessionStorage.getItem('playerId');
 
@@ -21,6 +23,14 @@ const GamePage = () => {
       if (gameId && storedPlayerId) {
         try {
           const handData = await apiService.getHand(gameId, storedPlayerId);
+          const turnData = await apiService.getTurn(gameId);
+          const deckData = await apiService.getDeckCount(gameId);
+          const turnOrderData = await apiService.getTurnOrder(gameId);
+          setDeckCount(deckData);
+          setCurrentTurn(turnData);
+          setTurnOrder(turnOrderData);
+          console.log("Turno actual:", turnData);
+          console.log("Datos del turno:", turnOrderData);
 
           let playingHand = cardService.getPlayingHand(handData);
 
