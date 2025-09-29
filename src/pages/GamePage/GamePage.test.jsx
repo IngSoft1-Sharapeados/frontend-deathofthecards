@@ -1,4 +1,4 @@
-// Importa las funciones necesarias desde Vitest
+
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { describe, test, expect, beforeEach, vi } from 'vitest';
@@ -166,3 +166,4 @@ describe('GamePage', () => {
 
 
 });
+
