@@ -1,12 +1,42 @@
-# React + Vite
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Agatha Christie Death On The Cards
+Frontend (React + Vite)
 
-Currently, two official plugins are available:
+Esta sección explica cómo instalar y ejecutar el cliente de la aplicación paso a paso.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+Requisitos Previos
+Antes de empezar, asegúrate de tener instalado:
 
-## Expanding the ESLint configuration
+Node.js (versión 18 o superior recomendada)
+npm (se instala automáticamente con Node.js)
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Instalación Paso a Paso
+Estas son las instrucciones para configurar el proyecto en tu máquina.
+
+1. Navega a la Carpeta del Frontend
+Abre tu terminal y asegúrate de estar en el directorio correcto del proyecto.
+Clonar el proyecto de Github con
+git clone https://github.com/IngSoft1-Sharapeados/frontend-deathofthecards.git
+
+2. Instala las Dependencias
+Ejecuta el siguiente comando desde dentro del proyecto, npm leerá el archivo package.json y descargará todas las librerías y paquetes necesarios para que la aplicación funcione.
+
+npm install
+
+
+▶️ Ejecutar la Aplicación
+Una vez que la instalación se haya completado, puedes iniciar la aplicación en modo de desarrollo.
+
+1. Inicia el Servidor de Desarrollo
+Ejecuta el siguiente comando en tu terminal (dentro de la carpeta frontend/):
+
+npm run dev
+
+O ejecutar los tests con
+
+npm tests
+
+2. Abre la Aplicación en tu Navegador
+Este comando iniciará el servidor de desarrollo de Vite. La terminal te mostrará un mensaje indicando la URL local donde la aplicación está corriendo. Generalmente es:
+http://localhost:5173
+
