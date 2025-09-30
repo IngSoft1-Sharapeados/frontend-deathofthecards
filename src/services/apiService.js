@@ -1,0 +1,114 @@
+const createHttpService = () => {
+  const baseUrl = import.meta.env.VITE_SERVER_URI || 'http://localhost:8000';
+
+  const request = async (endpoint, options = {}) => {
+    const url = `${baseUrl}${endpoint}`;
+    const config = {
+      headers: { 'Content-Type': 'application/json', ...options.headers },
+      ...options,
+    };
+
+    const response = await fetch(url, config);
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || `Error ${response.status}`);
+    }
+    return response.json();
+  };
+
+  // Aca van nuestros servicios
+  const createGame = async (gameData) => {
+    return request("/partidas", {
+      method: "POST",
+      body: JSON.stringify(gameData),
+    });
+  };
+
+  const listGames = async (playerData) => {
+    return request("/partidas", {
+      method: "GET",
+    });
+  };
+
+  const joinGame = async (gameId, playerData) => {
+    return request(`/partidas/${gameId}`, {
+      method: "POST",
+      body: JSON.stringify(playerData),
+    });
+  }
+
+  const getGameDetails = async (gameId) => {
+    return request(`/partidas/${gameId}`, {
+      method: "GET",
+    });
+  }
+
+  const startGame = async (gameId, playerId) => {
+    const gameIdInt = parseInt(gameId, 10);
+    console.log("startGame llamado con:", gameIdInt, playerId);
+
+    return request(`/partidas/${gameIdInt}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ id_jugador: playerId }),
+    });
+  };
+
+
+  const discardCards = async (gameId, playerId, cardIds) => {
+    return request(`/partidas/descarte/${gameId}?id_jugador=${playerId}`, {
+      method: "PUT",
+      body: JSON.stringify(cardIds),
+    });
+  };
+
+
+  const getHand = async (gameId, playerId) => {
+    return request(`/partidas/${gameId}/mano/?id_jugador=${playerId}`, {
+      method: "GET",
+    });
+  }
+
+  const getTurn = async (gameId) => {
+    return request(`/partidas/${gameId}/turno`, {
+      method: "GET",
+    });
+  }
+
+
+  const getDeckCount = async (gameId) => {
+    return request(`/partidas/${gameId}/mazo`, {
+      method: "GET",
+    });
+  }
+
+  const getTurnOrder = async (gameId) => {
+    return request(`/partidas/${gameId}/turnos`, { method: "GET" });
+  };
+
+  const drawCards = async (gameId, playerId, amount = 1) => {
+    return request(`/partidas/${gameId}/robar?id_jugador=${playerId}&cantidad=${amount}` , {
+      method: "POST",
+    });
+  };
+
+
+  return {
+    createGame,
+    listGames,
+    joinGame,
+    getGameDetails,
+    startGame,
+    discardCards,
+    getHand,
+    getTurn,
+    getDeckCount,
+    getTurnOrder,
+    drawCards,
+  };
+};
+
+export const apiService = createHttpService();
