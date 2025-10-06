@@ -22,21 +22,6 @@ const useGameState = () => {
   const isMyTurn = currentTurn === currentPlayerId;
   const isDiscardButtonEnabled = selectedCards.length > 0 && isMyTurn;
 
-  // Reset del estado (útil para reiniciar)
-  const resetGameState = useCallback(() => {
-    setHand([]);
-    setSelectedCards([]);
-    setIsLoading(true);
-    setCurrentPlayerId(null);
-    setDeckCount(0);
-    setCurrentTurn(null);
-    setTurnOrder([]);
-    setPlayers([]);
-    setHostId(null);
-    setWinners(null);
-    setAsesinoGano(false);
-  }, []);
-
   return {
     // Estado
     hand, setHand,
@@ -53,10 +38,7 @@ const useGameState = () => {
     
     // Derived state
     isMyTurn,
-    isDiscardButtonEnabled,
-    
-    // Actions
-    resetGameState
+    isDiscardButtonEnabled
   };
 };
 

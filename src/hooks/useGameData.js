@@ -14,9 +14,13 @@ const useGameData = (gameId, gameState) => {
   
   useEffect(() => {
     const storedPlayerId = sessionStorage.getItem('playerId');
-    if (storedPlayerId) {
-      setCurrentPlayerId(parseInt(storedPlayerId, 10));
+    if (!storedPlayerId) {
+      console.error(' No playerId found in sessionStorage');
+      setIsLoading(false);
+      return; 
     }
+    
+    setCurrentPlayerId(parseInt(storedPlayerId, 10));
 
     const loadGameData = async () => {
       if (gameId && storedPlayerId) {

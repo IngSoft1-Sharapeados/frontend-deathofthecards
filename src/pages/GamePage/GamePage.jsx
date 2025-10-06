@@ -1,12 +1,4 @@
-// Archivo: /components/GamePage/GamePage.jsx
-
-import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-
-// Services
-import { cardService } from '@/services/cardService';
-import websocketService from '@/services/websocketService';
-import { apiService } from '@/services/apiService';
 
 // Components
 import Card from '@/components/Card/Card';
