@@ -18,8 +18,6 @@ const PlayerPod = ({ player, isCurrentTurn, roleEmoji }) => {
     const visibleSetsCount = 3; // How many cards to show at once
 
     useEffect(() => {
-        // For demonstration, we'll get 7 random detectives.
-        // Later, this data will come from the backend.
         setAllSets(cardService.getRandomDetectives(7));
     }, []);
 
@@ -33,7 +31,6 @@ const PlayerPod = ({ player, isCurrentTurn, roleEmoji }) => {
         setCurrentIndex(prev => Math.max(prev - 1, 0));
     };
 
-    // Calculate how far to move the track
     const cardWidth = 80; // from .carouselCard width
     const cardGap = 5;    // from .setsTrack gap
     const trackOffset = currentIndex * (cardWidth + cardGap);
@@ -55,8 +52,8 @@ const PlayerPod = ({ player, isCurrentTurn, roleEmoji }) => {
                     <div className={styles.secretsInfo}>
                         <img src={secretCardBack} alt="Secret card back" className={styles.secretCardImage} />
                         <div className={styles.secretStats}>
-                            <span><EyeIcon /> 2</span>
-                            <span><LockIcon /> 1</span>
+                            <span><EyeIcon /> 0</span>
+                            <span><LockIcon /> 3</span>
                         </div>
                     </div>
                 </div>
