@@ -166,6 +166,11 @@ describe('GamePage', () => {
       );
     });
 
+    // Las cartas podrían seguir renderizadas mientras se actualiza el estado
+    await waitFor(() => {
+      expect(discardButton).toBeDisabled();
+    });
+
     expect(screen.queryByTestId('card-cardA.png')).not.toBeInTheDocument();
     expect(screen.queryByTestId('card-cardB.png')).not.toBeInTheDocument();
     expect(discardButton).toBeDisabled();

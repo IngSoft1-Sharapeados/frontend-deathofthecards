@@ -1,16 +1,14 @@
-import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-
-// Services
-import { cardService } from '@/services/cardService';
-import websocketService from '@/services/websocketService';
-import { apiService } from '@/services/apiService';
 
 // Components
 import Card from '@/components/Card/Card';
 import Deck from '@/components/Deck/Deck.jsx';
 import GameOverScreen from '@/components/GameOver/GameOverModal.jsx';
-
+//hooks
+import useWebSocket  from '@/hooks/useGameWebSockets';
+import useGameState from '@/hooks/useGameState';
+import useGameData from '@/hooks/useGameData';
+import useCardActions from '@/hooks/useCardActions';
 // Styles
 import styles from './GamePage.module.css';
 
@@ -18,158 +16,34 @@ const GamePage = () => {
   const { id: gameId } = useParams();
   const navigate = useNavigate();
 
-  // --- State Management ---
-  // Estados de la UI y datos del jugador
-  const [hand, setHand] = useState([]);
-  const [selectedCards, setSelectedCards] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [currentPlayerId, setCurrentPlayerId] = useState(null);
-  const [secretCards, setSecretCards] = useState([]);
-  const [deckCount, setDeckCount] = useState(0);
-  const [currentTurn, setCurrentTurn] = useState(null);
-  const [turnOrder, setTurnOrder] = useState([]);
-  const [players, setPlayers] = useState([]);
-  const [hostId, setHostId] = useState(null);
+    // --- State Management ---
+  const gameState = useGameState();
+  const {
+    hand, selectedCards, isLoading,
+    deckCount, currentTurn, turnOrder, players, hostId,
+    winners, asesinoGano,
+    isDiscardButtonEnabled, currentPlayerId,
+    roles, secretCards,
+  } = gameState;
 
-  const [roles, setRoles] = useState({ murdererId: null, accompliceId: null });
-
-  const [winners, setWinners] = useState(null);
-  const [asesinoGano, setAsesinoGano] = useState(false);
-
-  // --- Data Loading and WebSockets ---
-  useEffect(() => {
-    const storedPlayerId = sessionStorage.getItem('playerId');
-    if (storedPlayerId) {
-      setCurrentPlayerId(parseInt(storedPlayerId, 10));
-    }
-
-    const loadGameData = async () => {
-      if (gameId && storedPlayerId) {
-        try {
-          const [handData, turnData, deckData, turnOrderData, gameData, secretCards, rolesData] = await Promise.all([
-            apiService.getHand(gameId, storedPlayerId),
-            apiService.getTurn(gameId),
-            apiService.getDeckCount(gameId),
-            apiService.getTurnOrder(gameId),
-            apiService.getGameDetails(gameId),
-            apiService.getMySecrets(gameId, storedPlayerId),
-            apiService.getRoles(gameId)
-          ]);
-
-          // Actualizamos todo el estado del juego
-          setDeckCount(deckData);
-          const secretHand = cardService.getSecretCards(secretCards);
-          const secretsWithInstanceIds = secretHand.map((card, index) => ({
-            ...card,
-            instanceId: `${card.id}-secret-${index}`
-          }));
-          setSecretCards(secretsWithInstanceIds);
-          if (deckData === 0) {
-            setWinners(["Nadie"]);
-            setAsesinoGano(false);
-          }
-          setCurrentTurn(turnData);
-          setTurnOrder(turnOrderData);
-          setHostId(gameData.id_anfitrion);
-          setPlayers(gameData.listaJugadores || []);
-
-          // Añadimos 'instanceId' a cada carta para manejar duplicados en el UI
-          const playingHand = cardService.getPlayingHand(handData);
-          const handWithInstanceIds = playingHand.map((card, index) => ({
-            ...card,
-            instanceId: `${card.id}-${index}`
-          }));
-          setHand(handWithInstanceIds);
-
-          if (rolesData) {
-            setRoles({
-              murdererId: rolesData["asesino-id"],
-              accompliceId: rolesData["complice-id"]
-            });
-          }
-
-          // Conectamos el WebSocket para actualizaciones en tiempo real
-          websocketService.connect(gameId, storedPlayerId);
-
-          // --- Suscripción a eventos de WebSocket ---
-          const onDeckUpdate = (message) => setDeckCount(message["cantidad-restante-mazo"]);
-          const onTurnUpdate = (message) => setCurrentTurn(message["turno-actual"]);
-          const onGameEnd = (message) => {
-            setWinners(message.ganadores || []);
-            setAsesinoGano(message.asesino_gano || false);
-          };
-
-          websocketService.on('actualizacion-mazo', onDeckUpdate);
-          websocketService.on('turno-actual', onTurnUpdate);
-          websocketService.on('fin-partida', onGameEnd);
-
-        } catch (error) {
-          console.error("Error al cargar los datos del juego:", error);
-          console.error("Error al cargar los datos del juego:", error);
-        } finally {
-          setIsLoading(false);
-        }
-      }
-    };
-
-
-    loadGameData();
-
-    return () => {
-      websocketService.off('actualizacion-mazo', () => { });
-      websocketService.off('turno-actual', () => { });
-      websocketService.off('fin-partida', () => { });
-      websocketService.disconnect();
-    };
-  }, [gameId]);
-
-  // --- Derived State ---
-  const isMyTurn = currentTurn === currentPlayerId;
-  const isDiscardButtonEnabled = selectedCards.length > 0 && isMyTurn;
-
-  // --- Event Handlers ---
-  const handleCardClick = (instanceId) => {
-    if (!isMyTurn) {
-      console.log("No es tu turno para seleccionar cartas.");
-      return;
-    }
-    setSelectedCards((prev) =>
-      prev.includes(instanceId)
-        ? prev.filter((id) => id !== instanceId)
-        : [...prev, instanceId]
-    );
-  };
-
-  // Manejador para el descarte de cartas
-  const handleDiscard = async () => {
-    if (!isDiscardButtonEnabled) return;
-
-    try {
-      const cardIdsToDiscard = selectedCards
-        .map(instanceId => hand.find(c => c.instanceId === instanceId)?.id)
-        .filter(id => id !== undefined);
-
-      await apiService.discardCards(gameId, currentPlayerId, cardIdsToDiscard);
-
-      const newHand = hand.filter(card => !selectedCards.includes(card.instanceId));
-      setHand(newHand);
-      setSelectedCards([]);
-
-      const needed = Math.max(0, 6 - newHand.length);
-      if (needed > 0) {
-        const drawnCards = await apiService.drawCards(gameId, currentPlayerId, needed);
-        const mappedDrawn = cardService.getPlayingHand(drawnCards).map((card, index) => ({
-          ...card,
-          instanceId: `${card.id}-draw-${Date.now()}-${index}` // Clave única para cartas nuevas
-        }));
-        setHand(prev => [...prev, ...mappedDrawn]);
-      }
-
-    } catch (error) {
-      console.error("Error al descartar:", error);
-      alert(`Error: ${error.message}`);
+  // --- WebSocket Callbacks ---
+  const webSocketCallbacks = {
+    onDeckUpdate: (count) => gameState.setDeckCount(count),
+    onTurnUpdate: (turn) => gameState.setCurrentTurn(turn),
+    onGameEnd: ({ winners, asesinoGano }) => {
+      gameState.setWinners(winners);
+      gameState.setAsesinoGano(asesinoGano);
     }
   };
+  // Usar el custom hook solo para manejar eventos
+  useWebSocket(webSocketCallbacks);
+
+  // --- Data Loading y coneccion a WS ---
+  useGameData(gameId, gameState);
+
+  // --- Card Actions ---
+  const cardActions = useCardActions(gameId, gameState);
+  const { handleCardClick, handleDiscard } = cardActions;
 
   const getPlayerEmoji = (playerId) => {
     const isPlayerInvolved = currentPlayerId === roles.murdererId || currentPlayerId === roles.accompliceId;
