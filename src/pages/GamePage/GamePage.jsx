@@ -1,14 +1,18 @@
 import { useParams, useNavigate } from 'react-router-dom';
+import { useMemo } from 'react'; // Import useMemo
 
 // Components
 import Card from '@/components/Card/Card';
 import Deck from '@/components/Deck/Deck.jsx';
 import GameOverScreen from '@/components/GameOver/GameOverModal.jsx';
-//hooks
+import PlayerPod from '@/components/PlayerPod/PlayerPod.jsx'; // Import the new component
+
+// Hooks
 import useWebSocket  from '@/hooks/useGameWebSockets';
 import useGameState from '@/hooks/useGameState';
 import useGameData from '@/hooks/useGameData';
 import useCardActions from '@/hooks/useCardActions';
+
 // Styles
 import styles from './GamePage.module.css';
 
@@ -16,17 +20,34 @@ const GamePage = () => {
   const { id: gameId } = useParams();
   const navigate = useNavigate();
 
-    // --- State Management ---
+  // --- State Management ---
   const gameState = useGameState();
   const {
     hand, selectedCards, isLoading,
-    deckCount, currentTurn, turnOrder, players, hostId,
+    deckCount, currentTurn, turnOrder, players,
     winners, asesinoGano,
     isDiscardButtonEnabled, currentPlayerId,
-    roles, getPlayerEmoji, secretCards,
+    roles, secretCards,
   } = gameState;
 
-  // --- WebSocket Callbacks ---
+  // --- Reorder players for display ---
+  // This logic ensures players are always shown in turn order starting from your right
+  const displayedOpponents = useMemo(() => {
+    const playerIndex = turnOrder.indexOf(currentPlayerId);
+    if (playerIndex === -1) return [];
+
+    const rotatedTurnOrder = [
+      ...turnOrder.slice(playerIndex + 1),
+      ...turnOrder.slice(0, playerIndex)
+    ];
+
+    return rotatedTurnOrder.reverse() 
+      .map(playerId => players.find(p => p.id_jugador === playerId))
+      .filter(Boolean);
+  }, [turnOrder, currentPlayerId, players]);
+
+
+  // (The WebSocket, Data, and Card Action hooks remain unchanged)
   const webSocketCallbacks = {
     onDeckUpdate: (count) => gameState.setDeckCount(count),
     onTurnUpdate: (turn) => gameState.setCurrentTurn(turn),
@@ -35,122 +56,90 @@ const GamePage = () => {
       gameState.setAsesinoGano(asesinoGano);
     }
   };
-  // Usar el custom hook solo para manejar eventos
   useWebSocket(webSocketCallbacks);
-
-  // --- Data Loading y coneccion a WS ---
   useGameData(gameId, gameState);
+  const { handleCardClick, handleDiscard } = useCardActions(gameId, gameState);
 
-  // --- Card Actions ---
-  const cardActions = useCardActions(gameId, gameState);
-  const { handleCardClick, handleDiscard } = cardActions;
-
+  // --- UI Logic ---
+  const getPlayerEmoji = (playerId) => {
+    const isPlayerInvolved = currentPlayerId === roles.murdererId || currentPlayerId === roles.accompliceId;
+    if (!isPlayerInvolved || !roles.murdererId) return null;
+    if (playerId === roles.murdererId) return '🔪';
+    if (playerId === roles.accompliceId) return '🤝';
+    return null; 
+  };
 
   if (isLoading) {
     return <div className={styles.loadingSpinner}></div>;
   }
 
-  return (
+return (
     <div className={styles.gameContainer}>
       {winners && (
-        <GameOverScreen
-          winners={winners}
-          asesinoGano={asesinoGano}
-          onReturnToMenu={() => navigate("/")}
-        />
+        <GameOverScreen winners={winners} asesinoGano={asesinoGano} onReturnToMenu={() => navigate("/")} />
       )}
 
-      {/* Deck */}
-      <div className={styles.deckContainer}>
+      {/* --- Opponents Area (No changes here) --- */}
+      <div className={styles.opponentsContainer} data-player-count={players.length}>
+        {displayedOpponents.map((player, index) => (
+          <div key={player.id_jugador} className={`${styles.opponent} ${styles[`opponent-${index + 1}`]}`}>
+            <PlayerPod
+              player={player}
+              isCurrentTurn={player.id_jugador === currentTurn}
+              roleEmoji={getPlayerEmoji(player.id_jugador)}
+            />
+          </div>
+        ))}
+      </div>
+
+      {/* --- NEW WRAPPER for the central area --- */}
+      <div className={styles.centerArea}>
         <Deck count={deckCount} />
+        {/* Discard pile will go here later */}
       </div>
 
-      {/* Área del jugador */}
-      <div className={styles.playerArea}>
-
-        {/* Contenedor de Secretos */}
-        <div>
-          <h2 className={styles.secretTitle}>Tus Secretos</h2>
-          <div className={styles.secretCardsContainer}>
-            {secretCards.map((card) => (
-              <div key={card.instanceId} className={styles.secretCardWrapper}>
+      <div className={`${styles.bottomContainer} ${gameState.isMyTurn ? styles.myTurn : ''}`}>
+        
+        {/* Player's hand and secrets go here */}
+        <div className={styles.playerArea}>
+          <div>
+            <h2 className={styles.secretTitle}>Tus Secretos</h2>
+            <div className={styles.secretCardsContainer}>
+              {secretCards.map((card) => (
+                <div key={card.instanceId} className={styles.secretCardWrapper}>
+                  <Card imageName={card.url} subfolder="secret-cards" />
+                </div>
+              ))}
+            </div>
+          </div>
+          <div>
+            <h1 className={styles.title}>Tu Mano</h1>
+            <div className={styles.handContainer}>
+              {hand.map((card) => (
                 <Card
+                  key={card.instanceId}
                   imageName={card.url}
-                  subfolder="secret-cards"
+                  isSelected={selectedCards.includes(card.instanceId)}
+                  onCardClick={() => handleCardClick(card.instanceId)}
+                  subfolder="game-cards"
                 />
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
 
-        {/* Contenedor de la Mano */}
-        <div>
-          <h1 className={styles.title}>Tu Mano</h1>
-          <div className={styles.handContainer}>
-            {hand.map((card) => (
-              <Card
-                key={card.instanceId}
-                imageName={card.url}
-                isSelected={selectedCards.includes(card.instanceId)}
-                onCardClick={() => handleCardClick(card.instanceId)}
-                subfolder="game-cards"
-              />
-            ))}
-          </div>
+        {/* The discard button is now INSIDE the bordered container */}
+        <div className={styles.actionsContainer}>
+          <button
+            onClick={handleDiscard}
+            disabled={!isDiscardButtonEnabled}
+            className={`${styles.discardButton} ${isDiscardButtonEnabled ? styles.enabled : ''}`}
+          >
+            Descartar
+          </button>
         </div>
       </div>
-
-      {/* Contenedor de Acciones */}
-      <div className={styles.actionsContainer}>
-        <button
-          onClick={handleDiscard}
-          disabled={!isDiscardButtonEnabled}
-          className={`${styles.discardButton} ${isDiscardButtonEnabled ? styles.enabled : ''}`}
-        >
-          Descartar
-        </button>
-      </div>
-
-      {/* Tabla de jugadores */}
-      {turnOrder.length > 0 && players.length > 0 && (
-        <div className={styles.playersTableContainer}>
-          <h2 className={styles.playersTableTitle}>Jugadores ({players.length})</h2>
-          <table className={styles.playersTable}>
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Nombre</th>
-              </tr>
-            </thead>
-            <tbody>
-              {turnOrder.map((playerId, idx) => {
-                const player = players.find(p => p.id_jugador === playerId);
-                if (!player) return null;
-
-                const nameClasses = [
-                  player.id_jugador === hostId ? styles.hostName : '',
-                  player.id_jugador === currentPlayerId ? styles.currentUserName : ''
-                ].join(' ');
-
-                return (
-                  <tr
-                    key={player.id_jugador}
-                    className={player.id_jugador === currentTurn ? styles.currentPlayerRow : ''}
-                  >
-                    <td>{idx + 1}</td>
-                    <td className={nameClasses}>
-                      {player.nombre_jugador}
-                      <span> {getPlayerEmoji(player.id_jugador)}</span>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
     </div>
   );
 };
-
 export default GamePage;

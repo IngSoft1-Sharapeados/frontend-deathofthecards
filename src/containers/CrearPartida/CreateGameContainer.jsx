@@ -75,7 +75,7 @@ export default function GameCreateFormContainer({ showForm, onClose }) {
     <div className="modal-overlay">
       <div className="modal-card">
         <div className="modal-header">
-          <h2 className="modal-title">completar</h2>
+          <h2 className="modal-title">Crear Partida</h2>
           <button
             onClick={onClose}
             className="modal-close-btn"
