@@ -24,6 +24,19 @@ const useGameState = () => {
   const isMyTurn = currentTurn === currentPlayerId;
   const isDiscardButtonEnabled = selectedCards.length > 0 && isMyTurn;
 
+  const getPlayerEmoji = (playerId) => {
+    console.log("getPlayerEmoji()", { 
+      currentPlayerId, 
+      murdererId: roles.murdererId, 
+      accompliceId: roles.accompliceId 
+    });
+    const isPlayerInvolved = currentPlayerId === roles.murdererId || currentPlayerId === roles.accompliceId;
+    if (!isPlayerInvolved || !roles.murdererId) return null;
+    if (playerId === roles.murdererId) return ' 🔪';
+    if (playerId === roles.accompliceId) return ' 🤝';
+    return null;
+  };
+
   return {
     // Estado
     hand, setHand,
@@ -36,6 +49,7 @@ const useGameState = () => {
     players, setPlayers,
     hostId, setHostId,
     roles, setRoles,
+    getPlayerEmoji,
     winners, setWinners,
     asesinoGano, setAsesinoGano,
     secretCards, setSecretCards,

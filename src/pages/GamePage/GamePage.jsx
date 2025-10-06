@@ -23,7 +23,7 @@ const GamePage = () => {
     deckCount, currentTurn, turnOrder, players, hostId,
     winners, asesinoGano,
     isDiscardButtonEnabled, currentPlayerId,
-    roles, secretCards,
+    roles, getPlayerEmoji, secretCards,
   } = gameState;
 
   // --- WebSocket Callbacks ---
@@ -45,23 +45,6 @@ const GamePage = () => {
   const cardActions = useCardActions(gameId, gameState);
   const { handleCardClick, handleDiscard } = cardActions;
 
-  const getPlayerEmoji = (playerId) => {
-    const isPlayerInvolved = currentPlayerId === roles.murdererId || currentPlayerId === roles.accompliceId;
-    console.log("esta involucrado?", isPlayerInvolved, "Jugador ID:", playerId, "Roles:", roles, "Jugador actual ID:", currentPlayerId);
-
-    if (!isPlayerInvolved || !roles.murdererId) {
-      return null;
-    }
-
-    if (playerId === roles.murdererId) {
-      return ' 🔪';
-    }
-    if (playerId === roles.accompliceId) {
-      return ' 🤝';
-    }
-
-    return null; 
-  };
 
   if (isLoading) {
     return <div className={styles.loadingSpinner}></div>;
