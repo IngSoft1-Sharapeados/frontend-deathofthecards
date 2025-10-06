@@ -29,22 +29,6 @@ const GamePage = () => {
     roles, secretCards, displayedOpponents,
   } = gameState;
 
-  // Fallback en caso de que displayedOpponents no esté definido (p.ej., en tests con hook mockeado)
-  const computedDisplayedOpponents = Array.isArray(displayedOpponents)
-    ? displayedOpponents
-    : (() => {
-        const playerIndex = turnOrder.indexOf(currentPlayerId);
-        if (playerIndex === -1) return [];
-        const rotatedTurnOrder = [
-          ...turnOrder.slice(playerIndex + 1),
-          ...turnOrder.slice(0, playerIndex)
-        ];
-        return rotatedTurnOrder
-          .reverse()
-          .map((pid) => players.find((p) => p.id_jugador === pid))
-          .filter(Boolean);
-      })();
-
 
   const webSocketCallbacks = {
     onDeckUpdate: (count) => gameState.setDeckCount(count),
@@ -60,16 +44,7 @@ const GamePage = () => {
   const { handleCardClick, handleDiscard } = useCardActions(gameId, gameState);
 
   // --- UI Helpers ---
-  const getPlayerEmoji = typeof gameState.getPlayerEmoji === 'function'
-    ? gameState.getPlayerEmoji
-    : (playerId) => {
-        // Fallback para entornos de test donde el hook es mockeado sin getPlayerEmoji
-        const isPlayerInvolved = currentPlayerId === roles?.murdererId || currentPlayerId === roles?.accompliceId;
-        if (!isPlayerInvolved || !roles?.murdererId) return null;
-        if (playerId === roles.murdererId) return '🔪';
-        if (playerId === roles.accompliceId) return '🤝';
-        return null;
-      };
+  const getPlayerEmoji = gameState.getPlayerEmoji;
 
   if (isLoading) {
     return <div className={styles.loadingSpinner}></div>;
@@ -91,7 +66,7 @@ return (
 
   {/* --- Opponents Area --- */}
       <div className={styles.opponentsContainer} data-player-count={players.length}>
-        {computedDisplayedOpponents.map((player, index) => (
+  {displayedOpponents.map((player, index) => (
           <div key={player.id_jugador} className={`${styles.opponent} ${styles[`opponent-${index + 1}`]}`}>
             <PlayerPod
               player={player}
