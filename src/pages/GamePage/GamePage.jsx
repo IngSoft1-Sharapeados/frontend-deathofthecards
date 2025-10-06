@@ -1,11 +1,10 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { useMemo } from 'react'; // Import useMemo
 
 // Components
 import Card from '@/components/Card/Card';
 import Deck from '@/components/Deck/Deck.jsx';
 import GameOverScreen from '@/components/GameOver/GameOverModal.jsx';
-import PlayerPod from '@/components/PlayerPod/PlayerPod.jsx'; // Import the new component
+import PlayerPod from '@/components/PlayerPod/PlayerPod.jsx';
 
 // Hooks
 import useWebSocket  from '@/hooks/useGameWebSockets';
@@ -27,47 +26,50 @@ const GamePage = () => {
     deckCount, currentTurn, turnOrder, players,
     winners, asesinoGano,
     isDiscardButtonEnabled, currentPlayerId,
-    roles, secretCards,
+    roles, secretCards, displayedOpponents,
   } = gameState;
 
-  // --- Reorder players for display ---
-  // This logic ensures players are always shown in turn order starting from your right
-  const displayedOpponents = useMemo(() => {
-    const playerIndex = turnOrder.indexOf(currentPlayerId);
-    if (playerIndex === -1) return [];
+  // Fallback en caso de que displayedOpponents no esté definido (p.ej., en tests con hook mockeado)
+  const computedDisplayedOpponents = Array.isArray(displayedOpponents)
+    ? displayedOpponents
+    : (() => {
+        const playerIndex = turnOrder.indexOf(currentPlayerId);
+        if (playerIndex === -1) return [];
+        const rotatedTurnOrder = [
+          ...turnOrder.slice(playerIndex + 1),
+          ...turnOrder.slice(0, playerIndex)
+        ];
+        return rotatedTurnOrder
+          .reverse()
+          .map((pid) => players.find((p) => p.id_jugador === pid))
+          .filter(Boolean);
+      })();
 
-    const rotatedTurnOrder = [
-      ...turnOrder.slice(playerIndex + 1),
-      ...turnOrder.slice(0, playerIndex)
-    ];
 
-    return rotatedTurnOrder.reverse() 
-      .map(playerId => players.find(p => p.id_jugador === playerId))
-      .filter(Boolean);
-  }, [turnOrder, currentPlayerId, players]);
-
-
-  // (The WebSocket, Data, and Card Action hooks remain unchanged)
   const webSocketCallbacks = {
     onDeckUpdate: (count) => gameState.setDeckCount(count),
     onTurnUpdate: (turn) => gameState.setCurrentTurn(turn),
     onGameEnd: ({ winners, asesinoGano }) => {
-      gameState.setWinners(winners);
-      gameState.setAsesinoGano(asesinoGano);
-    }
+      // Delegamos la resolución final de ganadores al modal
+      gameState.setAsesinoGano(Boolean(asesinoGano));
+      gameState.setWinners(Array.isArray(winners) ? winners : []);
+    },
   };
   useWebSocket(webSocketCallbacks);
   useGameData(gameId, gameState);
   const { handleCardClick, handleDiscard } = useCardActions(gameId, gameState);
 
-  // --- UI Logic ---
-  const getPlayerEmoji = (playerId) => {
-    const isPlayerInvolved = currentPlayerId === roles.murdererId || currentPlayerId === roles.accompliceId;
-    if (!isPlayerInvolved || !roles.murdererId) return null;
-    if (playerId === roles.murdererId) return '🔪';
-    if (playerId === roles.accompliceId) return '🤝';
-    return null; 
-  };
+  // --- UI Helpers ---
+  const getPlayerEmoji = typeof gameState.getPlayerEmoji === 'function'
+    ? gameState.getPlayerEmoji
+    : (playerId) => {
+        // Fallback para entornos de test donde el hook es mockeado sin getPlayerEmoji
+        const isPlayerInvolved = currentPlayerId === roles?.murdererId || currentPlayerId === roles?.accompliceId;
+        if (!isPlayerInvolved || !roles?.murdererId) return null;
+        if (playerId === roles.murdererId) return '🔪';
+        if (playerId === roles.accompliceId) return '🤝';
+        return null;
+      };
 
   if (isLoading) {
     return <div className={styles.loadingSpinner}></div>;
@@ -76,12 +78,20 @@ const GamePage = () => {
 return (
     <div className={styles.gameContainer}>
       {winners && (
-        <GameOverScreen winners={winners} asesinoGano={asesinoGano} onReturnToMenu={() => navigate("/")} />
+        <GameOverScreen
+          winners={winners}
+          asesinoGano={asesinoGano}
+          players={players}
+          roles={roles}
+          setRoles={gameState.setRoles}
+          gameId={gameId}
+          onReturnToMenu={() => navigate("/")}
+        />
       )}
 
-      {/* --- Opponents Area (No changes here) --- */}
+  {/* --- Opponents Area --- */}
       <div className={styles.opponentsContainer} data-player-count={players.length}>
-        {displayedOpponents.map((player, index) => (
+        {computedDisplayedOpponents.map((player, index) => (
           <div key={player.id_jugador} className={`${styles.opponent} ${styles[`opponent-${index + 1}`]}`}>
             <PlayerPod
               player={player}

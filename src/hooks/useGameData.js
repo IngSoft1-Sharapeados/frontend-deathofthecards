@@ -38,10 +38,6 @@ const useGameData = (gameId, gameState) => {
 
           // Actualizar estado del juego
           setDeckCount(deckData);
-          if (deckData === 0) {
-            setWinners(["Nadie"]);
-            setAsesinoGano(false);
-          }
           setCurrentTurn(turnData);
           setTurnOrder(turnOrderData);
           setHostId(gameData.id_anfitrion);
@@ -52,6 +48,20 @@ const useGameData = (gameId, gameState) => {
               murdererId: rolesData["asesino-id"],
               accompliceId: rolesData["complice-id"]
             });
+          }
+
+          // Si el mazo ya está en 0 al cargar, computar ganadores según roles
+          if (deckData === 0) {
+            const playersList = gameData.listaJugadores || [];
+            const murderer = rolesData?.["asesino-id"]
+              ? playersList.find(p => p.id_jugador === rolesData["asesino-id"]) : null;
+            const accomplice = rolesData?.["complice-id"]
+              ? playersList.find(p => p.id_jugador === rolesData["complice-id"]) : null;
+            const names = [];
+            if (murderer?.nombre_jugador) names.push(murderer.nombre_jugador);
+            if (accomplice?.nombre_jugador) names.push(accomplice.nombre_jugador);
+            setWinners(names.length ? names : ["Nadie"]);
+            setAsesinoGano(names.length > 0);
           }
 
           const secretHand = cardService.getSecretCards(secretCardsData);
