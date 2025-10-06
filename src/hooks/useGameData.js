@@ -6,31 +6,34 @@ import websocketService from '@/services/websocketService';
 const useGameData = (gameId, gameState) => {
   const {
     setHand, setIsLoading, setCurrentPlayerId,
-    setDeckCount, setCurrentTurn, setTurnOrder, 
-    setPlayers, setHostId, setWinners, setAsesinoGano
+    setDeckCount, setCurrentTurn, setTurnOrder,
+    setPlayers, setHostId, setWinners, setAsesinoGano,
+    setRoles, setSecretCards,
   } = gameState;
 
   const hasConnectedRef = useRef(false); // evita reconexiones extras
-  
+
   useEffect(() => {
     const storedPlayerId = sessionStorage.getItem('playerId');
     if (!storedPlayerId) {
       console.error(' No playerId found in sessionStorage');
       setIsLoading(false);
-      return; 
+      return;
     }
-    
+
     setCurrentPlayerId(parseInt(storedPlayerId, 10));
 
     const loadGameData = async () => {
       if (gameId && storedPlayerId) {
         try {
-          const [handData, turnData, deckData, turnOrderData, gameData] = await Promise.all([
+          const [handData, turnData, deckData, turnOrderData, gameData, rolesData, secretCardsData] = await Promise.all([
             apiService.getHand(gameId, storedPlayerId),
             apiService.getTurn(gameId),
             apiService.getDeckCount(gameId),
             apiService.getTurnOrder(gameId),
-            apiService.getGameDetails(gameId)
+            apiService.getGameDetails(gameId),
+            apiService.getRoles(gameId),
+            apiService.getMySecrets(gameId, storedPlayerId)
           ]);
 
           // Actualizar estado del juego
@@ -43,7 +46,21 @@ const useGameData = (gameId, gameState) => {
           setTurnOrder(turnOrderData);
           setHostId(gameData.id_anfitrion);
           setPlayers(gameData.listaJugadores || []);
-          
+
+          if (rolesData) {
+            setRoles({
+              murdererId: rolesData["asesino-id"],
+              accompliceId: rolesData["complice-id"]
+            });
+          }
+
+          const secretHand = cardService.getSecretCards(secretCardsData);
+          const secretsWithInstanceIds = secretHand.map((card, index) => ({
+            ...card,
+            instanceId: `${card.id}-secret-${index}`
+          }));
+          setSecretCards(secretsWithInstanceIds);
+
           // Procesar mano de cartas
           const playingHand = cardService.getPlayingHand(handData);
           const handWithInstanceIds = playingHand.map((card, index) => ({
@@ -54,7 +71,6 @@ const useGameData = (gameId, gameState) => {
 
           // Conectar WebSocket solo una vez
           if (!hasConnectedRef.current) {
-            console.log('🔌 Conectando WebSocket...', { gameId, playerId: storedPlayerId });
             websocketService.connect(gameId, storedPlayerId);
             hasConnectedRef.current = true;
           }

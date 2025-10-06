@@ -35,7 +35,6 @@ const useWebSocket = (callbacks) => {
 
     // Función de limpieza - SOLO remover listeners, NO desconectar
     return () => {
-      console.log('🧹 Limpiando listeners de WebSocket...');
       websocketService.off('actualizacion-mazo', onDeckUpdate);
       websocketService.off('turno-actual', onTurnUpdate);
       websocketService.off('fin-partida', onGameEnd);

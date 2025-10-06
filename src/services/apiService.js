@@ -95,6 +95,18 @@ const createHttpService = () => {
     });
   };
 
+  const getMySecrets = async (gameId, playerId) => {
+    return request(`/partidas/${gameId}/secretos?id_jugador=${playerId}`, {
+      method: "GET",
+    });
+  }
+
+  const getRoles = async (gameId) => {
+    return request(`/partidas/${gameId}/roles`, {
+      method: "GET",
+    });
+  }
+
 
   return {
     createGame,
@@ -108,6 +120,8 @@ const createHttpService = () => {
     getDeckCount,
     getTurnOrder,
     drawCards,
+    getMySecrets,
+    getRoles,
   };
 };
 

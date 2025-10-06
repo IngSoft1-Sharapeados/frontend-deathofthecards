@@ -1,17 +1,17 @@
 const HELP_CARDS = [
   {id:0, url:'00-help.png'},
+  {id:2,url:'02-murder_escapes.png'},
 ];
 
 const BACK_CARDS = [
   {id:1, url:'01-card_back.png'},
-  {id:5, url:'05-secret_front.png'},
-  '06-secret_back.png',
+  {id:5, url:'05-secret_back.png'},
 ];
 
-const MURDER_SECRET_CARDS = [
-  '02-murder_escapes.png',
-  '03-secret_murderer.png',
-  '04-secret_accomplice.png',
+const SECRET_CARDS = [
+  {id:6, url:'06-secret_front.png'},
+  {id:3,url:'03-secret_murderer.png'},
+  {id:4,url:'04-secret_accomplice.png'},
 ];
 
 const DETECTIVE_CARDS = [
@@ -69,7 +69,17 @@ const  getPlayingHand = (handData) => {
   return playingHand;
 }
 
+const getSecretCards = (secretData) => {
+  const secretHand = secretData.map(card => 
+    SECRET_CARDS.find(secretCard => secretCard.id === card.id)
+  );
+  return secretHand;
+};
+
+
+
 export const cardService = {
   getRandomHand,
-  getPlayingHand
+  getPlayingHand,
+  getSecretCards
 };

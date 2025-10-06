@@ -39,7 +39,9 @@ describe('useGameData', () => {
     setPlayers: vi.fn(),
     setHostId: vi.fn(),
     setWinners: vi.fn(),
-    setAsesinoGano: vi.fn()
+    setAsesinoGano: vi.fn(),
+    setRoles: vi.fn(),
+    setSecretCards: vi.fn()
   };
 
   const mockGameData = {
@@ -53,7 +55,9 @@ describe('useGameData', () => {
         { id_jugador: 1, nombre_jugador: 'Player1' },
         { id_jugador: 2, nombre_jugador: 'Player2' }
       ]
-    }
+    },
+    rolesData: { 'asesino-id': 2, 'complice-id': 3 },
+    secretCardsData: [{ id: 6, url: 'secret.png' }],
   };
 
   beforeEach(() => {
@@ -70,11 +74,17 @@ describe('useGameData', () => {
     apiService.getDeckCount.mockResolvedValue(mockGameData.deckData);
     apiService.getTurnOrder.mockResolvedValue(mockGameData.turnOrderData);
     apiService.getGameDetails.mockResolvedValue(mockGameData.gameDetails);
-    
+
+    apiService.getRoles.mockResolvedValue(mockGameData.rolesData);
+    apiService.getMySecrets.mockResolvedValue(mockGameData.secretCardsData);
+
+    // Mock cardService
     cardService.getPlayingHand.mockImplementation(cards => cards);
+    cardService.getSecretCards.mockImplementation(cards => cards);
   });
 
   test('should load game data and connect WebSocket on mount', async () => {
+    sessionStorage.setItem('playerId', '1');
     renderHook(() => useGameData('game-123', mockGameState));
 
     // Wait for async operations
@@ -92,7 +102,7 @@ describe('useGameData', () => {
     expect(mockGameState.setTurnOrder).toHaveBeenCalledWith([1, 2, 3]);
     expect(mockGameState.setHostId).toHaveBeenCalledWith(2);
     expect(mockGameState.setPlayers).toHaveBeenCalledWith(mockGameData.gameDetails.listaJugadores);
-    
+
     // Verify hand processing
     expect(cardService.getPlayingHand).toHaveBeenCalledWith(mockGameData.handData);
     expect(mockGameState.setHand).toHaveBeenCalledWith([
@@ -103,7 +113,7 @@ describe('useGameData', () => {
     await waitFor(() => {
       expect(websocketService.connect).toHaveBeenCalledWith('game-123', '1');
     });
-    
+
     // Verify loading state updated
     await waitFor(() => {
       expect(mockGameState.setIsLoading).toHaveBeenCalledWith(false);
@@ -124,7 +134,7 @@ describe('useGameData', () => {
   test('should handle loading errors', async () => {
     const error = new Error('Failed to load');
     apiService.getHand.mockRejectedValue(error);
-    
+
     const consoleSpy = vi.spyOn(console, 'error');
 
     renderHook(() => useGameData('game-123', mockGameState));
@@ -137,14 +147,14 @@ describe('useGameData', () => {
 
   test('should not load data if no playerId in sessionStorage', async () => {
     sessionStorage.getItem.mockReturnValue(null);
-  
+
     renderHook(() => useGameData('game-123', mockGameState));
-  
+
     // Esperar a que el efecto complete
     await waitFor(() => {
       expect(mockGameState.setIsLoading).toHaveBeenCalledWith(false);
     });
-  
+
     // Verificar que no se llamó a las APIs
     expect(apiService.getHand).not.toHaveBeenCalled();
   });

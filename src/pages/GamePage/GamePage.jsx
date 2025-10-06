@@ -5,7 +5,7 @@ import Card from '@/components/Card/Card';
 import Deck from '@/components/Deck/Deck.jsx';
 import GameOverScreen from '@/components/GameOver/GameOverModal.jsx';
 //hooks
-import  useWebSocket  from '@/hooks/useGameWebSockets';
+import useWebSocket  from '@/hooks/useGameWebSockets';
 import useGameState from '@/hooks/useGameState';
 import useGameData from '@/hooks/useGameData';
 import useCardActions from '@/hooks/useCardActions';
@@ -22,7 +22,8 @@ const GamePage = () => {
     hand, selectedCards, isLoading,
     deckCount, currentTurn, turnOrder, players, hostId,
     winners, asesinoGano,
-    isDiscardButtonEnabled, currentPlayerId
+    isDiscardButtonEnabled, currentPlayerId,
+    roles, getPlayerEmoji, secretCards,
   } = gameState;
 
   // --- WebSocket Callbacks ---
@@ -44,36 +45,62 @@ const GamePage = () => {
   const cardActions = useCardActions(gameId, gameState);
   const { handleCardClick, handleDiscard } = cardActions;
 
-  // --- Render Logic ---
+
   if (isLoading) {
     return <div className={styles.loadingSpinner}></div>;
   }
 
   return (
     <div className={styles.gameContainer}>
-      {/* Muestra el modal de fin de partida cuando hay ganadores */}
       {winners && (
-        <GameOverScreen 
-          winners={winners} 
+        <GameOverScreen
+          winners={winners}
           asesinoGano={asesinoGano}
-          onReturnToMenu={() => navigate("/")} 
+          onReturnToMenu={() => navigate("/")}
         />
       )}
 
-      <Deck count={deckCount} />
-      
-      <h1 className={styles.title}>Tu Mano</h1>
-      <div className={styles.handContainer}>
-        {hand.map((card) => (
-          <Card
-            key={card.instanceId}
-            imageName={card.url}
-            isSelected={selectedCards.includes(card.instanceId)}
-            onCardClick={() => handleCardClick(card.instanceId)}
-          />
-        ))}
+      {/* Deck */}
+      <div className={styles.deckContainer}>
+        <Deck count={deckCount} />
       </div>
 
+      {/* Área del jugador */}
+      <div className={styles.playerArea}>
+
+        {/* Contenedor de Secretos */}
+        <div>
+          <h2 className={styles.secretTitle}>Tus Secretos</h2>
+          <div className={styles.secretCardsContainer}>
+            {secretCards.map((card) => (
+              <div key={card.instanceId} className={styles.secretCardWrapper}>
+                <Card
+                  imageName={card.url}
+                  subfolder="secret-cards"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Contenedor de la Mano */}
+        <div>
+          <h1 className={styles.title}>Tu Mano</h1>
+          <div className={styles.handContainer}>
+            {hand.map((card) => (
+              <Card
+                key={card.instanceId}
+                imageName={card.url}
+                isSelected={selectedCards.includes(card.instanceId)}
+                onCardClick={() => handleCardClick(card.instanceId)}
+                subfolder="game-cards"
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Contenedor de Acciones */}
       <div className={styles.actionsContainer}>
         <button
           onClick={handleDiscard}
@@ -82,7 +109,6 @@ const GamePage = () => {
         >
           Descartar
         </button>
-        {/* Botones de robar removidos: la acción de robar se ejecuta automáticamente tras descartar */}
       </div>
 
       {/* Tabla de jugadores */}
@@ -114,6 +140,7 @@ const GamePage = () => {
                     <td>{idx + 1}</td>
                     <td className={nameClasses}>
                       {player.nombre_jugador}
+                      <span> {getPlayerEmoji(player.id_jugador)}</span>
                     </td>
                   </tr>
                 );
