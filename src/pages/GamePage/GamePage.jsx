@@ -55,13 +55,18 @@ const GamePage = () => {
             apiService.getDeckCount(gameId),
             apiService.getTurnOrder(gameId),
             apiService.getGameDetails(gameId),
-            cardService.getSecretCards()
+            apiService.getMySecrets(gameId, storedPlayerId)
           ]);
 
           // Actualizamos todo el estado del juego
           setDeckCount(deckData);
-          setSecretCards(secretCards);
-          // Si al cargar el estado inicial el mazo ya está en 0, mostramos el fin de partida
+          const secretHand = cardService.getSecretCards(secretCards);
+          const secretsWithInstanceIds = secretHand.map((card, index) => ({
+            ...card,
+            instanceId: `${card.id}-secret-${index}`
+          }));
+          console.log("Secret Cards Loaded:", secretsWithInstanceIds);
+          setSecretCards(secretsWithInstanceIds);
           if (deckData === 0) {
             setWinners(["Nadie"]);
             setAsesinoGano(false);

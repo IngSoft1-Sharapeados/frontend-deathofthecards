@@ -13,11 +13,11 @@ import websocketService from '@/services/websocketService';
 // Usa vi.mock en lugar de jest.mock
 vi.mock('@/components/Card/Card', () => {
   return {
-    default: ({ imageName, isSelected, onCardClick }) => (
+    default: ({ imageName, ...props }) => (
       <div
         data-testid={`card-${imageName}`}
-        onClick={onCardClick}
-        className={isSelected ? 'selected' : ''}
+        onClick={props.onCardClick}
+        className={props.isSelected ? 'selected' : ''}
       >
         {imageName}
       </div>
@@ -68,7 +68,7 @@ const MOCK_GAME_DETAILS = {
 
 const MOCK_TURN_ORDER = [2, 3, 1];
 
-const renderComponent = () => {
+const renderComponent = (options = {}) => {
   // Usa vi.spyOn
   vi.spyOn(Storage.prototype, 'getItem').mockImplementation((key) => {
     if (key === 'playerId') return MOCK_PLAYER_ID.toString();
@@ -80,6 +80,9 @@ const renderComponent = () => {
   apiService.getDeckCount.mockResolvedValue(52);
   apiService.getTurnOrder.mockResolvedValue(MOCK_TURN_ORDER);
   apiService.getGameDetails.mockResolvedValue(MOCK_GAME_DETAILS);
+
+  apiService.getMySecrets.mockResolvedValue(options.secretCards || []);
+  cardService.getSecretCards.mockImplementation(secrets => secrets); 
 
   cardService.getPlayingHand.mockImplementation(hand => hand);
 
@@ -163,6 +166,26 @@ describe('GamePage', () => {
     expect(screen.queryByTestId('card-cardA.png')).not.toBeInTheDocument();
     expect(screen.queryByTestId('card-cardB.png')).not.toBeInTheDocument();
     expect(discardButton).toBeDisabled();
+  });
+
+  test('should fetch and render secret cards on initial load', async () => {
+    const MOCK_SECRET_CARDS_FROM_API = [
+      { id: 6, url: '06-secret_front.png' },
+      { id: 3, url: '03-secret_murderer.png' },
+    ];
+
+    apiService.getMySecrets.mockResolvedValue(MOCK_SECRET_CARDS_FROM_API);
+
+    cardService.getSecretCards.mockImplementation(secrets => secrets);
+
+    renderComponent({ secretCards: MOCK_SECRET_CARDS_FROM_API });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('card-06-secret_front.png')).toBeInTheDocument();
+      expect(screen.getByTestId('card-03-secret_murderer.png')).toBeInTheDocument();
+    });
+
+    expect(screen.getByRole('heading', { name: /tus secretos/i })).toBeInTheDocument();
   });
 
 

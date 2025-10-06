@@ -69,13 +69,14 @@ const  getPlayingHand = (handData) => {
   return playingHand;
 }
 
-const getSecretCards = () => {
-  const shuffled = [...SECRET_CARDS].sort(() => 0.5 - Math.random());
-  return shuffled.slice(0, 3).map(card => ({
-    id: card.id, 
-    url: card.url
-  }));
+const getSecretCards = (secretData) => {
+  const secretHand = secretData.map(card => 
+    SECRET_CARDS.find(secretCard => secretCard.id === card.id)
+  );
+  return secretHand;
 };
+
+
 
 export const cardService = {
   getRandomHand,
