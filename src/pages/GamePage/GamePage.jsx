@@ -9,6 +9,7 @@ import useWebSocket  from '@/hooks/useGameWebSockets';
 import useGameState from '@/hooks/useGameState';
 import useGameData from '@/hooks/useGameData';
 import useCardActions from '@/hooks/useCardActions';
+import { apiService } from '@/services/apiService';
 // Styles
 import styles from './GamePage.module.css';
 
@@ -26,13 +27,46 @@ const GamePage = () => {
     roles, getPlayerEmoji, secretCards,
   } = gameState;
 
+  // Utilidad para resolver nombres de ganadores según roles actuales
+  const resolveWinners = (rolesObj, playersList) => {
+    if (!rolesObj || !rolesObj.murdererId) return null;
+    const murderer = playersList.find(p => p.id_jugador === rolesObj.murdererId);
+    const accomplice = rolesObj.accompliceId
+      ? playersList.find(p => p.id_jugador === rolesObj.accompliceId)
+      : null;
+    const names = [];
+    if (murderer?.nombre_jugador) names.push(murderer.nombre_jugador);
+    if (accomplice?.nombre_jugador) names.push(accomplice.nombre_jugador);
+    return names.length ? names : null;
+  };
+
   // --- WebSocket Callbacks ---
   const webSocketCallbacks = {
     onDeckUpdate: (count) => gameState.setDeckCount(count),
     onTurnUpdate: (turn) => gameState.setCurrentTurn(turn),
-    onGameEnd: ({ winners, asesinoGano }) => {
-      gameState.setWinners(winners);
-      gameState.setAsesinoGano(asesinoGano);
+    onGameEnd: async (_payload) => {
+      // Ignoramos 'winners' del payload y resolvemos con el estado/roles actuales
+      let computed = resolveWinners(roles, players);
+      if (!computed) {
+        try {
+          // Fallback: obtener roles desde el backend y recalcular
+          const rolesData = await apiService.getRoles(gameId);
+          const fetchedRoles = {
+            murdererId: rolesData?.["asesino-id"] ?? null,
+            accompliceId: rolesData?.["complice-id"] ?? null,
+          };
+          computed = resolveWinners(fetchedRoles, players) || [];
+          // Guardamos roles si no estaban
+          if (!roles?.murdererId && fetchedRoles.murdererId) {
+            gameState.setRoles(fetchedRoles);
+          }
+        } catch (e) {
+          console.error('No se pudieron obtener roles al finalizar partida:', e);
+          computed = [];
+        }
+      }
+      gameState.setWinners(computed);
+      gameState.setAsesinoGano(true);
     }
   };
   // Usar el custom hook solo para manejar eventos

@@ -22,10 +22,11 @@ const useWebSocket = (callbacks) => {
 
     const onGameEnd = (message) => {
       console.log('Fin de partida:', message);
-      callbacksRef.current.onGameEnd?.({
-        winners: message.ganadores || [],
-        asesinoGano: message.asesino_gano || false
-      });
+      const payload = message?.payload || {};
+      const winners = payload.ganadores ?? message.ganadores ?? [];
+      const asesinoGano =
+        payload.asesinoGano ?? message.asesinoGano ?? message.asesino_gano ?? false;
+      callbacksRef.current.onGameEnd?.({ winners, asesinoGano });
     };
 
     // Suscribirse a eventos
