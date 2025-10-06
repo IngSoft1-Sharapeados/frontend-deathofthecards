@@ -76,10 +76,16 @@ const getSecretCards = (secretData) => {
   return secretHand;
 };
 
+const getRandomDetectives = (count) => {
+  const shuffled = [...DETECTIVE_CARDS].sort(() => 0.5 - Math.random());
+  return shuffled.slice(0, count);
+};
+
 
 
 export const cardService = {
   getRandomHand,
   getPlayingHand,
-  getSecretCards
+  getSecretCards,
+  getRandomDetectives
 };
