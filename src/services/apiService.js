@@ -101,6 +101,12 @@ const createHttpService = () => {
     });
   }
 
+  const getRoles = async (gameId) => {
+    return request(`/partidas/${gameId}/roles`, {
+      method: "GET",
+    });
+  }
+
 
   return {
     createGame,
@@ -115,6 +121,7 @@ const createHttpService = () => {
     getTurnOrder,
     drawCards,
     getMySecrets,
+    getRoles,
   };
 };
 

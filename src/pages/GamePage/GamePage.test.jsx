@@ -71,7 +71,9 @@ const MOCK_TURN_ORDER = [2, 3, 1];
 const renderComponent = (options = {}) => {
   // Usa vi.spyOn
   vi.spyOn(Storage.prototype, 'getItem').mockImplementation((key) => {
-    if (key === 'playerId') return MOCK_PLAYER_ID.toString();
+    if (key === 'playerId') {
+      return options.playerId?.toString() || MOCK_PLAYER_ID.toString();
+    }
     return null;
   });
 
@@ -82,7 +84,8 @@ const renderComponent = (options = {}) => {
   apiService.getGameDetails.mockResolvedValue(MOCK_GAME_DETAILS);
 
   apiService.getMySecrets.mockResolvedValue(options.secretCards || []);
-  cardService.getSecretCards.mockImplementation(secrets => secrets); 
+  cardService.getSecretCards.mockImplementation(secrets => secrets);
+  apiService.getRoles.mockResolvedValue(options.roles || {});
 
   cardService.getPlayingHand.mockImplementation(hand => hand);
 
@@ -186,6 +189,81 @@ describe('GamePage', () => {
     });
 
     expect(screen.getByRole('heading', { name: /tus secretos/i })).toBeInTheDocument();
+  });
+
+  describe('Role Emojis Visibility', () => {
+    // Objeto simulado de la respuesta de la API /roles
+    const MOCK_ROLES_DATA = { 'asesino-id': 2, 'complice-id': 3 };
+
+    test('should show both emojis if the current player is the Murderer', async () => {
+      // Simulamos que somos el jugador 2 (el asesino)
+      vi.spyOn(Storage.prototype, 'getItem').mockReturnValue(MOCK_HOST_ID.toString()); // MOCK_HOST_ID is 2
+
+      // Renderizamos el componente pasándole los datos de los roles
+      renderComponent({
+        roles: MOCK_ROLES_DATA,
+        playerId: MOCK_HOST_ID // MOCK_HOST_ID es 2
+      });
+
+      // Esperamos a que la lista de jugadores se renderice
+      await waitFor(() => {
+        expect(screen.getByText('Player Two (Host)')).toBeInTheDocument();
+      });
+
+      // Verificamos que el asesino (Player 2) tiene su emoji
+      const murdererRow = screen.getByRole('row', { name: /Player Two \(Host\)/i });
+      expect(murdererRow.textContent).toContain('🔪');
+
+      // Verificamos que el cómplice (Player 3) tiene su emoji
+      const accompliceRow = screen.getByRole('row', { name: /Player Three/i });
+      expect(accompliceRow.textContent).toContain('🤝');
+
+      // Verificamos que el detective (Player 1) no ve ningún emoji
+      const detectiveRow = screen.getByRole('row', { name: /Player One \(You\)/i });
+      expect(detectiveRow.textContent).not.toContain('🔪');
+      expect(detectiveRow.textContent).not.toContain('🤝');
+    });
+
+    test('should show both emojis if the current player is the Accomplice', async () => {
+      const MOCK_ROLES_DATA = { 'asesino-id': 2, 'complice-id': 3 };
+      // Simulamos que somos el jugador 3 (el cómplice)
+      vi.spyOn(Storage.prototype, 'getItem').mockReturnValue('3');
+
+      renderComponent({
+        roles: MOCK_ROLES_DATA,
+        playerId: 3
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText('Player Three')).toBeInTheDocument();
+      });
+
+      // Las verificaciones son las mismas, vistas desde la perspectiva del cómplice
+      const murdererRow = screen.getByRole('row', { name: /Player Two \(Host\)/i });
+      expect(murdererRow.textContent).toContain('🔪');
+
+      const accompliceRow = screen.getByRole('row', { name: /Player Three/i });
+      expect(accompliceRow.textContent).toContain('🤝');
+    });
+
+    test('should NOT show any emojis if the current player is a Detective', async () => {
+      const MOCK_ROLES_DATA = { 'asesino-id': 2, 'complice-id': 3 };
+      // Simulamos que somos el jugador 1 (un detective)
+      vi.spyOn(Storage.prototype, 'getItem').mockReturnValue(MOCK_PLAYER_ID.toString()); // MOCK_PLAYER_ID is 1
+
+      renderComponent({
+        roles: MOCK_ROLES_DATA,
+        playerId: MOCK_PLAYER_ID // MOCK_PLAYER_ID es 1
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText('Player One (You)')).toBeInTheDocument();
+      });
+
+      // La forma más simple de verificar: los emojis no deben estar en ningún lugar del documento
+      expect(screen.queryByText('🔪')).not.toBeInTheDocument();
+      expect(screen.queryByText('🤝')).not.toBeInTheDocument();
+    });
   });
 
 

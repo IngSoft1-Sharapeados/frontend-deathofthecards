@@ -1,5 +1,3 @@
-// Archivo: /components/GamePage/GamePage.jsx
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 
@@ -27,14 +25,14 @@ const GamePage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [currentPlayerId, setCurrentPlayerId] = useState(null);
   const [secretCards, setSecretCards] = useState([]);
-  // Estados globales del juego (turnos, jugadores, etc.)
   const [deckCount, setDeckCount] = useState(0);
   const [currentTurn, setCurrentTurn] = useState(null);
   const [turnOrder, setTurnOrder] = useState([]);
   const [players, setPlayers] = useState([]);
   const [hostId, setHostId] = useState(null);
 
-  // Estados para el fin de la partida
+  const [roles, setRoles] = useState({ murdererId: null, accompliceId: null });
+
   const [winners, setWinners] = useState(null);
   const [asesinoGano, setAsesinoGano] = useState(false);
 
@@ -48,14 +46,14 @@ const GamePage = () => {
     const loadGameData = async () => {
       if (gameId && storedPlayerId) {
         try {
-          // Usamos Promise.all para cargar todos los datos iniciales en paralelo
-          const [handData, turnData, deckData, turnOrderData, gameData, secretCards] = await Promise.all([
+          const [handData, turnData, deckData, turnOrderData, gameData, secretCards, rolesData] = await Promise.all([
             apiService.getHand(gameId, storedPlayerId),
             apiService.getTurn(gameId),
             apiService.getDeckCount(gameId),
             apiService.getTurnOrder(gameId),
             apiService.getGameDetails(gameId),
-            apiService.getMySecrets(gameId, storedPlayerId)
+            apiService.getMySecrets(gameId, storedPlayerId),
+            apiService.getRoles(gameId)
           ]);
 
           // Actualizamos todo el estado del juego
@@ -65,7 +63,6 @@ const GamePage = () => {
             ...card,
             instanceId: `${card.id}-secret-${index}`
           }));
-          console.log("Secret Cards Loaded:", secretsWithInstanceIds);
           setSecretCards(secretsWithInstanceIds);
           if (deckData === 0) {
             setWinners(["Nadie"]);
@@ -75,7 +72,7 @@ const GamePage = () => {
           setTurnOrder(turnOrderData);
           setHostId(gameData.id_anfitrion);
           setPlayers(gameData.listaJugadores || []);
-          
+
           // Añadimos 'instanceId' a cada carta para manejar duplicados en el UI
           const playingHand = cardService.getPlayingHand(handData);
           const handWithInstanceIds = playingHand.map((card, index) => ({
@@ -84,7 +81,13 @@ const GamePage = () => {
           }));
           setHand(handWithInstanceIds);
 
-          // Conectamos el WebSocket para actualizaciones en tiempo real
+          if (rolesData) {
+            setRoles({
+              murdererId: rolesData["asesino-id"],
+              accompliceId: rolesData["complice-id"]
+            });
+          }
+
           // Conectamos el WebSocket para actualizaciones en tiempo real
           websocketService.connect(gameId, storedPlayerId);
 
@@ -112,12 +115,10 @@ const GamePage = () => {
 
     loadGameData();
 
-    // Función de limpieza para desconectar y desuscribir al desmontar
     return () => {
-      // Es importante remover los listeners para evitar memory leaks
-      websocketService.off('actualizacion-mazo', () => {});
-      websocketService.off('turno-actual', () => {});
-      websocketService.off('fin-partida', () => {});
+      websocketService.off('actualizacion-mazo', () => { });
+      websocketService.off('turno-actual', () => { });
+      websocketService.off('fin-partida', () => { });
       websocketService.disconnect();
     };
   }, [gameId]);
@@ -132,14 +133,12 @@ const GamePage = () => {
       console.log("No es tu turno para seleccionar cartas.");
       return;
     }
-    setSelectedCards((prev) => 
-      prev.includes(instanceId) 
+    setSelectedCards((prev) =>
+      prev.includes(instanceId)
         ? prev.filter((id) => id !== instanceId)
         : [...prev, instanceId]
     );
   };
-
-  // (Unificado) Robar cartas se hará automáticamente después de descartar
 
   // Manejador para el descarte de cartas
   const handleDiscard = async () => {
@@ -150,15 +149,12 @@ const GamePage = () => {
         .map(instanceId => hand.find(c => c.instanceId === instanceId)?.id)
         .filter(id => id !== undefined);
 
-      // 1. Descartar cartas en el backend
       await apiService.discardCards(gameId, currentPlayerId, cardIdsToDiscard);
 
-      // 2. Actualizar la mano localmente
       const newHand = hand.filter(card => !selectedCards.includes(card.instanceId));
       setHand(newHand);
       setSelectedCards([]);
 
-      // 3. Robar automáticamente hasta tener 6 cartas
       const needed = Math.max(0, 6 - newHand.length);
       if (needed > 0) {
         const drawnCards = await apiService.drawCards(gameId, currentPlayerId, needed);
@@ -168,7 +164,6 @@ const GamePage = () => {
         }));
         setHand(prev => [...prev, ...mappedDrawn]);
       }
-      // El backend se encarga de pasar el turno después de esta secuencia.
 
     } catch (error) {
       console.error("Error al descartar:", error);
@@ -176,112 +171,129 @@ const GamePage = () => {
     }
   };
 
-  // --- Render Logic ---
+  const getPlayerEmoji = (playerId) => {
+    const isPlayerInvolved = currentPlayerId === roles.murdererId || currentPlayerId === roles.accompliceId;
+    console.log("esta involucrado?", isPlayerInvolved, "Jugador ID:", playerId, "Roles:", roles, "Jugador actual ID:", currentPlayerId);
+
+    if (!isPlayerInvolved || !roles.murdererId) {
+      return null;
+    }
+
+    if (playerId === roles.murdererId) {
+      return ' 🔪';
+    }
+    if (playerId === roles.accompliceId) {
+      return ' 🤝';
+    }
+
+    return null; 
+  };
+
   if (isLoading) {
     return <div className={styles.loadingSpinner}></div>;
   }
 
-return (
-  <div className={styles.gameContainer}>
-    {/* Muestra el modal de fin de partida cuando hay ganadores */}
-    {winners && (
-      <GameOverScreen 
-        winners={winners} 
-        asesinoGano={asesinoGano}
-        onReturnToMenu={() => navigate("/")} 
-      />
-    )}
+  return (
+    <div className={styles.gameContainer}>
+      {winners && (
+        <GameOverScreen
+          winners={winners}
+          asesinoGano={asesinoGano}
+          onReturnToMenu={() => navigate("/")}
+        />
+      )}
 
-    {/* Deck */}
-    <div className={styles.deckContainer}>
-      <Deck count={deckCount} />
-    </div>
+      {/* Deck */}
+      <div className={styles.deckContainer}>
+        <Deck count={deckCount} />
+      </div>
 
-    {/* Área del jugador */}
-    <div className={styles.playerArea}>
+      {/* Área del jugador */}
+      <div className={styles.playerArea}>
 
-      {/* Contenedor de Secretos */}
-      <div>
-        <h2 className={styles.secretTitle}>Tus Secretos</h2>
-        <div className={styles.secretCardsContainer}>
-          {secretCards.map((card) => (
-            <div key={card.id} className={styles.secretCardWrapper}>
+        {/* Contenedor de Secretos */}
+        <div>
+          <h2 className={styles.secretTitle}>Tus Secretos</h2>
+          <div className={styles.secretCardsContainer}>
+            {secretCards.map((card) => (
+              <div key={card.instanceId} className={styles.secretCardWrapper}>
+                <Card
+                  imageName={card.url}
+                  subfolder="secret-cards"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Contenedor de la Mano */}
+        <div>
+          <h1 className={styles.title}>Tu Mano</h1>
+          <div className={styles.handContainer}>
+            {hand.map((card) => (
               <Card
+                key={card.instanceId}
                 imageName={card.url}
-                subfolder="secret-cards"
+                isSelected={selectedCards.includes(card.instanceId)}
+                onCardClick={() => handleCardClick(card.instanceId)}
+                subfolder="game-cards"
               />
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* Contenedor de la Mano */}
-      <div>
-        <h1 className={styles.title}>Tu Mano</h1>
-        <div className={styles.handContainer}>
-          {hand.map((card) => (
-            <Card
-              key={card.instanceId}
-              imageName={card.url}
-              isSelected={selectedCards.includes(card.instanceId)}
-              onCardClick={() => handleCardClick(card.instanceId)}
-              subfolder="game-cards"
-            />
-          ))}
+      {/* Contenedor de Acciones */}
+      <div className={styles.actionsContainer}>
+        <button
+          onClick={handleDiscard}
+          disabled={!isDiscardButtonEnabled}
+          className={`${styles.discardButton} ${isDiscardButtonEnabled ? styles.enabled : ''}`}
+        >
+          Descartar
+        </button>
+      </div>
+
+      {/* Tabla de jugadores */}
+      {turnOrder.length > 0 && players.length > 0 && (
+        <div className={styles.playersTableContainer}>
+          <h2 className={styles.playersTableTitle}>Jugadores ({players.length})</h2>
+          <table className={styles.playersTable}>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Nombre</th>
+              </tr>
+            </thead>
+            <tbody>
+              {turnOrder.map((playerId, idx) => {
+                const player = players.find(p => p.id_jugador === playerId);
+                if (!player) return null;
+
+                const nameClasses = [
+                  player.id_jugador === hostId ? styles.hostName : '',
+                  player.id_jugador === currentPlayerId ? styles.currentUserName : ''
+                ].join(' ');
+
+                return (
+                  <tr
+                    key={player.id_jugador}
+                    className={player.id_jugador === currentTurn ? styles.currentPlayerRow : ''}
+                  >
+                    <td>{idx + 1}</td>
+                    <td className={nameClasses}>
+                      {player.nombre_jugador}
+                      <span> {getPlayerEmoji(player.id_jugador)}</span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
-      </div>
+      )}
     </div>
-
-    {/* Contenedor de Acciones */}
-    <div className={styles.actionsContainer}>
-      <button
-        onClick={handleDiscard}
-        disabled={!isDiscardButtonEnabled}
-        className={`${styles.discardButton} ${isDiscardButtonEnabled ? styles.enabled : ''}`}
-      >
-        Descartar
-      </button>
-    </div>
-
-    {/* Tabla de jugadores */}
-    {turnOrder.length > 0 && players.length > 0 && (
-      <div className={styles.playersTableContainer}>
-        <h2 className={styles.playersTableTitle}>Jugadores ({players.length})</h2>
-        <table className={styles.playersTable}>
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Nombre</th>
-            </tr>
-          </thead>
-          <tbody>
-            {turnOrder.map((playerId, idx) => {
-              const player = players.find(p => p.id_jugador === playerId);
-              if (!player) return null;
-
-              const nameClasses = [
-                player.id_jugador === hostId ? styles.hostName : '',
-                player.id_jugador === currentPlayerId ? styles.currentUserName : ''
-              ].join(' ');
-
-              return (
-                <tr
-                  key={player.id_jugador}
-                  className={player.id_jugador === currentTurn ? styles.currentPlayerRow : ''}
-                >
-                  <td>{idx + 1}</td>
-                  <td className={nameClasses}>
-                    {player.nombre_jugador}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-    )}
-  </div>
-);
+  );
 };
 
 export default GamePage;
