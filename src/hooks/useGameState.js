@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 
 const useGameState = () => {
   // Estados de la UI y datos del jugador
@@ -37,6 +37,22 @@ const useGameState = () => {
     return null;
   };
 
+  // Jugadores oponentes ordenados para visualización (desde tu derecha)
+  const displayedOpponents = useMemo(() => {
+    const playerIndex = turnOrder.indexOf(currentPlayerId);
+    if (playerIndex === -1) return [];
+
+    const rotatedTurnOrder = [
+      ...turnOrder.slice(playerIndex + 1),
+      ...turnOrder.slice(0, playerIndex)
+    ];
+
+    return rotatedTurnOrder
+      .reverse()
+      .map((playerId) => players.find((p) => p.id_jugador === playerId))
+      .filter(Boolean);
+  }, [turnOrder, currentPlayerId, players]);
+
   return {
     // Estado
     hand, setHand,
@@ -50,6 +66,7 @@ const useGameState = () => {
     hostId, setHostId,
     roles, setRoles,
     getPlayerEmoji,
+  displayedOpponents,
     winners, setWinners,
     asesinoGano, setAsesinoGano,
     secretCards, setSecretCards,
