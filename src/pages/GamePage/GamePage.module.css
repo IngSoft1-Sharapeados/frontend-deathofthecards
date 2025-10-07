@@ -27,8 +27,10 @@ html, body {
 .centerArea {
   grid-row: 2 / 3;
   display: flex;
+  flex-direction: column; 
+  align-items: center;    
   justify-content: center;
-  align-items: center;
+  gap: 1rem;              
   padding: 10px 0;
 }
 
@@ -43,10 +45,9 @@ html, body {
 .actionsContainer {
   display: flex;
   justify-content: center;
-  margin-top: 1.5rem; /* Space between hand and button */
+  margin-top: 1.5rem; 
 }
 
-/* --- Positioning Logic for Opponent Pods --- */
 .opponent {
   position: absolute;
   pointer-events: all;
@@ -62,21 +63,21 @@ html, body {
 [data-player-count="2"] .opponent-1 { top: 10px; left: 50%; transform: translateX(-50%) scale(0.9); }
 
 /* ... keep the rest of your positioning logic for 3, 4, 5, 6 players ... */
-[data-player-count="2"] .opponent-1 { top: 0; left: 50%; transform: translateX(-50%) scale(0.9); }
-[data-player-count="3"] .opponent-1 { top: 0; left: 30%; transform: translateX(-50%) scale(0.9); }
-[data-player-count="3"] .opponent-2 { top: 0; left: 70%; transform: translateX(-50%) scale(0.9); }
-[data-player-count="4"] .opponent-1 { top: 90%; left: 70px; transform: translateY(-50%) scale(0.9); }
-[data-player-count="4"] .opponent-2 { top: 15px; left: 50%; transform: translateX(-50%) scale(0.9); }
-[data-player-count="4"] .opponent-3 { top: 90%; right: 70px; transform: translateY(-50%) scale(0.9); }
-[data-player-count="5"] .opponent-1 { top: 90%; left: 90px; transform: translateY(-50%) scale(0.9); }
-[data-player-count="5"] .opponent-2 { top: 0; left: 35%; transform: translateX(-50%) scale(0.9); }
-[data-player-count="5"] .opponent-3 { top: 0; left: 65%; transform: translateX(-50%) scale(0.9); }
-[data-player-count="5"] .opponent-4 { top: 90%; right: 90px; transform: translateY(-50%) scale(0.9); }
-[data-player-count="6"] .opponent-1 { top: 120%; left: 70px; transform: translateY(-50%) scale(0.9); }
-[data-player-count="6"] .opponent-2 { top: 0; left: 30%; transform: translateX(-50%) scale(0.9); }
-[data-player-count="6"] .opponent-3 { top: 0; left: 50%; transform: translateX(-50%) scale(0.9); }
-[data-player-count="6"] .opponent-4 { top: 0; left: 70%; transform: translateX(-50%) scale(0.9); }
-[data-player-count="6"] .opponent-5 { top: 120%; right: 70px; transform: translateY(-50%) scale(0.9); }
+[data-player-count="2"] .opponent-1 { top: 130%; left: 85%; transform: translateX(-50%) scale(0.9); }
+[data-player-count="3"] .opponent-1 { top: 130%; left: 12%; transform: translateX(-50%) scale(0.9); }
+[data-player-count="3"] .opponent-2 { top: 130%; left: 88%; transform: translateX(-50%) scale(0.9); }
+[data-player-count="4"] .opponent-1 { top: 200%; left: 70px; transform: translateY(-50%) scale(0.9); }
+[data-player-count="4"] .opponent-2 { top: 15px; left: 75%; transform: translateX(-50%) scale(0.9); }
+[data-player-count="4"] .opponent-3 { top: 280%; right: 70px; transform: translateY(-50%) scale(0.9); }
+[data-player-count="5"] .opponent-1 { top: 290%; left: 80px; transform: translateY(-50%) scale(0.9); }
+[data-player-count="5"] .opponent-2 { top: 0; left: 12%; transform: translateX(-50%) scale(0.9); }
+[data-player-count="5"] .opponent-3 { top: 0%; left: 88%; transform: translateX(-50%) scale(0.9); }
+[data-player-count="5"] .opponent-4 { top: 290%; right: 90px; transform: translateY(-50%) scale(0.9); }
+[data-player-count="6"] .opponent-1 { top: 290%; left: 85px; transform: translateY(-50%) scale(0.8); }
+[data-player-count="6"] .opponent-2 { top: 0; left: 12%; transform: translateX(-50%) scale(0.8); }
+[data-player-count="6"] .opponent-3 { top: 0; left: 75%; transform: translateX(-50%) scale(0.8); }
+[data-player-count="6"] .opponent-4 { top: 90%; right: -160px; transform: translateX(-50%) scale(0.8); }
+[data-player-count="6"] .opponent-5 { top: 350%; right: 10px; transform: translateY(-50%) scale(0.8); }
 
 
 .title, .secretTitle {

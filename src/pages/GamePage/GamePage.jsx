@@ -5,10 +5,11 @@ import { useMemo } from 'react'; // Import useMemo
 import Card from '@/components/Card/Card';
 import Deck from '@/components/Deck/Deck.jsx';
 import GameOverScreen from '@/components/GameOver/GameOverModal.jsx';
-import PlayerPod from '@/components/PlayerPod/PlayerPod.jsx'; // Import the new component
+import PlayerPod from '@/components/PlayerPod/PlayerPod.jsx';
+import CardDraft from '@/components/CardDraft/CardDraft.jsx'
 
 // Hooks
-import useWebSocket  from '@/hooks/useGameWebSockets';
+import useWebSocket from '@/hooks/useGameWebSockets';
 import useGameState from '@/hooks/useGameState';
 import useGameData from '@/hooks/useGameData';
 import useCardActions from '@/hooks/useCardActions';
@@ -41,7 +42,7 @@ const GamePage = () => {
       ...turnOrder.slice(0, playerIndex)
     ];
 
-    return rotatedTurnOrder.reverse() 
+    return rotatedTurnOrder.reverse()
       .map(playerId => players.find(p => p.id_jugador === playerId))
       .filter(Boolean);
   }, [turnOrder, currentPlayerId, players]);
@@ -66,14 +67,14 @@ const GamePage = () => {
     if (!isPlayerInvolved || !roles.murdererId) return null;
     if (playerId === roles.murdererId) return '🔪';
     if (playerId === roles.accompliceId) return '🤝';
-    return null; 
+    return null;
   };
 
   if (isLoading) {
     return <div className={styles.loadingSpinner}></div>;
   }
 
-return (
+  return (
     <div className={styles.gameContainer}>
       {winners && (
         <GameOverScreen winners={winners} asesinoGano={asesinoGano} onReturnToMenu={() => navigate("/")} />
@@ -92,14 +93,13 @@ return (
         ))}
       </div>
 
-      {/* --- NEW WRAPPER for the central area --- */}
       <div className={styles.centerArea}>
         <Deck count={deckCount} />
-        {/* Discard pile will go here later */}
+        <CardDraft /> {/* 2. Add the component here */}
       </div>
 
       <div className={`${styles.bottomContainer} ${gameState.isMyTurn ? styles.myTurn : ''}`}>
-        
+
         {/* Player's hand and secrets go here */}
         <div className={styles.playerArea}>
           <div>
