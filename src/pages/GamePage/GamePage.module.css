@@ -262,8 +262,6 @@ html, body {
 }
 
 
-
-/* --- Your other styles --- */
 .title, .secretTitle {
   margin: 0;
   padding-bottom: 0.5rem;
@@ -272,3 +270,27 @@ html, body {
 }
 .title { font-size: 1.2rem; }
 .secretTitle { font-size: 1.2rem; }
+
+.centerArea {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.decksContainer {
+  display: flex;
+  flex-direction: row; /* Asegura disposición horizontal */
+  gap: 8px; /* Aún más pegado */
+  align-items: flex-start; /* Alinea por la parte superior */
+  justify-content: center;
+  position: relative;
+  z-index: 10;
+}
+
+.decksContainer {
+  display: flex;
+  gap: 10px; /* Espacio pequeño entre mazos */
+  align-items: center;
+  justify-content: center;
+}

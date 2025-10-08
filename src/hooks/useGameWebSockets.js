@@ -28,11 +28,15 @@ const useWebSocket = (callbacks) => {
       });
     };
 
+    const onDiscardUpdate = (message) => {
+      console.log('Carta descartada:', message);
+      callbacksRef.current.onDiscardUpdate?.(message.payload?.discardted || []);
+    };
     // Suscribirse a eventos
     websocketService.on('actualizacion-mazo', onDeckUpdate);
     websocketService.on('turno-actual', onTurnUpdate);
     websocketService.on('fin-partida', onGameEnd);
-
+    websocketService.on('carta-descartada', onDiscardUpdate);
     // Función de limpieza - SOLO remover listeners, NO desconectar
     return () => {
       websocketService.off('actualizacion-mazo', onDeckUpdate);

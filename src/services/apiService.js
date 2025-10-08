@@ -113,7 +113,12 @@ const createHttpService = () => {
     });
   }
 
-
+  const getDiscardPile = async (gameId) => {
+    return request(`/partidas/${gameId}/descarte`, {
+      method: "GET",
+    });
+  }
+  
   return {
     createGame,
     listGames,
@@ -129,6 +134,7 @@ const createHttpService = () => {
     getMySecrets,
     getRoles,
     getDraftCards,
+    getDiscardPile
   };
 };
 

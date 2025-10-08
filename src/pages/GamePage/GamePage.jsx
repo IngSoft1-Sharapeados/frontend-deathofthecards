@@ -6,7 +6,7 @@ import Deck from '@/components/Deck/Deck.jsx';
 import GameOverScreen from '@/components/GameOver/GameOverModal.jsx';
 import PlayerPod from '@/components/PlayerPod/PlayerPod.jsx';
 import CardDraft from '@/components/CardDraft/CardDraft.jsx'
-
+import DiscardDeck from '@/components/DiscardDeck/DiscardDeck.jsx';
 // Hooks
 import useWebSocket from '@/hooks/useGameWebSockets';
 import useGameState from '@/hooks/useGameState';
@@ -17,6 +17,7 @@ import useCardActions from '@/hooks/useCardActions';
 import styles from './GamePage.module.css';
 
 const GamePage = () => {
+
   const { id: gameId } = useParams();
   const navigate = useNavigate();
 
@@ -27,9 +28,13 @@ const GamePage = () => {
     deckCount, currentTurn, turnOrder, players,
     winners, asesinoGano,
     isDiscardButtonEnabled, currentPlayerId,
-    roles, secretCards, displayedOpponents, draftCards,
+    roles, secretCards, displayedOpponents, draftCards, discardPile
   } = gameState;
-
+      // Desarrollo solamente
+  if (process.env.NODE_ENV === 'development') {
+    window.gameState = gameState;
+  }
+  //borrar despues
 
   const webSocketCallbacks = {
     onDeckUpdate: (count) => gameState.setDeckCount(count),
@@ -39,6 +44,7 @@ const GamePage = () => {
       gameState.setAsesinoGano(Boolean(asesinoGano));
       gameState.setWinners(Array.isArray(winners) ? winners : []);
     },
+    onDiscardUpdate: (discardPile) => gameState.setDiscardPile(discardPile),
   };
   useWebSocket(webSocketCallbacks);
   useGameData(gameId, gameState);
@@ -79,7 +85,10 @@ const GamePage = () => {
       </div>
 
       <div className={styles.centerArea}>
+        <div className={styles.decksContainer}>
         <Deck count={deckCount} />
+        <DiscardDeck cards={discardPile} />
+      </div>
         <CardDraft cards={draftCards} />
       </div>
 
