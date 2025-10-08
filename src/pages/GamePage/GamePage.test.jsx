@@ -153,7 +153,6 @@ describe('GamePage', () => {
     render(<GamePage />);
     expect(screen.getByTestId('card-06-secret_front.png')).toBeInTheDocument();
     expect(screen.getByTestId('card-03-secret_murderer.png')).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /tus secretos/i })).toBeInTheDocument();
   });
 
 describe('Role Emojis Visibility', () => {

@@ -1,18 +1,17 @@
+/* components/PlayerPod/PlayerPod.module.css */
+
 .podWrapper {
   display: flex;
   flex-direction: column;
   align-items: center;
   position: relative;
-}
-
-/* This is the key: when a card is hovered, we lift the entire pod so it
-   appears above any adjacent pods. */
-.podWrapper:has(.carouselCard:hover) {
-  z-index: 100;
+  padding-top: 100px; /* Increased to accommodate the carousel */
+  z-index: 1;
 }
 
 .pod {
-  position: relative;
+  position: relative; 
+  z-index: 2; /* Sits on top of the peeking cards */
   display: flex;
   flex-direction: column;
   padding: 10px;
@@ -35,40 +34,48 @@
   animation: pulse-green 2s infinite;
 }
 
-.topSection, .playerIdentifier, .secretsInfo, .secretCardImage, .secretStats,
-.playerIcon, .playerName, .roleEmoji {
-  /* No changes to these styles */
-  margin-bottom: 10px;
-  display: flex;
-  align-items: center;
-}
 .topSection {
   display: flex;
   justify-content: space-between;
-  align-items: center; /* This will vertically align the player info and secrets */
+  align-items: center;
   margin-bottom: 10px;
 }
-.playerIdentifier, .secretsInfo { flex-direction: column; gap: 6px; }
-.playerIdentifier { flex-grow: 1; }
-.playerIcon { 
-  width: 60px; 
-  height: 60px; 
+
+.playerIdentifier, .secretsInfo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
 }
-.playerIcon svg { width: 100%; height: 100%; }
-.playerName { 
-  color: #e0e0e0; 
-  font-weight: bold; 
-  font-size: 1.1rem; 
-  margin-top: 5px; 
+
+.playerIdentifier {
+  flex-grow: 1;
+}
+
+.playerIcon {
+  width: 60px;
+  height: 60px;
+}
+
+.playerIcon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.playerName {
+  color: #e0e0e0;
+  font-weight: bold;
+  font-size: 1.1rem;
+  margin-top: 5px;
 }
 
 .roleEmoji {
   position: absolute;
   top: 10px;
   left: 10px;
-  font-size: 1.5rem; /* Increased size */
+  font-size: 1.5rem;
   background-color: rgba(0, 0, 0, 0.4);
-  width: 45px; /* Increased size */
+  width: 45px;
   height: 45px;
   display: flex;
   align-items: center;
@@ -76,85 +83,355 @@
   border-radius: 50%;
   border: 1px solid rgba(255, 255, 255, 0.2);
 }
-.secretCardImage { 
-  width: 70px; 
-  border-radius: 5px; 
-}.secretStats { gap: 10px; color: #fff; background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 20px; }
-.secretStats span { gap: 4px; font-weight: bold; font-size: 0.9rem; }
-.secretStats svg { width: 16px; height: 16px; }
 
+.secretCardImage {
+  width: 70px;
+  border-radius: 5px;
+}
 
-/* --- Carousel Fixes --- */
-.setsCarousel {
-  position: relative;
-  width: 100%;
-  margin-top: 8px;
+.secretStats {
   display: flex;
   align-items: center;
+  gap: 10px;
+  color: #fff;
+  background: rgba(0,0,0,0.3);
+  padding: 4px 8px;
+  border-radius: 20px;
+}
+
+.secretStats span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: bold;
+  font-size: 0.9rem;
+}
+
+.secretStats svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* --- Carousel and Card Positioning --- */
+.setsCarousel {
+  position: absolute;
+  top: 0;
+  left: 42%;
+  transform: translateX(-50%);
+  width: 320px;
+  height: 180px;
+  display: flex;
+  align-items: flex-start;
   justify-content: center;
+  padding-top: 20px;
+  z-index: 2;
+  pointer-events: none; /* Allow clicks to pass through to elements below */
 }
 
 .setsScroller {
-  width: 255px;
-  overflow: hidden; /* This MUST be hidden by default */
-}
-
-.setsScroller:has(.carouselCard:hover) {
-  overflow: visible;
+  width: 100%;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .setsTrack {
   display: flex;
-  gap: 5px;
-  transition: transform 0.4s ease;
-  padding: 15px; 
-  margin: -15px;
+  gap: 8px;
+  padding: 0;
+  transition: transform 0.3s ease;
+  position: relative;
+  z-index: 2;
+  justify-content: center;
+  width: fit-content;
 }
 
 .carouselCard {
-  width: 80px;
+  width: 70px;
   flex-shrink: 0;
-  transition: transform 0.2s ease;
+  transform: translateY(0);
+  transition: all 0.3s ease;
   position: relative;
+  z-index: 2;
+  cursor: pointer;
+  pointer-events: auto;
 }
 
+/* Individual card hover effect */
 .carouselCard:hover {
-  transform: translateY(-10px) scale(1.05); /* Slightly larger scale */
-  z-index: 10;
+  transform: translateY(-30px) scale(1.05);
+  z-index: 3;
+  filter: drop-shadow(0 5px 15px rgba(0, 0, 0, 0.3));
 }
 
+/* --- Arrow Buttons --- */
 .arrowButton {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  background: rgba(47, 47, 79, 0.8);
+  background: rgba(47, 47, 79, 0.9);
   color: white;
-  border: 1px solid #3a3a5e;
+  border: 2px solid #3a3a5e;
   border-radius: 50%;
   width: 32px;
   height: 32px;
-  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 101; /* Higher than the hovered card */
-  transition: opacity 0.2s ease;
+  cursor: pointer;
+  z-index: 10;
   opacity: 0;
+  transition: opacity 0.2s ease, transform 0.2s ease, background 0.2s ease;
+  pointer-events: auto;
 }
 
-.setsCarousel:hover .arrowButton {
-  opacity: 1;
+/* Show arrows only on wrapper hover */
+.podWrapper:hover .arrowButton:not(:disabled) {
+  opacity: 0.8;
 }
 
-.arrowButton:hover {
+.arrowButton:hover:not(:disabled) {
   background: #646cff;
+  opacity: 1 !important;
 }
 
 .arrowButton.left {
-  left: 20px; /* Pull arrows in slightly */
+  left: -5px;
   transform: translateY(-50%) rotate(180deg);
 }
 
+.arrowButton.left:hover:not(:disabled) {
+  transform: translateY(-50%) rotate(180deg) scale(1.1);
+}
+
 .arrowButton.right {
-  right: 40px; /* Pull arrows in slightly */
+  right: -5px;
+}
+
+.arrowButton.right:hover:not(:disabled) {
+  transform: translateY(-50%) scale(1.1);
+}
+
+.arrowButton:disabled {
+  opacity: 0 !important;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Ensure buttons are clickable */
+.arrowButtonContainer {
+  position: absolute;
+  pointer-events: auto;
+  z-index: 10;
+  width: 32px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.arrowButtonContainer:first-child {
+  left: -15px;
+}
+
+.arrowButtonContainer:last-child {
+  right: -70px;
+}
+
+/* --- Responsive Design for PlayerPod --- */
+
+/* Tablets and smaller (max-width: 1024px) */
+@media (max-width: 1024px) {
+  .pod {
+    width: 280px;
+    padding: 8px;
+  }
+  
+  .podWrapper {
+    padding-top: 85px;
+  }
+  
+  .setsCarousel {
+    width: 280px;
+    height: 150px;
+  }
+  
+  .carouselCard {
+    width: 60px;
+  }
+  
+  .setsTrack {
+    gap: 6px;
+  }
+  
+  .playerIcon {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .playerName {
+    font-size: 1rem;
+  }
+  
+  .secretCardImage {
+    width: 60px;
+  }
+  
+  .roleEmoji {
+    width: 38px;
+    height: 38px;
+    font-size: 1.2rem;
+  }
+  
+  .arrowButton {
+    width: 28px;
+    height: 28px;
+  }
+}
+
+/* Mobile landscape & small tablets (max-width: 768px) */
+@media (max-width: 768px) {
+  .pod {
+    width: 240px;
+    padding: 6px;
+  }
+  
+  .podWrapper {
+    padding-top: 70px;
+  }
+  
+  .setsCarousel {
+    width: 240px;
+    height: 120px;
+    padding-top: 15px;
+  }
+  
+  .carouselCard {
+    width: 50px;
+  }
+  
+  .setsTrack {
+    gap: 5px;
+  }
+  
+  .carouselCard:hover {
+    transform: translateY(-25px) scale(1.05);
+  }
+  
+  .playerIcon {
+    width: 45px;
+    height: 45px;
+  }
+  
+  .playerName {
+    font-size: 0.9rem;
+  }
+  
+  .secretCardImage {
+    width: 50px;
+  }
+  
+  .secretStats {
+    padding: 3px 6px;
+    font-size: 0.8rem;
+  }
+  
+  .secretStats svg {
+    width: 14px;
+    height: 14px;
+  }
+  
+  .roleEmoji {
+    width: 32px;
+    height: 32px;
+    font-size: 1rem;
+  }
+  
+  .arrowButton {
+    width: 24px;
+    height: 24px;
+  }
+  
+  .arrowButtonContainer:last-child {
+    right: -60px;
+  }
+}
+
+/* Mobile portrait (max-width: 480px) */
+@media (max-width: 480px) {
+  .pod {
+    width: 200px;
+    padding: 5px;
+  }
+  
+  .podWrapper {
+    padding-top: 60px;
+  }
+  
+  .setsCarousel {
+    width: 200px;
+    height: 100px;
+    padding-top: 10px;
+  }
+  
+  .carouselCard {
+    width: 42px;
+  }
+  
+  .setsTrack {
+    gap: 4px;
+  }
+  
+  .carouselCard:hover {
+    transform: translateY(-20px) scale(1.05);
+  }
+  
+  .playerIcon {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .playerName {
+    font-size: 0.8rem;
+  }
+  
+  .secretCardImage {
+    width: 45px;
+  }
+  
+  .secretStats {
+    padding: 2px 5px;
+    font-size: 0.75rem;
+    gap: 6px;
+  }
+  
+  .secretStats svg {
+    width: 12px;
+    height: 12px;
+  }
+  
+  .roleEmoji {
+    width: 28px;
+    height: 28px;
+    font-size: 0.9rem;
+    top: 8px;
+    left: 8px;
+  }
+  
+  .arrowButton {
+    width: 22px;
+    height: 22px;
+  }
+  
+  .arrowButtonContainer {
+    width: 28px;
+  }
+  
+  .arrowButtonContainer:first-child {
+    left: -12px;
+  }
+  
+  .arrowButtonContainer:last-child {
+    right: -50px;
+  }
 }

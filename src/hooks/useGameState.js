@@ -15,6 +15,7 @@ const useGameState = () => {
   const [hostId, setHostId] = useState(null);
   const [roles, setRoles] = useState({ murdererId: null, accompliceId: null });
   const [secretCards, setSecretCards] = useState([]);
+  const [draftCards, setDraftCards] = useState([]);
 
   // Estados para el fin de la partida
   const [winners, setWinners] = useState(null);
@@ -70,6 +71,7 @@ const useGameState = () => {
     winners, setWinners,
     asesinoGano, setAsesinoGano,
     secretCards, setSecretCards,
+    draftCards, setDraftCards,
     // Derived state
     isMyTurn,
     isDiscardButtonEnabled

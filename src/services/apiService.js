@@ -107,6 +107,12 @@ const createHttpService = () => {
     });
   }
 
+  const getDraftCards = async (gameId) => {
+    return request(`/partidas/${gameId}/draft`, {
+      method: "GET",
+    });
+  }
+
 
   return {
     createGame,
@@ -122,6 +128,7 @@ const createHttpService = () => {
     drawCards,
     getMySecrets,
     getRoles,
+    getDraftCards,
   };
 };
 

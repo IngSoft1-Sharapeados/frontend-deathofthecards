@@ -8,7 +8,7 @@ const useGameData = (gameId, gameState) => {
     setHand, setIsLoading, setCurrentPlayerId,
     setDeckCount, setCurrentTurn, setTurnOrder,
     setPlayers, setHostId, setWinners, setAsesinoGano,
-    setRoles, setSecretCards,
+    setRoles, setSecretCards, setDraftCards,
   } = gameState;
 
   const hasConnectedRef = useRef(false); // evita reconexiones extras
@@ -26,15 +26,17 @@ const useGameData = (gameId, gameState) => {
     const loadGameData = async () => {
       if (gameId && storedPlayerId) {
         try {
-          const [handData, turnData, deckData, turnOrderData, gameData, rolesData, secretCardsData] = await Promise.all([
+          const [handData, turnData, deckData, turnOrderData, gameData, rolesData, secretCardsData, draftData] = await Promise.all([
             apiService.getHand(gameId, storedPlayerId),
             apiService.getTurn(gameId),
             apiService.getDeckCount(gameId),
             apiService.getTurnOrder(gameId),
             apiService.getGameDetails(gameId),
             apiService.getRoles(gameId),
-            apiService.getMySecrets(gameId, storedPlayerId)
+            apiService.getMySecrets(gameId, storedPlayerId),
+            apiService.getDraftCards(gameId),
           ]);
+
 
           // Actualizar estado del juego
           setDeckCount(deckData);
@@ -63,6 +65,13 @@ const useGameData = (gameId, gameState) => {
             setWinners(names.length ? names : ["Nadie"]);
             setAsesinoGano(names.length > 0);
           }
+
+          const draftHand = cardService.getDraftCards(draftData);
+          const draftWithInstanceIds = draftHand.map((card, index) => ({
+            ...card,
+            instanceId: `${card.id}-draft-${index}`,
+          }));
+          setDraftCards(draftWithInstanceIds);
 
           const secretHand = cardService.getSecretCards(secretCardsData);
           const secretsWithInstanceIds = secretHand.map((card, index) => ({

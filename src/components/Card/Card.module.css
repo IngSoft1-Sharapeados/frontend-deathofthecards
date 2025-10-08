@@ -30,7 +30,7 @@
 }
 
 .card.selected:hover {
-  transform: translateY(-7px) scale(1.05); 
+  transform: translateY(-15px) scale(1.05); 
   z-index: 11; 
 }
 

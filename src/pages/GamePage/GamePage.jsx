@@ -27,7 +27,7 @@ const GamePage = () => {
     deckCount, currentTurn, turnOrder, players,
     winners, asesinoGano,
     isDiscardButtonEnabled, currentPlayerId,
-    roles, secretCards, displayedOpponents,
+    roles, secretCards, displayedOpponents, draftCards,
   } = gameState;
 
 
@@ -80,7 +80,7 @@ const GamePage = () => {
 
       <div className={styles.centerArea}>
         <Deck count={deckCount} />
-        <CardDraft />
+        <CardDraft title="Draft Phase" cards={draftCards} />
       </div>
 
       <div className={`${styles.bottomContainer} ${gameState.isMyTurn ? styles.myTurn : ''}`}>

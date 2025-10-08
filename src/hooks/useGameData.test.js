@@ -41,7 +41,8 @@ describe('useGameData', () => {
     setWinners: vi.fn(),
     setAsesinoGano: vi.fn(),
     setRoles: vi.fn(),
-    setSecretCards: vi.fn()
+    setSecretCards: vi.fn(),
+    setDraftCards: vi.fn()
   };
 
   const mockGameData = {
@@ -77,10 +78,12 @@ describe('useGameData', () => {
 
     apiService.getRoles.mockResolvedValue(mockGameData.rolesData);
     apiService.getMySecrets.mockResolvedValue(mockGameData.secretCardsData);
+    apiService.getDraftCards.mockResolvedValue([]);
 
     // Mock cardService
     cardService.getPlayingHand.mockImplementation(cards => cards);
     cardService.getSecretCards.mockImplementation(cards => cards);
+    cardService.getDraftCards.mockImplementation(cards => cards);
   });
 
   test('should load game data and connect WebSocket on mount', async () => {
@@ -136,7 +139,7 @@ describe('useGameData', () => {
     const error = new Error('Failed to load');
     apiService.getHand.mockRejectedValue(error);
 
-    const consoleSpy = vi.spyOn(console, 'error');
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     renderHook(() => useGameData('game-123', mockGameState));
 
@@ -144,6 +147,8 @@ describe('useGameData', () => {
       expect(consoleSpy).toHaveBeenCalledWith('Error al cargar los datos del juego:', error);
       expect(mockGameState.setIsLoading).toHaveBeenCalledWith(false);
     });
+    
+    consoleSpy.mockRestore();
   });
 
   test('should not load data if no playerId in sessionStorage', async () => {

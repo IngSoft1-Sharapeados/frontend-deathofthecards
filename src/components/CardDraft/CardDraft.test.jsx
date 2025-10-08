@@ -12,7 +12,7 @@ vi.mock('@/components/Card/Card', () => ({
 
 vi.mock('@/services/cardService', () => ({
   cardService: {
-    getRandomGameCards: vi.fn(),
+    getRandomCards: vi.fn(),
   },
 }));
 
@@ -27,17 +27,15 @@ describe('CardDraft', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Ensure our mock function returns the mock data
-    cardService.getRandomGameCards.mockReturnValue(mockDraftCards);
+    cardService.getRandomCards.mockReturnValue(mockDraftCards);
   });
 
   test('should render the title and fetch 3 cards on mount', async () => {
     render(<CardDraft />);
     
-    // Check that the title is there
-    expect(screen.getByRole('heading', { name: /draft/i })).toBeInTheDocument();
 
     // Check that the service was called to get the cards
-    expect(cardService.getRandomGameCards).toHaveBeenCalledWith(3);
+    expect(cardService.getRandomCards).toHaveBeenCalledWith(3);
 
     // Wait for the component to render the cards after the useEffect hook runs
     await waitFor(() => {

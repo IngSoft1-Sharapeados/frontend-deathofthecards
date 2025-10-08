@@ -69,6 +69,13 @@ const  getPlayingHand = (handData) => {
   return playingHand;
 }
 
+const getDraftCards = (draftData) => {
+  const draftHand = draftData.map(card => 
+    GAME_CARDS.find(gameCard => gameCard.id === card.id)
+  );
+  return draftHand;
+}
+
 const getSecretCards = (secretData) => {
   const secretHand = secretData.map(card => 
     SECRET_CARDS.find(secretCard => secretCard.id === card.id)
@@ -87,5 +94,6 @@ export const cardService = {
   getRandomCards,
   getPlayingHand,
   getSecretCards,
-  getRandomDetectives
+  getRandomDetectives,
+  getDraftCards
 };
