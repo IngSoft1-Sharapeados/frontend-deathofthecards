@@ -126,8 +126,9 @@ describe('useGameData', () => {
     renderHook(() => useGameData('game-123', mockGameState));
 
     await vi.waitFor(() => {
-      expect(mockGameState.setWinners).toHaveBeenCalledWith(['Nadie']);
-      expect(mockGameState.setAsesinoGano).toHaveBeenCalledWith(false);
+      // Con mazo vacío y roles presentes, debe mostrar al asesino (y cómplice si existe)
+      expect(mockGameState.setWinners).toHaveBeenCalledWith(['Player2']);
+      expect(mockGameState.setAsesinoGano).toHaveBeenCalledWith(true);
     });
   });
 

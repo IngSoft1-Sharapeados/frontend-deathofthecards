@@ -20,6 +20,9 @@ const mockUseGameState = {
   asesinoGano: false,
   roles: { murdererId: null, accompliceId: null },
   secretCards: [],
+  // Derived added to match hook contract
+  displayedOpponents: [],
+  getPlayerEmoji: (playerId) => null,
 };
 
 const mockUseCardActions = {
@@ -58,6 +61,37 @@ vi.mock('react-router-dom', () => ({
   useNavigate: () => vi.fn(),
 }));
 
+// --- Helpers to keep mock state consistent with hook contract ---
+const computeDisplayedOpponents = (players, turnOrder, currentPlayerId) => {
+  const idx = turnOrder.indexOf(currentPlayerId);
+  if (idx === -1) return [];
+  const rotated = [
+    ...turnOrder.slice(idx + 1),
+    ...turnOrder.slice(0, idx),
+  ];
+  return rotated
+    .reverse()
+    .map((id) => players.find((p) => p.id_jugador === id))
+    .filter(Boolean);
+};
+
+const updateDerivedMockState = () => {
+  mockUseGameState.displayedOpponents = computeDisplayedOpponents(
+    mockUseGameState.players,
+    mockUseGameState.turnOrder,
+    mockUseGameState.currentPlayerId,
+  );
+  mockUseGameState.getPlayerEmoji = (playerId) => {
+    const { currentPlayerId, roles } = mockUseGameState;
+    const isInvolved =
+      currentPlayerId === roles.murdererId || currentPlayerId === roles.accompliceId;
+    if (!isInvolved || !roles.murdererId) return null;
+    if (playerId === roles.murdererId) return '🔪';
+    if (playerId === roles.accompliceId) return '🤝';
+    return null;
+  };
+};
+
 // --- TESTS ---
 describe('GamePage', () => {
   beforeEach(() => {
@@ -83,6 +117,7 @@ describe('GamePage', () => {
       roles: { murdererId: null, accompliceId: null },
       secretCards: [],
     });
+    updateDerivedMockState();
   });
 
   test('should allow card selection and enable discard button when it is the current players turn', () => {
@@ -129,6 +164,7 @@ describe('Role Emojis Visibility', () => {
     // --- FIX STARTS HERE ---
     test('should show accomplice emoji when player is the Murderer', () => {
       mockUseGameState.currentPlayerId = 2; // We are the murderer
+      updateDerivedMockState();
       render(<GamePage />);
       
       // We should see the pods for our opponents: player 1 and player 3
@@ -146,6 +182,7 @@ describe('Role Emojis Visibility', () => {
 
     test('should show murderer emoji when player is the Accomplice', () => {
       mockUseGameState.currentPlayerId = 3; // We are the accomplice
+      updateDerivedMockState();
       render(<GamePage />);
       
       // We should see the pods for our opponents: player 1 and player 2
@@ -163,6 +200,7 @@ describe('Role Emojis Visibility', () => {
 
     test('should NOT show any emojis if the current player is a Detective', () => {
       mockUseGameState.currentPlayerId = 1; // We are the detective
+      updateDerivedMockState();
       render(<GamePage />);
       
       // We check the rendered opponent pods
