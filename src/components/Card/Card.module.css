@@ -1,7 +1,10 @@
+/* components/Card/Card.module.css */
+
 .card {
   perspective: 1000px;
   cursor: pointer;
-  transition: transform 0.3s ease; 
+  transition: transform 0.3s ease;
+  position: relative; /* Ensure z-index works correctly */
 }
 
 .cardImage {
@@ -9,19 +12,29 @@
   height: auto;
   border-radius: 10px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-  transition: transform 0.2s ease, box-shadow 0.3s ease;
+  transition: box-shadow 0.3s ease; /* Only transition the shadow here */
+}
+
+/* --- NEW HOVER & SELECTION LOGIC --- */
+
+/* Hovering a regular (non-selected) card */
+.card:hover {
+  transform: translateY(-2px) scale(1.05);
+  z-index: 10;
+}
+
+/* A selected card (not hovered) */
+.card.selected {
+  transform: translateY(-15px); /* Moves up higher than a normal hover */
+  z-index: 5;
+}
+
+.card.selected:hover {
+  transform: translateY(-7px) scale(1.05); 
+  z-index: 11; 
 }
 
 .card:hover .cardImage {
-  transform: translateY(-10px) scale(1.05);
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.4);
-}
-
-.card.selected {
-  transform: translateY(-25px); 
-}
-
-.card.selected:hover .cardImage {
-  transform: translateY(0) scale(1.05);
 }
 

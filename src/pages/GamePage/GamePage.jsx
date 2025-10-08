@@ -80,7 +80,6 @@ const GamePage = () => {
         <GameOverScreen winners={winners} asesinoGano={asesinoGano} onReturnToMenu={() => navigate("/")} />
       )}
 
-      {/* --- Opponents Area (No changes here) --- */}
       <div className={styles.opponentsContainer} data-player-count={players.length}>
         {displayedOpponents.map((player, index) => (
           <div key={player.id_jugador} className={`${styles.opponent} ${styles[`opponent-${index + 1}`]}`}>
@@ -95,15 +94,12 @@ const GamePage = () => {
 
       <div className={styles.centerArea}>
         <Deck count={deckCount} />
-        <CardDraft /> {/* 2. Add the component here */}
+        <CardDraft />
       </div>
 
       <div className={`${styles.bottomContainer} ${gameState.isMyTurn ? styles.myTurn : ''}`}>
-
-        {/* Player's hand and secrets go here */}
         <div className={styles.playerArea}>
           <div>
-            <h2 className={styles.secretTitle}>Tus Secretos</h2>
             <div className={styles.secretCardsContainer}>
               {secretCards.map((card) => (
                 <div key={card.instanceId} className={styles.secretCardWrapper}>
@@ -112,8 +108,8 @@ const GamePage = () => {
               ))}
             </div>
           </div>
+
           <div>
-            <h1 className={styles.title}>Tu Mano</h1>
             <div className={styles.handContainer}>
               {hand.map((card) => (
                 <Card
@@ -126,17 +122,16 @@ const GamePage = () => {
               ))}
             </div>
           </div>
-        </div>
 
-        {/* The discard button is now INSIDE the bordered container */}
-        <div className={styles.actionsContainer}>
-          <button
-            onClick={handleDiscard}
-            disabled={!isDiscardButtonEnabled}
-            className={`${styles.discardButton} ${isDiscardButtonEnabled ? styles.enabled : ''}`}
-          >
-            Descartar
-          </button>
+          <div className={styles.actionsContainer}>
+            <button
+              onClick={handleDiscard}
+              disabled={!isDiscardButtonEnabled}
+              className={`${styles.discardButton} ${isDiscardButtonEnabled ? styles.enabled : ''}`}
+            >
+              Descartar
+            </button>
+          </div>
         </div>
       </div>
     </div>

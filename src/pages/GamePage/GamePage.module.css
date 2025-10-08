@@ -45,7 +45,8 @@ html, body {
 .actionsContainer {
   display: flex;
   justify-content: center;
-  margin-top: 1.5rem; 
+  margin-left: -20px; /* Pull button closer to the hand */
+  padding-bottom: 4rem; /* Align button vertically with cards */
 }
 
 .opponent {
@@ -92,8 +93,14 @@ html, body {
 .handContainer, .secretCardsContainer {
   display: flex;
   justify-content: center;
-  gap: 5px;
+  padding-left: 60px;
 }
+.handContainer > *,
+.secretCardsContainer > * {
+  margin-left: -45px; /* Overlap cards by 60px */
+  transition: transform 0.2s ease-out, margin 0.2s ease-out;
+}
+
 
 .discardButton {
   padding: 10px 25px;
@@ -153,8 +160,8 @@ html, body {
   align-items: center;
   justify-content: center;
   padding: 1rem;
-  margin: 0 1rem 1rem 1rem; /* Add margin to keep it from touching screen edges */
-  border: 2px solid transparent; /* Transparent border to prevent size changes on hover */
+  margin: 0 1rem 1rem 1rem; 
+  border: 2px solid transparent;
   border-radius: 16px;
   transition: all 0.3s ease;
   width: fit-content;

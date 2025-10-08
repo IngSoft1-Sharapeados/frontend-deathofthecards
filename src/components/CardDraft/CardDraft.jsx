@@ -14,7 +14,6 @@ const CardDraft = () => {
 
   return (
     <div className={styles.draftContainer}>
-      <h3 className={styles.draftTitle}>Draft</h3>
       <div className={styles.cardsWrapper}>
         {draftCards.map(card => (
           <Card
