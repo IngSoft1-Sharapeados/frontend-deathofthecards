@@ -80,7 +80,7 @@ const GamePage = () => {
 
       <div className={styles.centerArea}>
         <Deck count={deckCount} />
-        <CardDraft title="Draft Phase" cards={draftCards} />
+        <CardDraft cards={draftCards} />
       </div>
 
       <div className={`${styles.bottomContainer} ${gameState.isMyTurn ? styles.myTurn : ''}`}>

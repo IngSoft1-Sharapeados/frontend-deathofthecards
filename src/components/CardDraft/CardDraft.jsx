@@ -1,18 +1,10 @@
 // components/CardDraft/CardDraft.jsx
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import PropTypes from 'prop-types';
 import Card from '@/components/Card/Card';
-import { cardService } from '@/services/cardService';
 import styles from './CardDraft.module.css';
 
-const CardDraft = ({ title }) => {
-  const [cards, setCards] = useState([]);
-
-  useEffect(() => {
-    const draftCards = cardService.getRandomCards(3);
-    setCards(draftCards);
-  }, []);
-
+const CardDraft = ({ cards, title }) => {
   if (!cards || cards.length === 0) {
     return <div className={styles.emptyState}>No cards available</div>;
   }
@@ -35,6 +27,7 @@ const CardDraft = ({ title }) => {
 };
 
 CardDraft.propTypes = {
+  cards: PropTypes.arrayOf(PropTypes.object).isRequired,
   title: PropTypes.string,
 };
 
