@@ -54,7 +54,7 @@ describe('PlayerPod', () => {
     // ... (the carousel tests were correct and remain the same)
     test('carousel scrolls to the next set of cards', () => {
       render(<PlayerPod player={mockPlayer} />);
-      const rightArrow = screen.getByRole('button', { name: /Next Set/i });
+      const rightArrow = screen.getByRole('button', { name: /Next Detective/i });
       fireEvent.click(rightArrow);
       expect(screen.queryByTestId('card-detective-0.png')).not.toBeInTheDocument();
       expect(screen.getByTestId('card-detective-3.png')).toBeInTheDocument();
@@ -62,21 +62,27 @@ describe('PlayerPod', () => {
 
     test('carousel scrolls back to the previous set', () => {
       render(<PlayerPod player={mockPlayer} />);
-      const rightArrow = screen.getByRole('button', { name: /Next Set/i });
+      const rightArrow = screen.getByRole('button', { name: /Next Detective/i });
       fireEvent.click(rightArrow);
-      const leftArrow = screen.getByRole('button', { name: /Previous Set/i });
+      const leftArrow = screen.getByRole('button', { name: /Previous Detective/i });
       fireEvent.click(leftArrow);
       expect(screen.getByTestId('card-detective-0.png')).toBeInTheDocument();
       expect(screen.queryByTestId('card-detective-3.png')).not.toBeInTheDocument();
     });
     
-    test('should hide the right arrow at the end of the list', () => {
+    test('should disable right arrow at the end of the list', () => {
         render(<PlayerPod player={mockPlayer} />);
-        let rightArrow;
-        while ((rightArrow = screen.queryByRole('button', { name: /Next Set/i }))) {
-          fireEvent.click(rightArrow);
-        }
-        expect(screen.queryByRole('button', { name: /Next Set/i })).not.toBeInTheDocument();
+        // Click through until we reach the end (7 cards, showing 3 at a time, can move 4 times)
+        const rightArrow = screen.getByRole('button', { name: /Next detective/i });
+        
+        // Click 4 times to reach the end (indices 0->1->2->3->4, showing last 3 cards)
+        fireEvent.click(rightArrow); // index 1
+        fireEvent.click(rightArrow); // index 2
+        fireEvent.click(rightArrow); // index 3
+        fireEvent.click(rightArrow); // index 4 (showing cards 4, 5, 6)
+        
+        // At the end, the button should be disabled
+        expect(rightArrow).toBeDisabled();
     });
   });
 });

@@ -5,9 +5,10 @@ import Card from '@/components/Card/Card';
 import Deck from '@/components/Deck/Deck.jsx';
 import GameOverScreen from '@/components/GameOver/GameOverModal.jsx';
 import PlayerPod from '@/components/PlayerPod/PlayerPod.jsx';
+import CardDraft from '@/components/CardDraft/CardDraft.jsx'
 
 // Hooks
-import useWebSocket  from '@/hooks/useGameWebSockets';
+import useWebSocket from '@/hooks/useGameWebSockets';
 import useGameState from '@/hooks/useGameState';
 import useGameData from '@/hooks/useGameData';
 import useCardActions from '@/hooks/useCardActions';
@@ -26,7 +27,7 @@ const GamePage = () => {
     deckCount, currentTurn, turnOrder, players,
     winners, asesinoGano,
     isDiscardButtonEnabled, currentPlayerId,
-    roles, secretCards, displayedOpponents,
+    roles, secretCards, displayedOpponents, draftCards,
   } = gameState;
 
 
@@ -50,7 +51,7 @@ const GamePage = () => {
     return <div className={styles.loadingSpinner}></div>;
   }
 
-return (
+  return (
     <div className={styles.gameContainer}>
       {winners && (
         <GameOverScreen
@@ -77,18 +78,14 @@ return (
         ))}
       </div>
 
-      {/* --- NEW WRAPPER for the central area --- */}
       <div className={styles.centerArea}>
         <Deck count={deckCount} />
-        {/* Discard pile will go here later */}
+        <CardDraft cards={draftCards} />
       </div>
 
       <div className={`${styles.bottomContainer} ${gameState.isMyTurn ? styles.myTurn : ''}`}>
-        
-        {/* Player's hand and secrets go here */}
         <div className={styles.playerArea}>
           <div>
-            <h2 className={styles.secretTitle}>Tus Secretos</h2>
             <div className={styles.secretCardsContainer}>
               {secretCards.map((card) => (
                 <div key={card.instanceId} className={styles.secretCardWrapper}>
@@ -97,8 +94,8 @@ return (
               ))}
             </div>
           </div>
+
           <div>
-            <h1 className={styles.title}>Tu Mano</h1>
             <div className={styles.handContainer}>
               {hand.map((card) => (
                 <Card
@@ -111,17 +108,16 @@ return (
               ))}
             </div>
           </div>
-        </div>
 
-        {/* The discard button is now INSIDE the bordered container */}
-        <div className={styles.actionsContainer}>
-          <button
-            onClick={handleDiscard}
-            disabled={!isDiscardButtonEnabled}
-            className={`${styles.discardButton} ${isDiscardButtonEnabled ? styles.enabled : ''}`}
-          >
-            Descartar
-          </button>
+          <div className={styles.actionsContainer}>
+            <button
+              onClick={handleDiscard}
+              disabled={!isDiscardButtonEnabled}
+              className={`${styles.discardButton} ${isDiscardButtonEnabled ? styles.enabled : ''}`}
+            >
+              Descartar
+            </button>
+          </div>
         </div>
       </div>
     </div>

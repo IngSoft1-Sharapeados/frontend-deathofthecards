@@ -1,6 +1,6 @@
 .deckContainer {
   position: relative;
-  width: 120px;  
+  width: 120px;
   height: 170px;
   margin: 16px;
 }
@@ -10,15 +10,20 @@
   width: 100%;
   height: auto;
   border-radius: 8px;
-  box-shadow: 0px 4px 6px rgba(0,0,0,0.3);
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.3);
 }
 
 .counter {
-  margin-top: 8px; 
+  position: absolute;
+  bottom: 72px;
+  left: 46%;
+  margin-top: 8px;
   background: #222;
   color: #fff;
   padding: 2px 8px;
   border-radius: 12px;
   font-size: 14px;
   font-weight: bold;
+  z-index: 10;
+  pointer-events: none;
 }

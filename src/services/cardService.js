@@ -56,9 +56,9 @@ const GAME_CARDS = [
 ];
 
 // Esta función simula "robar" una mano de 6 cartas.
-const getRandomHand = () => {
+const getRandomCards = (count) => {
   const shuffled = [...GAME_CARDS].sort(() => 0.5 - Math.random());
-  return shuffled.slice(0, 6);
+  return shuffled.slice(0, count);
 };
 
 const  getPlayingHand = (handData) => {
@@ -67,6 +67,13 @@ const  getPlayingHand = (handData) => {
     GAME_CARDS.find(gameCard => gameCard.id === card.id)
   );
   return playingHand;
+}
+
+const getDraftCards = (draftData) => {
+  const draftHand = draftData.map(card => 
+    GAME_CARDS.find(gameCard => gameCard.id === card.id)
+  );
+  return draftHand;
 }
 
 const getSecretCards = (secretData) => {
@@ -84,8 +91,9 @@ const getRandomDetectives = (count) => {
 
 
 export const cardService = {
-  getRandomHand,
+  getRandomCards,
   getPlayingHand,
   getSecretCards,
-  getRandomDetectives
+  getRandomDetectives,
+  getDraftCards
 };
