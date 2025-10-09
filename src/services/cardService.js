@@ -61,26 +61,28 @@ const getRandomCards = (count) => {
   return shuffled.slice(0, count);
 };
 
-const  getPlayingHand = (handData) => {
-  // Filtra las cartas de handdata en función de los IDs en GAME_CARDS
-  const playingHand = handData.map(card => 
-    GAME_CARDS.find(gameCard => gameCard.id === card.id)
-  );
-  return playingHand;
+const getPlayingHand = (handData) => {
+  // Mapea IDs a assets; si no existe, usa un fallback para no perder el conteo
+  return handData.map((card) => {
+    const found = GAME_CARDS.find((gameCard) => gameCard.id === card.id);
+    if (found) return found;
+    // Fallback seguro: mantener el id para la lógica y usar dorso de carta
+    return { id: card.id, url: '01-card_back.png' };
+  });
 }
 
 const getDraftCards = (draftData) => {
-  const draftHand = draftData.map(card => 
-    GAME_CARDS.find(gameCard => gameCard.id === card.id)
-  );
-  return draftHand;
+  return draftData.map((card) => {
+    const found = GAME_CARDS.find((gameCard) => gameCard.id === card.id);
+    return found || { id: card.id, url: '01-card_back.png' };
+  });
 }
 
 const getSecretCards = (secretData) => {
-  const secretHand = secretData.map(card => 
-    SECRET_CARDS.find(secretCard => secretCard.id === card.id)
-  );
-  return secretHand;
+  return secretData.map((card) => {
+    const found = SECRET_CARDS.find((secretCard) => secretCard.id === card.id);
+    return found || { id: card.id, url: '05-secret_back.png' };
+  });
 };
 
 const getRandomDetectives = (count) => {

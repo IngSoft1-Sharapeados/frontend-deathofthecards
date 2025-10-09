@@ -22,6 +22,7 @@ const mockUseGameState = {
   draftCards: [],
   selectedDraftCards: [],
   isPickupButtonEnabled: false,
+  isPlayButtonEnabled: false,
   displayedOpponents: [],
   getPlayerEmoji: () => null,
   setDeckCount: vi.fn(),
@@ -36,6 +37,7 @@ const mockUseCardActions = {
   handleDraftCardClick: vi.fn(),
   handleDiscard: vi.fn(),
   handlePickUp: vi.fn(),
+  handlePlay: vi.fn(),
 };
 
 vi.mock('@/hooks/useGameState', () => ({ default: () => mockUseGameState }));
@@ -155,6 +157,13 @@ describe('GamePage', () => {
     render(<GamePage />);
     fireEvent.click(screen.getByTestId('card-cardA.png'));
     expect(mockUseCardActions.handleCardClick).toHaveBeenCalledWith('h1');
+  });
+
+  test('renders Play button disabled when selection invalid', () => {
+    render(<GamePage />);
+    const playButton = screen.getByRole('button', { name: /jugar/i });
+    expect(playButton).toBeInTheDocument();
+    expect(playButton).toBeDisabled();
   });
 
   test('should call handleDraftCardClick when a draft card is clicked', () => {

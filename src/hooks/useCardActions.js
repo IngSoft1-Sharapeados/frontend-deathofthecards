@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { cardService } from '@/services/cardService';
 import { apiService } from '@/services/apiService';
+import { isValidDetectiveSet } from '@/utils/detectiveSetValidation';
 
 const useCardActions = (gameId, gameState) => {
   const {
@@ -96,11 +97,41 @@ const useCardActions = (gameId, gameState) => {
     selectedDraftCards, draftCards, setHand, setSelectedDraftCards
   ]);
 
+  const handlePlay = useCallback(async () => {
+    // Only allow during discarding phase and player's turn
+    if (!isMyTurn || playerTurnState !== 'discarding') return;
+    // Validate selection
+    if (!isValidDetectiveSet(hand, selectedCards)) return;
+
+    try {
+      // Map selected instance IDs to card ids
+      const cardIdsToPlay = selectedCards
+        .map((instanceId) => hand.find((c) => c.instanceId === instanceId)?.id)
+        .filter((id) => id !== undefined);
+
+      // If backend supports a play endpoint, call it here. Otherwise, optimistically remove from hand.
+      if (apiService.playDetectiveSet) {
+        await apiService.playDetectiveSet(gameId, currentPlayerId, cardIdsToPlay);
+      }
+
+      // Update local hand and clear selection
+      const newHand = hand.filter(card => !selectedCards.includes(card.instanceId));
+      setHand(newHand);
+      setSelectedCards([]);
+  // Tras jugar un set, pasamos a la fase 'drawing' para levantar hasta tener 6.
+  setPlayerTurnState('drawing');
+    } catch (error) {
+      console.error('Error al jugar set de detectives:', error);
+      alert(`Error: ${error.message}`);
+    }
+  }, [isMyTurn, playerTurnState, hand, selectedCards, setHand, setSelectedCards, gameId, currentPlayerId]);
+
   return {
     handleCardClick,
     handleDraftCardClick,
     handleDiscard,
     handlePickUp,
+    handlePlay,
   };
 };
 

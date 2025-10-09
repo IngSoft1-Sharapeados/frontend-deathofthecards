@@ -30,7 +30,8 @@ const GamePage = () => {
     winners, asesinoGano,
     isDiscardButtonEnabled, currentPlayerId,
     roles, secretCards, displayedOpponents, draftCards,
-    playerTurnState, selectedDraftCards, isPickupButtonEnabled
+    playerTurnState, selectedDraftCards, isPickupButtonEnabled,
+    isPlayButtonEnabled
   } = gameState;
 
   console.log("Testing Step 1 - Initial Game State:", gameState);
@@ -60,7 +61,7 @@ const GamePage = () => {
 
   useWebSocket(webSocketCallbacks);
   useGameData(gameId, gameState);
-  const { handleCardClick, handleDraftCardClick, handleDiscard, handlePickUp } = useCardActions(gameId, gameState);
+  const { handleCardClick, handleDraftCardClick, handleDiscard, handlePickUp, handlePlay } = useCardActions(gameId, gameState);
 
   const sortedHand = useMemo(() => {
     return [...hand].sort((a, b) => a.id - b.id);
@@ -139,6 +140,19 @@ const GamePage = () => {
           </div>
 
           <div className={styles.actionsContainer}>
+            {/* Selected indicator and Play button */}
+            <div className={styles.playControls}>
+              <span className={styles.selectedInfo}>
+                Seleccionadas: {selectedCards.length}
+              </span>
+              <button
+                onClick={handlePlay}
+                disabled={!isPlayButtonEnabled}
+                className={`${styles.playButton} ${isPlayButtonEnabled ? styles.enabled : ''}`}
+              >
+                Jugar
+              </button>
+            </div>
             {playerTurnState === 'discarding' ? (
               <button
                 onClick={handleDiscard}

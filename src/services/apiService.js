@@ -130,6 +130,14 @@ const createHttpService = () => {
     });
   };
 
+  const playDetectiveSet = async (gameId, playerId, cardIds) => {
+    // Backend expects: POST /partidas/{id_partida}/Jugar-set?id_jugador=... body: [int, int, int]
+    return request(`/partidas/${gameId}/Jugar-set?id_jugador=${playerId}`, {
+      method: "POST",
+      body: JSON.stringify(cardIds),
+    });
+  };
+
   return {
     createGame,
     listGames,
@@ -147,6 +155,7 @@ const createHttpService = () => {
     getDraftCards,
     takeDraftCard,
     pickUpCards,
+    playDetectiveSet,
   };
 };
 

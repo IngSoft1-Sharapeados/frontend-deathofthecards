@@ -1,4 +1,5 @@
 import { useState, useCallback, useMemo } from 'react';
+import { isValidDetectiveSet } from '@/utils/detectiveSetValidation';
 
 const useGameState = () => {
   // Estados de la UI y datos del jugador
@@ -29,6 +30,7 @@ const useGameState = () => {
   const isMyTurn = currentTurn === currentPlayerId;
   const isDiscardButtonEnabled = selectedCards.length > 0 && isMyTurn && playerTurnState === 'discarding';
   const isPickupButtonEnabled = isMyTurn && playerTurnState === 'drawing';
+  const isPlayButtonEnabled = isMyTurn && playerTurnState === 'discarding' && isValidDetectiveSet(hand, selectedCards);
 
 
   const getPlayerEmoji = (playerId) => {
@@ -82,6 +84,7 @@ const useGameState = () => {
     isMyTurn,
     isDiscardButtonEnabled,
     isPickupButtonEnabled,
+    isPlayButtonEnabled,
     playerTurnState, setPlayerTurnState,
     selectedDraftCards, setSelectedDraftCards,
   };
