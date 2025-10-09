@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import styles from './Card.module.css';
 
 // 1. Agregamos 'subfolder' a la lista de props.
-const Card = ({ imageName, isSelected, onCardClick, subfolder }) => {
+const Card = ({ imageName, isSelected, onCardClick, subfolder, isGlowing }) => {
   let imageUrl = null;
 
   // Comprobación para evitar errores si imageName no existe
@@ -12,7 +12,7 @@ const Card = ({ imageName, isSelected, onCardClick, subfolder }) => {
     imageUrl = new URL(`../../assets/images/cards/${subfolder}/${imageName}`, import.meta.url).href;
   }
 
-  const cardClasses = `${styles.card} ${isSelected ? styles.selected : ''}`;
+  const cardClasses = `${styles.card} ${isSelected ? styles.selected : ''} ${isGlowing ? styles.glowing : ''}`;
 
   if (!imageUrl) {
     return null; // No renderiza nada si no hay imagen
@@ -36,7 +36,9 @@ Card.propTypes = {
 Card.defaultProps = {
   isSelected: false,
   onCardClick: () => {},
-  subfolder: 'game-cards' // 4. Valor por defecto para que las cartas de la mano sigan funcionando sin cambios.
+  subfolder: 'game-cards',
+  isGlowing: false,
 };
+
 
 export default Card;

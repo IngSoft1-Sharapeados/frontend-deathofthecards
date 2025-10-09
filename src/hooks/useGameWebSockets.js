@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import websocketService from '@/services/websocketService';
-/* No gestiona coneccion, solo eventos*/ 
+import { cardService } from '@/services/cardService';
+/* No gestiona coneccion, solo eventos*/
 const useWebSocket = (callbacks) => {
   const callbacksRef = useRef(callbacks);
 
@@ -28,16 +29,24 @@ const useWebSocket = (callbacks) => {
       });
     };
 
+    const onDraftUpdate = (message) => {
+      console.log('Actualización de draft:', message);
+      callbacksRef.current.onDraftUpdate?.(message['mazo-draft']);
+    };
+
+
     // Suscribirse a eventos
     websocketService.on('actualizacion-mazo', onDeckUpdate);
     websocketService.on('turno-actual', onTurnUpdate);
     websocketService.on('fin-partida', onGameEnd);
+    websocketService.on('nuevo-draft', onDraftUpdate);
 
     // Función de limpieza - SOLO remover listeners, NO desconectar
     return () => {
       websocketService.off('actualizacion-mazo', onDeckUpdate);
       websocketService.off('turno-actual', onTurnUpdate);
       websocketService.off('fin-partida', onGameEnd);
+      websocketService.off('nuevo-draft', onDraftUpdate);
     };
   }, []);
 };

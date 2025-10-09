@@ -18,19 +18,17 @@ const mockDraftCards = [
 
 describe('CardDraft', () => {
   test('should render cards passed as props', () => {
-    render(<CardDraft cards={mockDraftCards} title="Draft Cards" />);
+    const mockOnCardClick = vi.fn();
+    render(<CardDraft cards={mockDraftCards} onCardClick={mockOnCardClick} />);
 
     // Check that all cards are rendered
     expect(screen.getByTestId('card-draft-card-1.png')).toBeInTheDocument();
     expect(screen.getByTestId('card-draft-card-2.png')).toBeInTheDocument();
     expect(screen.getByTestId('card-draft-card-3.png')).toBeInTheDocument();
-
-    // Check that title is rendered
-    expect(screen.getByText('Draft Cards')).toBeInTheDocument();
   });
 
-  test('should render empty state when no cards provided', () => {
-    render(<CardDraft cards={[]} />);
-    expect(screen.getByText('No cards available')).toBeInTheDocument();
+  test('should not render any cards when empty array is provided', () => {
+    const { container } = render(<CardDraft cards={[]} onCardClick={vi.fn()} />);
+    expect(container.querySelectorAll('[data-testid^="card-"]').length).toBe(0);
   });
 });

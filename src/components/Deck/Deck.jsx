@@ -2,7 +2,7 @@ import React from "react";
 import styles from "./Deck.module.css";
 import cardBack from "../../assets/images/cards/misc/01-card_back.png";
 
-const Deck = ({ count }) => {
+const Deck = ({ count, isGlowing }) => {
   const visibleCards = Math.min(count, 6);
 
   return (
@@ -13,7 +13,9 @@ const Deck = ({ count }) => {
             key={i}
             src={cardBack}
             alt="Mazo de cartas"
-            className={styles.deckImage}
+            className={`${styles.deckImage} ${
+              isGlowing && i === visibleCards - 1 ? styles.glowing : ''
+            }`}
             style={{
               top: `${i * 2}px`,
               left: `${i * 2}px`,

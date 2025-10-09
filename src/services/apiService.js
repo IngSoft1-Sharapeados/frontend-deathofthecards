@@ -113,6 +113,22 @@ const createHttpService = () => {
     });
   }
 
+  const takeDraftCard = async (gameId, playerId, cardIds) => {
+    return request(`/partidas/${gameId}/draft?id_jugador=${playerId}`, {
+      method: "PUT",
+      body: JSON.stringify(cardIds), // The backend expects a list of integers
+    });
+  };
+
+  const pickUpCards = async (gameId, playerId, draftCardIds) => {
+    const payload = {
+      cartas_draft: draftCardIds
+    };
+    return request(`/partidas/${gameId}/jugador/${playerId}/recoger`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    });
+  };
 
   return {
     createGame,
@@ -129,6 +145,8 @@ const createHttpService = () => {
     getMySecrets,
     getRoles,
     getDraftCards,
+    takeDraftCard,
+    pickUpCards,
   };
 };
 
