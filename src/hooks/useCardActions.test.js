@@ -18,7 +18,8 @@ describe('useCardActions', () => {
     selectedCards: [],
     setSelectedCards: vi.fn(),
     currentPlayerId: 1,
-    isMyTurn: true
+    isMyTurn: true,
+    setPlayerTurnState: vi.fn(),
   };
 
   beforeEach(() => {
@@ -26,20 +27,21 @@ describe('useCardActions', () => {
     // Resetear mocks 
     mockGameState.setHand.mockClear();
     mockGameState.setSelectedCards.mockClear();
-    
+
     // Configurar mocks por defecto
     apiService.discardCards.mockResolvedValue({});
     apiService.drawCards.mockResolvedValue([]);
     cardService.getPlayingHand.mockImplementation(cards => cards);
+    mockGameState.setPlayerTurnState.mockClear();
   });
 
-  test('should handle successful discard and draw', async () => {
+  test('should handle successful discard and update turn phase', async () => {
     const stateWithSelection = {
       ...mockGameState,
-      selectedCards: ['instance-1', 'instance-2']
+      selectedCards: ['instance-1'] // Select one card to discard
     };
 
-    const { result } = renderHook(() => 
+    const { result } = renderHook(() =>
       useCardActions('game-123', stateWithSelection)
     );
 
@@ -47,25 +49,26 @@ describe('useCardActions', () => {
       await result.current.handleDiscard();
     });
 
-    // 1. Verificar discard llamado con IDs correctos
-    expect(apiService.discardCards).toHaveBeenCalledWith(
-      'game-123',
-      1,
-      [1, 2] // IDs de las cartas seleccionadas
-    );
-    // 2. Verificar que se actualiza la mano (removiendo cartas descartadas)
+    // 1. Verify discardCards was called with the correct card ID
+    expect(apiService.discardCards).toHaveBeenCalledWith('game-123', 1, [1]);
+
+    // 2. Verify the hand was updated optimistically
     expect(mockGameState.setHand).toHaveBeenCalledWith([
+      // The hand should now only contain the cards that were not selected
+      { id: 2, url: 'card2.png', instanceId: 'instance-2' },
       { id: 3, url: 'card3.png', instanceId: 'instance-3' }
     ]);
-    // 3. Verificar que se limpian las selecciones
+
+    // 3. Verify selections were cleared
     expect(mockGameState.setSelectedCards).toHaveBeenCalledWith([]);
-    // 4. Verificar draw llamado con cantidad correcta (6 - 1 = 5)
-    expect(apiService.drawCards).toHaveBeenCalledWith('game-123', 1, 5);
+
+    // 4. Verify the turn phase was switched to 'drawing'
+    expect(mockGameState.setPlayerTurnState).toHaveBeenCalledWith('drawing');
   });
 
   test('should not discard if no cards selected', async () => {
-    const { result } = renderHook(() => 
-      useCardActions('game-123', mockGameState) 
+    const { result } = renderHook(() =>
+      useCardActions('game-123', mockGameState)
     );
     await act(async () => {
       await result.current.handleDiscard();
@@ -79,7 +82,7 @@ describe('useCardActions', () => {
       selectedCards: ['instance-1'],
       isMyTurn: false
     };
-    const { result } = renderHook(() => 
+    const { result } = renderHook(() =>
       useCardActions('game-123', stateNotMyTurn)
     );
     await act(async () => {

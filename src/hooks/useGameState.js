@@ -22,9 +22,15 @@ const useGameState = () => {
   const [winners, setWinners] = useState(null);
   const [asesinoGano, setAsesinoGano] = useState(false);
 
+  const [playerTurnState, setPlayerTurnState] = useState('discarding');
+  const [selectedDraftCards, setSelectedDraftCards] = useState([]);
+  
+
   // Derived state
   const isMyTurn = currentTurn === currentPlayerId;
-  const isDiscardButtonEnabled = selectedCards.length > 0 && isMyTurn;
+  const isDiscardButtonEnabled = selectedCards.length > 0 && isMyTurn && playerTurnState === 'discarding';
+  const isPickupButtonEnabled = isMyTurn && playerTurnState === 'drawing';
+
 
   const getPlayerEmoji = (playerId) => {
     console.log("getPlayerEmoji()", { 
@@ -76,7 +82,10 @@ const useGameState = () => {
     discardPile,setDiscardPile,
     // Derived state
     isMyTurn,
-    isDiscardButtonEnabled
+    isDiscardButtonEnabled,
+    isPickupButtonEnabled,
+    playerTurnState, setPlayerTurnState,
+    selectedDraftCards, setSelectedDraftCards,
   };
 };
 

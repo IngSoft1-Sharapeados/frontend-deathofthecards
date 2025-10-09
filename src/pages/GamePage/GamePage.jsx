@@ -1,4 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom';
+import { cardService } from '@/services/cardService';
+import { useMemo } from 'react';
 
 // Components
 import Card from '@/components/Card/Card';
@@ -28,30 +30,52 @@ const GamePage = () => {
     deckCount, currentTurn, turnOrder, players,
     winners, asesinoGano,
     isDiscardButtonEnabled, currentPlayerId,
-    roles, secretCards, displayedOpponents, draftCards, discardPile
+    roles, secretCards, displayedOpponents, draftCards, discardPile,
+    playerTurnState, selectedDraftCards, isPickupButtonEnabled
   } = gameState;
       // Desarrollo solamente
   if (process.env.NODE_ENV === 'development') {
     window.gameState = gameState;
   }
   //borrar despues
+  console.log("Testing Step 1 - Initial Game State:", gameState);
+
 
   const webSocketCallbacks = {
     onDeckUpdate: (count) => gameState.setDeckCount(count),
-    onTurnUpdate: (turn) => gameState.setCurrentTurn(turn),
+        onTurnUpdate: (turn) => {
+      gameState.setCurrentTurn(turn);
+      gameState.setPlayerTurnState('discarding'); 
+    },
+    
+    onDraftUpdate: (newDraftData) => {
+      const processedDraftCards = cardService.getPlayingHand(newDraftData);
+      const draftWithInstanceIds = processedDraftCards.map((card, index) => ({
+        ...card,
+        instanceId: `draft-${card.id}-${Date.now()}-${index}`
+      }));
+      gameState.setDraftCards(draftWithInstanceIds);
+    },
+    
     onGameEnd: ({ winners, asesinoGano }) => {
-      // Delegamos la resolución final de ganadores al modal
-      gameState.setAsesinoGano(Boolean(asesinoGano));
-      gameState.setWinners(Array.isArray(winners) ? winners : []);
+      gameState.setWinners(winners);
+      gameState.setAsesinoGano(asesinoGano);
     },
     onDiscardUpdate: (discardPile) => gameState.setDiscardPile(discardPile),
   };
+
   useWebSocket(webSocketCallbacks);
   useGameData(gameId, gameState);
-  const { handleCardClick, handleDiscard } = useCardActions(gameId, gameState);
+  const { handleCardClick, handleDraftCardClick, handleDiscard, handlePickUp } = useCardActions(gameId, gameState);
 
-  // --- UI Helpers ---
+  const sortedHand = useMemo(() => {
+    return [...hand].sort((a, b) => a.id - b.id);
+  }, [hand]);
   const getPlayerEmoji = gameState.getPlayerEmoji;
+  const isDrawingPhase = playerTurnState === 'drawing' && gameState.isMyTurn;
+  console.log("ispickupenabled", isPickupButtonEnabled);
+  console.log
+
 
   if (isLoading) {
     return <div className={styles.loadingSpinner}></div>;
@@ -71,9 +95,9 @@ const GamePage = () => {
         />
       )}
 
-  {/* --- Opponents Area --- */}
+      {/* --- Opponents Area --- */}
       <div className={styles.opponentsContainer} data-player-count={players.length}>
-  {displayedOpponents.map((player, index) => (
+        {displayedOpponents.map((player, index) => (
           <div key={player.id_jugador} className={`${styles.opponent} ${styles[`opponent-${index + 1}`]}`}>
             <PlayerPod
               player={player}
@@ -86,13 +110,18 @@ const GamePage = () => {
 
       <div className={styles.centerArea}>
         <div className={styles.decksContainer}>
-        <Deck count={deckCount} />
+        <Deck count={deckCount} isGlowing={isDrawingPhase} />
         <DiscardDeck cards={discardPile} />
       </div>
-        <CardDraft cards={draftCards} />
+        <CardDraft
+          cards={draftCards}
+          selectedCards={selectedDraftCards}
+          onCardClick={handleDraftCardClick}
+          isGlowing={isDrawingPhase}
+        />
       </div>
 
-      <div className={`${styles.bottomContainer} ${gameState.isMyTurn ? styles.myTurn : ''}`}>
+      <div className={`${styles.bottomContainer} ${(gameState.isMyTurn && !isDrawingPhase) ? styles.myTurn : ''}`}>
         <div className={styles.playerArea}>
           <div>
             <div className={styles.secretCardsContainer}>
@@ -105,8 +134,8 @@ const GamePage = () => {
           </div>
 
           <div>
-            <div className={styles.handContainer}>
-              {hand.map((card) => (
+            <div data-testid="hand-container" className={styles.handContainer}>
+              {sortedHand.map((card) => (
                 <Card
                   key={card.instanceId}
                   imageName={card.url}
@@ -119,13 +148,23 @@ const GamePage = () => {
           </div>
 
           <div className={styles.actionsContainer}>
-            <button
-              onClick={handleDiscard}
-              disabled={!isDiscardButtonEnabled}
-              className={`${styles.discardButton} ${isDiscardButtonEnabled ? styles.enabled : ''}`}
-            >
-              Descartar
-            </button>
+            {playerTurnState === 'discarding' ? (
+              <button
+                onClick={handleDiscard}
+                disabled={!isDiscardButtonEnabled}
+                className={`${styles.discardButton} ${isDiscardButtonEnabled ? styles.enabled : ''}`}
+              >
+                Descartar
+              </button>
+            ) : (
+              <button
+                onClick={handlePickUp}
+                disabled={!isPickupButtonEnabled}
+                className={`${styles.discardButton} ${isPickupButtonEnabled ? styles['pickup-enabled'] : ''}`}
+              >
+                Levantar
+              </button>
+            )}
           </div>
         </div>
       </div>

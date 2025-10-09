@@ -59,7 +59,7 @@ const createHttpService = () => {
 
 
   const discardCards = async (gameId, playerId, cardIds) => {
-    return request(`/partidas/descarte/${gameId}?id_jugador=${playerId}`, {
+    return request(`/partidas/${gameId}/descarte/?id_jugador=${playerId}`, {
       method: "PUT",
       body: JSON.stringify(cardIds),
     });
@@ -113,6 +113,22 @@ const createHttpService = () => {
     });
   }
 
+  const takeDraftCard = async (gameId, playerId, cardIds) => {
+    return request(`/partidas/${gameId}/draft?id_jugador=${playerId}`, {
+      method: "PUT",
+      body: JSON.stringify(cardIds), // The backend expects a list of integers
+    });
+  };
+
+  const pickUpCards = async (gameId, playerId, draftCardIds) => {
+    const payload = {
+      cartas_draft: draftCardIds
+    };
+    return request(`/partidas/${gameId}/jugador/${playerId}/recoger`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    });
+  };
   const getDiscardPile = async (gameId) => {
     return request(`/partidas/${gameId}/descarte`, {
       method: "GET",
@@ -134,6 +150,8 @@ const createHttpService = () => {
     getMySecrets,
     getRoles,
     getDraftCards,
+    takeDraftCard,
+    pickUpCards,
     getDiscardPile
   };
 };

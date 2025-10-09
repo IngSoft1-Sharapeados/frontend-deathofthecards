@@ -24,6 +24,17 @@ html, body {
   pointer-events: none;
 }
 
+.discardButton.pickup-enabled {
+  background-color: #ffc107; 
+  border-color: #ffca28;
+  color: #111; 
+  cursor: pointer;
+}
+
+.discardButton.pickup-enabled:hover {
+  background-color: #ffb300;
+}
+
 .centerArea {
   grid-row: 2 / 3;
   display: flex;

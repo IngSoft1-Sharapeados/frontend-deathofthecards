@@ -4,31 +4,22 @@ import PropTypes from 'prop-types';
 import Card from '@/components/Card/Card';
 import styles from './CardDraft.module.css';
 
-const CardDraft = ({ cards, title }) => {
-  if (!cards || cards.length === 0) {
-    return <div className={styles.emptyState}>No cards available</div>;
-  }
-
+const CardDraft = ({ cards = [], selectedCards = [], onCardClick, isGlowing }) => {
   return (
     <div className={styles.draftContainer}>
-      {title && <h3 className={styles.title}>{title}</h3>}
       <div className={styles.cardsWrapper}>
         {cards.map(card => (
           <Card
-            key={card.instanceId || card.id}
+            key={card.instanceId}
             imageName={card.url}
             subfolder="game-cards"
-            alt={card.nombre || card.type || 'Card'}
+            isSelected={selectedCards.includes(card.instanceId)}
+            onCardClick={() => onCardClick(card.instanceId)}
+            isGlowing={isGlowing}
           />
         ))}
       </div>
     </div>
   );
 };
-
-CardDraft.propTypes = {
-  cards: PropTypes.arrayOf(PropTypes.object).isRequired,
-  title: PropTypes.string,
-};
-
 export default CardDraft;
