@@ -113,6 +113,12 @@ const createHttpService = () => {
     });
   }
 
+  const getPlayedSets = async (gameId) => {
+    return request(`/partidas/${gameId}/sets`, {
+      method: "GET",
+    });
+  }
+
   const takeDraftCard = async (gameId, playerId, cardIds) => {
     return request(`/partidas/${gameId}/draft?id_jugador=${playerId}`, {
       method: "PUT",
@@ -156,6 +162,7 @@ const createHttpService = () => {
     takeDraftCard,
     pickUpCards,
     playDetectiveSet,
+    getPlayedSets,
   };
 };
 

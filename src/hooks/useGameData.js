@@ -26,7 +26,7 @@ const useGameData = (gameId, gameState) => {
     const loadGameData = async () => {
       if (gameId && storedPlayerId) {
         try {
-          const [handData, turnData, deckData, turnOrderData, gameData, rolesData, secretCardsData, draftData] = await Promise.all([
+          const [handData, turnData, deckData, turnOrderData, gameData, rolesData, secretCardsData, draftData, playedSets] = await Promise.all([
             apiService.getHand(gameId, storedPlayerId),
             apiService.getTurn(gameId),
             apiService.getDeckCount(gameId),
@@ -35,6 +35,7 @@ const useGameData = (gameId, gameState) => {
             apiService.getRoles(gameId),
             apiService.getMySecrets(gameId, storedPlayerId),
             apiService.getDraftCards(gameId),
+            apiService.getPlayedSets(gameId),
           ]);
 
 
@@ -79,6 +80,15 @@ const useGameData = (gameId, gameState) => {
             instanceId: `${card.id}-secret-${index}`
           }));
           setSecretCards(secretsWithInstanceIds);
+
+          // Played sets
+          const grouped = {};
+          (playedSets || []).forEach(item => {
+            const arr = grouped[item.jugador_id] || [];
+            arr.push(item);
+            grouped[item.jugador_id] = arr;
+          });
+          gameState.setPlayedSetsByPlayer(grouped);
 
           // Procesar mano de cartas
           const playingHand = cardService.getPlayingHand(handData);

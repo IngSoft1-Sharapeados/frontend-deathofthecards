@@ -60,6 +60,17 @@ html, body {
   padding-bottom: 4rem; /* Align button vertically with cards */
 }
 
+.mySetsContainer {
+  display: flex;
+  justify-content: center;
+  margin-top: 0.5rem;
+  gap: 8px;
+}
+
+.mySetCard {
+  transform: scale(0.8);
+}
+
 .playControls {
   display: flex;
   align-items: center;

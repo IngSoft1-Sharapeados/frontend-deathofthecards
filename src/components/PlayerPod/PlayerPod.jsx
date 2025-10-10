@@ -11,16 +11,17 @@ const EyeIcon = () => <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 
 const LockIcon = () => <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1s3.1 1.39 3.1 3.1v2z" /></svg>;
 const ArrowIcon = () => <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z" /></svg>;
 
-const PlayerPod = ({ player, isCurrentTurn, roleEmoji }) => {
+const PlayerPod = ({ player, isCurrentTurn, roleEmoji, sets = [] }) => {
     const [allSets, setAllSets] = useState([]);
     const [currentIndex, setCurrentIndex] = useState(0);
     const visibleSetsCount = 3; // Number of cards to show at once
     const trackRef = useRef(null);
 
     useEffect(() => {
-        // Generate some random detective cards
-        setAllSets(cardService.getRandomDetectives(7));
-    }, []);
+        // Map provided set representations to real images
+        const mapped = sets.map((s) => cardService.getPlayingHand([{ id: s.id }])[0]);
+        setAllSets(mapped);
+    }, [sets]);
 
     const podClasses = `${styles.pod} ${isCurrentTurn ? styles.currentTurn : ''}`;
     const totalCards = allSets.length;
@@ -62,15 +63,15 @@ const PlayerPod = ({ player, isCurrentTurn, roleEmoji }) => {
                         </div>
                         
                         <div className={styles.setsTrack} ref={trackRef}>
-                            {visibleSets.map((card, index) => (
-                                <div key={`${card.id}-${index}`} className={styles.carouselCard}>
-                                    <Card 
-                                        imageName={card.url} 
-                                        subfolder="game-cards"
-                                        alt={`Detective card ${index + 1}`}
-                                    />
-                                </div>
-                            ))}
+                                                                        {visibleSets.map((card, index) => (
+                                                                            <div key={`${card.id}-${index}`} className={styles.carouselCard}>
+                                                                                <Card
+                                                                                    imageName={card.url}
+                                                                                    subfolder="game-cards"
+                                                                                    alt={`Set jugado ${index + 1}`}
+                                                                                />
+                                                                            </div>
+                                                                        ))}
                         </div>
                         
                         <div className={styles.arrowButtonContainer}>
@@ -115,6 +116,7 @@ PlayerPod.propTypes = {
     }).isRequired,
     isCurrentTurn: PropTypes.bool,
     roleEmoji: PropTypes.string,
+    sets: PropTypes.arrayOf(PropTypes.shape({ id: PropTypes.number.isRequired })),
 };
 
 export default PlayerPod;

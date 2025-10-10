@@ -31,6 +31,7 @@ const GamePage = () => {
     isDiscardButtonEnabled, currentPlayerId,
     roles, secretCards, displayedOpponents, draftCards,
     playerTurnState, selectedDraftCards, isPickupButtonEnabled,
+    playedSetsByPlayer,
     isPlayButtonEnabled
   } = gameState;
 
@@ -45,7 +46,7 @@ const GamePage = () => {
     },
     
     onDraftUpdate: (newDraftData) => {
-      const processedDraftCards = cardService.getPlayingHand(newDraftData);
+      const processedDraftCards = cardService.getDraftCards(newDraftData);
       const draftWithInstanceIds = processedDraftCards.map((card, index) => ({
         ...card,
         instanceId: `draft-${card.id}-${Date.now()}-${index}`
@@ -56,7 +57,17 @@ const GamePage = () => {
     onGameEnd: ({ winners, asesinoGano }) => {
       gameState.setWinners(winners);
       gameState.setAsesinoGano(asesinoGano);
-    }
+    },
+    onSetPlayed: (payload) => {
+      const { jugador_id, representacion_id, cartas_ids } = payload;
+      gameState.setPlayedSetsByPlayer(prev => {
+        const next = { ...prev };
+        const arr = next[jugador_id] ? [...next[jugador_id]] : [];
+        arr.push({ jugador_id, representacion_id_carta: representacion_id, cartas_ids });
+        next[jugador_id] = arr;
+        return next;
+      });
+    },
   };
 
   useWebSocket(webSocketCallbacks);
@@ -98,6 +109,7 @@ const GamePage = () => {
               player={player}
               isCurrentTurn={player.id_jugador === currentTurn}
               roleEmoji={getPlayerEmoji(player.id_jugador)}
+              sets={(playedSetsByPlayer[player.id_jugador] || []).map(item => ({ id: item.representacion_id_carta }))}
             />
           </div>
         ))}
@@ -137,6 +149,18 @@ const GamePage = () => {
                 />
               ))}
             </div>
+          </div>
+
+          {/* My played sets */}
+          <div className={styles.mySetsContainer}>
+            {(playedSetsByPlayer[currentPlayerId] || []).map((item, index) => {
+              const card = cardService.getPlayingHand([{ id: item.representacion_id_carta }])[0];
+              return (
+                <div key={`myset-${index}`} className={styles.mySetCard}>
+                  <Card imageName={card.url} subfolder="game-cards" />
+                </div>
+              );
+            })}
           </div>
 
           <div className={styles.actionsContainer}>

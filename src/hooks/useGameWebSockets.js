@@ -34,12 +34,19 @@ const useWebSocket = (callbacks) => {
       callbacksRef.current.onDraftUpdate?.(message['mazo-draft']);
     };
 
+    const onSetPlayed = (message) => {
+      console.log('Set jugado:', message);
+      // If consumer passed a handler, call it
+      callbacksRef.current.onSetPlayed?.(message);
+    };
+
 
     // Suscribirse a eventos
     websocketService.on('actualizacion-mazo', onDeckUpdate);
     websocketService.on('turno-actual', onTurnUpdate);
     websocketService.on('fin-partida', onGameEnd);
     websocketService.on('nuevo-draft', onDraftUpdate);
+  websocketService.on('jugar-set', onSetPlayed);
 
     // Función de limpieza - SOLO remover listeners, NO desconectar
     return () => {
@@ -47,6 +54,7 @@ const useWebSocket = (callbacks) => {
       websocketService.off('turno-actual', onTurnUpdate);
       websocketService.off('fin-partida', onGameEnd);
       websocketService.off('nuevo-draft', onDraftUpdate);
+      websocketService.off('jugar-set', onSetPlayed);
     };
   }, []);
 };

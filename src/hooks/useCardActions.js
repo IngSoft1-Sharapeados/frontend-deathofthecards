@@ -46,8 +46,8 @@ const useCardActions = (gameId, gameState) => {
 
       await apiService.discardCards(gameId, currentPlayerId, cardIdsToDiscard);
 
-      const newHand = hand.filter(card => !selectedCards.includes(card.instanceId));
-      setHand(newHand);
+  // Use functional update to avoid races with other state updates
+  setHand(prev => prev.filter(card => !selectedCards.includes(card.instanceId)));
       setSelectedCards([]);
 
       // Switch to the 'drawing' phase
@@ -88,6 +88,20 @@ const useCardActions = (gameId, gameState) => {
       //    backend now controls the turn and will notify us via WebSocket.
       setSelectedDraftCards([]);
 
+      // 5. Ensure UI matches backend: fetch authoritative hand after pickup
+      try {
+        const freshHandData = await apiService.getHand(gameId, currentPlayerId);
+        const playingHand = cardService.getPlayingHand(freshHandData);
+        const handWithInstanceIds = playingHand.map((card, index) => ({
+          ...card,
+          instanceId: `${card.id}-sync-${Date.now()}-${index}`,
+        }));
+        setHand(handWithInstanceIds);
+      } catch (e) {
+        // Non-fatal: keep optimistic hand if sync fails
+        console.warn('No se pudo sincronizar la mano después de levantar:', e);
+      }
+
     } catch (error) {
       console.error("Error al levantar cartas:", error);
       alert(`Error: ${error.message}`);
@@ -115,8 +129,8 @@ const useCardActions = (gameId, gameState) => {
       }
 
       // Update local hand and clear selection
-      const newHand = hand.filter(card => !selectedCards.includes(card.instanceId));
-      setHand(newHand);
+  // Use functional update to avoid races with pickup updates
+  setHand(prev => prev.filter(card => !selectedCards.includes(card.instanceId)));
       setSelectedCards([]);
   // Tras jugar un set, pasamos a la fase 'drawing' para levantar hasta tener 6.
   setPlayerTurnState('drawing');
