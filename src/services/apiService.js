@@ -129,8 +129,8 @@ const createHttpService = () => {
       body: JSON.stringify(payload),
     });
   };
-  const getDiscardPile = async (gameId) => {
-    return request(`/partidas/${gameId}/descarte`, {
+  const getDiscardPile = async (gameId, cantidad = 1)  => {
+    return request(`/partidas/${gameId}/descarte?cantidad=${cantidad}`, {
       method: "GET",
     });
   }
