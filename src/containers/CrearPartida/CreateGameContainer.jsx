@@ -30,7 +30,6 @@ export default function GameCreateFormContainer({ showForm, onClose }) {
     if (!newErrors.minJugadores && !newErrors.maxJugadores && min > max) {
       newErrors.maxJugadores = "Debe ser ≥ mínimo";
     }
-    console.log("Errores detectados:", newErrors, "¿Válido?", Object.keys(newErrors).length === 0);
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -40,13 +39,7 @@ export default function GameCreateFormContainer({ showForm, onClose }) {
     e.preventDefault();
     if (!validate()) return;
     try {
-      console.log("Enviando al backend:", {
-        "nombre-partida": form.nombrePartida,
-        "nombre-jugador": form.nombreJugador,
-        "dia-nacimiento": form.fechaNacimiento,
-        "min-jugadores": parseInt(form.minJugadores), 
-        "max-jugadores": parseInt(form.maxJugadores),
-      });
+
       //Aca le mandamos los datos al Backend 
       const result = await apiService.createGame({
         "nombre-partida": form.nombrePartida,
@@ -63,7 +56,6 @@ export default function GameCreateFormContainer({ showForm, onClose }) {
        sessionStorage.setItem('hostId', result.id_jugador);
        navigate(`/partidas/${result.id_partida}`);
       }
-      console.log("Resultado createGame:", result);
     } catch {
       setMessage(" Error al crear partida");
     }
