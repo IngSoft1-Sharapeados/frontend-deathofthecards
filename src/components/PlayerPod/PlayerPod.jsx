@@ -11,7 +11,7 @@ const EyeIcon = () => <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 
 const LockIcon = () => <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1s3.1 1.39 3.1 3.1v2z" /></svg>;
 const ArrowIcon = () => <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z" /></svg>;
 
-const PlayerPod = ({ player, isCurrentTurn, roleEmoji, onSecretsClick }) => {
+const PlayerPod = ({ player, isCurrentTurn, roleEmoji, onSecretsClick, playerSecrets }) => {
     const [allSets, setAllSets] = useState([]);
     const [currentIndex, setCurrentIndex] = useState(0);
     const visibleSetsCount = 3; // Number of cards to show at once
@@ -26,6 +26,10 @@ const PlayerPod = ({ player, isCurrentTurn, roleEmoji, onSecretsClick }) => {
     const totalCards = allSets.length;
     const canGoPrev = currentIndex > 0;
     const canGoNext = currentIndex < totalCards - visibleSetsCount;
+
+    const revealedCount = playerSecrets?.revealed ?? 0;
+    const hiddenCount = playerSecrets?.hidden ?? 3;
+
 
     const handleNext = (e) => {
         e.stopPropagation();
@@ -87,7 +91,6 @@ const PlayerPod = ({ player, isCurrentTurn, roleEmoji, onSecretsClick }) => {
                 </div>
             )}
 
-            {/* Player Pod */}
             <div className={podClasses} data-testid="player-pod">
                 {roleEmoji && <span className={styles.roleEmoji}>{roleEmoji}</span>}
                 <div className={styles.topSection}>
@@ -98,8 +101,8 @@ const PlayerPod = ({ player, isCurrentTurn, roleEmoji, onSecretsClick }) => {
                     <div className={styles.secretsInfo} onClick={() => onSecretsClick(player)}>
                         <img src={secretCardBack} alt="Secret card back" className={styles.secretCardImage} />
                         <div className={styles.secretStats}>
-                            <span><EyeIcon /> 0</span>
-                            <span><LockIcon /> 3</span>
+                            <span><EyeIcon /> {revealedCount}</span>
+                            <span><LockIcon /> {hiddenCount}</span>
                         </div>
                     </div>
                 </div>
