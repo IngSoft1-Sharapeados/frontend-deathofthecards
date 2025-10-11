@@ -34,7 +34,7 @@ const GamePage = () => {
     isDiscardButtonEnabled, currentPlayerId,
     roles, secretCards, displayedOpponents, draftCards,
     playerTurnState, selectedDraftCards, isPickupButtonEnabled,
-    isSecretsModalOpen, isSecretsLoading, playerSecretsData, viewingSecretsOfPlayer
+    isSecretsModalOpen, isSecretsLoading, playerSecretsData, viewingSecretsOfPlayer, playersSecrets, setPlayersSecrets
   } = gameState;
 
   const { handleOpenSecretsModal, handleCloseSecretsModal } = useSecrets(gameId, gameState);
@@ -58,7 +58,21 @@ const GamePage = () => {
     onGameEnd: ({ winners, asesinoGano }) => {
       gameState.setWinners(winners);
       gameState.setAsesinoGano(asesinoGano);
-    }
+    },
+
+    onSecretUpdate: ({ playerId, secrets }) => {
+      const revealedCount = secrets.filter(s => s.revelado).length;
+      const hiddenCount = secrets.length - revealedCount;
+
+      setPlayersSecrets(prevSecrets => ({
+        ...prevSecrets,
+        [playerId]: {
+          revealed: revealedCount,
+          hidden: hiddenCount,
+        }
+      }));
+    },
+
   };
 
   useWebSocket(webSocketCallbacks);
@@ -99,6 +113,7 @@ const GamePage = () => {
               isCurrentTurn={player.id_jugador === currentTurn}
               roleEmoji={getPlayerEmoji(player.id_jugador)}
               onSecretsClick={handleOpenSecretsModal}
+              playerSecrets={playersSecrets[player.id_jugador]}
             />
           </div>
         ))}
