@@ -2,18 +2,21 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { cardService } from '@/services/cardService';
 import { useMemo } from 'react';
 
+
 // Components
 import Card from '@/components/Card/Card';
 import Deck from '@/components/Deck/Deck.jsx';
 import GameOverScreen from '@/components/GameOver/GameOverModal.jsx';
 import PlayerPod from '@/components/PlayerPod/PlayerPod.jsx';
 import CardDraft from '@/components/CardDraft/CardDraft.jsx'
+import SecretsModal from '@/components/SecretsModal/SecretsModal.jsx';
+
 
 // Hooks
 import useWebSocket from '@/hooks/useGameWebSockets';
 import useGameState from '@/hooks/useGameState';
 import useGameData from '@/hooks/useGameData';
-import useCardActions from '@/hooks/useCardActions';
+import useCardActions, { useSecrets } from '@/hooks/useCardActions';
 
 // Styles
 import styles from './GamePage.module.css';
@@ -32,14 +35,16 @@ const GamePage = () => {
     roles, secretCards, displayedOpponents, draftCards,
     playerTurnState, selectedDraftCards, isPickupButtonEnabled,
     playedSetsByPlayer,
-    isPlayButtonEnabled
+    isPlayButtonEnabled,
+    isSecretsModalOpen, isSecretsLoading, playerSecretsData, viewingSecretsOfPlayer, playersSecrets, setPlayersSecrets
+
   } = gameState;
 
-  console.log("Testing Step 1 - Initial Game State:", gameState);
-
+  const { handleOpenSecretsModal, handleCloseSecretsModal } = useSecrets(gameId, gameState);
 
   const webSocketCallbacks = {
     onDeckUpdate: (count) => gameState.setDeckCount(count),
+
         onTurnUpdate: (turn) => {
           gameState.setCurrentTurn(turn);
           gameState.setPlayerTurnState('discarding');
@@ -47,6 +52,7 @@ const GamePage = () => {
           gameState.setHasPlayedSetThisTurn(false);
         },
     
+
     onDraftUpdate: (newDraftData) => {
       const processedDraftCards = cardService.getDraftCards(newDraftData);
       const draftWithInstanceIds = processedDraftCards.map((card, index) => ({
@@ -55,11 +61,12 @@ const GamePage = () => {
       }));
       gameState.setDraftCards(draftWithInstanceIds);
     },
-    
+
     onGameEnd: ({ winners, asesinoGano }) => {
       gameState.setWinners(winners);
       gameState.setAsesinoGano(asesinoGano);
     },
+
     onSetPlayed: (payload) => {
       const { jugador_id, representacion_id, cartas_ids } = payload;
       gameState.setPlayedSetsByPlayer(prev => {
@@ -70,6 +77,21 @@ const GamePage = () => {
         return next;
       });
     },
+
+
+    onSecretUpdate: ({ playerId, secrets }) => {
+      const revealedCount = secrets.filter(s => s.revelado).length;
+      const hiddenCount = secrets.length - revealedCount;
+
+      setPlayersSecrets(prevSecrets => ({
+        ...prevSecrets,
+        [playerId]: {
+          revealed: revealedCount,
+          hidden: hiddenCount,
+        }
+      }));
+    },
+
   };
 
   useWebSocket(webSocketCallbacks);
@@ -81,10 +103,12 @@ const GamePage = () => {
   }, [hand]);
   const getPlayerEmoji = gameState.getPlayerEmoji;
   const isDrawingPhase = playerTurnState === 'drawing' && gameState.isMyTurn;
+
   // Also glow the deck/draft when a set was played and player can pick up to reach 6
   const canPickAfterSet = gameState.hasPlayedSetThisTurn && gameState.isMyTurn && hand.length < 6;
   console.log("ispickupenabled", isPickupButtonEnabled);
   console.log
+
 
 
   if (isLoading) {
@@ -113,7 +137,12 @@ const GamePage = () => {
               player={player}
               isCurrentTurn={player.id_jugador === currentTurn}
               roleEmoji={getPlayerEmoji(player.id_jugador)}
+
               sets={(playedSetsByPlayer[player.id_jugador] || []).map(item => ({ id: item.representacion_id_carta }))}
+
+              onSecretsClick={handleOpenSecretsModal}
+              playerSecrets={playersSecrets[player.id_jugador]}
+
             />
           </div>
         ))}
@@ -204,6 +233,13 @@ const GamePage = () => {
           </div>
         </div>
       </div>
+      <SecretsModal
+        isOpen={isSecretsModalOpen}
+        onClose={handleCloseSecretsModal}
+        player={viewingSecretsOfPlayer}
+        secrets={playerSecretsData}
+        isLoading={isSecretsLoading}
+      />
     </div>
   );
 };

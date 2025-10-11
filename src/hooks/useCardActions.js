@@ -159,4 +159,48 @@ const useCardActions = (gameId, gameState) => {
   };
 };
 
+export const useSecrets = (gameId, gameState) => {
+  const {
+    setIsSecretsModalOpen,
+    setViewingSecretsOfPlayer,
+    setPlayerSecretsData,
+    setIsSecretsLoading,
+  } = gameState;
+
+  const handleOpenSecretsModal = useCallback(async (player) => {
+    setViewingSecretsOfPlayer(player);
+    setIsSecretsModalOpen(true);
+    setIsSecretsLoading(true);
+
+    try {
+      const secretsFromApi = await apiService.getPlayerSecrets(gameId, player.id_jugador);
+      console.log(secretsFromApi)
+      
+      const processedSecrets = secretsFromApi.map(secret => {
+        if (secret.bocaArriba) {
+          const cardDetails = cardService.getSecretCards([{ id: secret.carta_id }])[0];
+          console.log(cardDetails)
+          return { ...secret, ...cardDetails };
+        }
+        return secret;
+      });
+      setPlayerSecretsData(processedSecrets);
+
+    } catch (error) {
+      console.error("Error al obtener los secretos del jugador:", error);
+      setPlayerSecretsData([]);
+    } finally {
+      setIsSecretsLoading(false);
+    }
+  }, [gameId, setViewingSecretsOfPlayer, setIsSecretsModalOpen, setIsSecretsLoading, setPlayerSecretsData]);
+
+  const handleCloseSecretsModal = useCallback(() => {
+    setIsSecretsModalOpen(false);
+    setViewingSecretsOfPlayer(null);
+    setPlayerSecretsData([]);
+  }, [setIsSecretsModalOpen, setViewingSecretsOfPlayer, setPlayerSecretsData]);
+
+  return { handleOpenSecretsModal, handleCloseSecretsModal };
+};
+
 export default useCardActions;

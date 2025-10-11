@@ -43,6 +43,7 @@ describe('useGameData', () => {
     setRoles: vi.fn(),
     setSecretCards: vi.fn(),
     setDraftCards: vi.fn(),
+    setPlayersSecrets: vi.fn(),
     setPlayedSetsByPlayer: vi.fn(),
   };
 
@@ -83,9 +84,9 @@ describe('useGameData', () => {
   apiService.getPlayedSets.mockResolvedValue([]);
 
     // Mock cardService
-    cardService.getPlayingHand.mockImplementation(cards => cards);
-    cardService.getSecretCards.mockImplementation(cards => cards);
-    cardService.getDraftCards.mockImplementation(cards => cards);
+    cardService.getPlayingHand.mockImplementation(cards => cards.map(c => ({ ...c, url: 'card1.png' })));
+    cardService.getSecretCards.mockImplementation(cards => cards.map(c => ({ ...c, url: 'secret.png' })));
+    cardService.getDraftCards.mockImplementation(cards => cards.map(c => ({ ...c, url: 'draft.png' })));
   });
 
   test('should load game data and connect WebSocket on mount', async () => {
@@ -107,6 +108,12 @@ describe('useGameData', () => {
     expect(mockGameState.setTurnOrder).toHaveBeenCalledWith([1, 2, 3]);
     expect(mockGameState.setHostId).toHaveBeenCalledWith(2);
     expect(mockGameState.setPlayers).toHaveBeenCalledWith(mockGameData.gameDetails.listaJugadores);
+
+    const expectedInitialSecrets = {
+      '1': { revealed: 0, hidden: 3 },
+      '2': { revealed: 0, hidden: 3 },
+    };
+    expect(mockGameState.setPlayersSecrets).toHaveBeenCalledWith(expectedInitialSecrets);
 
     // Verify hand processing
     expect(cardService.getPlayingHand).toHaveBeenCalledWith(mockGameData.handData);
@@ -141,7 +148,7 @@ describe('useGameData', () => {
     const error = new Error('Failed to load');
     apiService.getHand.mockRejectedValue(error);
 
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
 
     renderHook(() => useGameData('game-123', mockGameState));
 
@@ -149,7 +156,7 @@ describe('useGameData', () => {
       expect(consoleSpy).toHaveBeenCalledWith('Error al cargar los datos del juego:', error);
       expect(mockGameState.setIsLoading).toHaveBeenCalledWith(false);
     });
-    
+
     consoleSpy.mockRestore();
   });
 

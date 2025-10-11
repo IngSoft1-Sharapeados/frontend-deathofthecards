@@ -1,7 +1,5 @@
 import { useEffect, useRef } from 'react';
 import websocketService from '@/services/websocketService';
-import { cardService } from '@/services/cardService';
-/* No gestiona coneccion, solo eventos*/
 const useWebSocket = (callbacks) => {
   const callbacksRef = useRef(callbacks);
 
@@ -34,10 +32,19 @@ const useWebSocket = (callbacks) => {
       callbacksRef.current.onDraftUpdate?.(message['mazo-draft']);
     };
 
+
     const onSetPlayed = (message) => {
       console.log('Set jugado:', message);
       // If consumer passed a handler, call it
       callbacksRef.current.onSetPlayed?.(message);
+    };
+
+    const onSecretUpdate = (message) => {
+      console.log('Actualización de secreto:', message);
+      callbacksRef.current.onSecretUpdate?.({
+        playerId: message['jugador-id'],
+        secrets: message['lista-secretos'],
+      });
     };
 
 
@@ -46,7 +53,11 @@ const useWebSocket = (callbacks) => {
     websocketService.on('turno-actual', onTurnUpdate);
     websocketService.on('fin-partida', onGameEnd);
     websocketService.on('nuevo-draft', onDraftUpdate);
-  websocketService.on('jugar-set', onSetPlayed);
+
+    websocketService.on('jugar-set', onSetPlayed);
+
+    websocketService.on('actualizacion-secreto', onSecretUpdate);
+
 
     // Función de limpieza - SOLO remover listeners, NO desconectar
     return () => {
@@ -54,7 +65,11 @@ const useWebSocket = (callbacks) => {
       websocketService.off('turno-actual', onTurnUpdate);
       websocketService.off('fin-partida', onGameEnd);
       websocketService.off('nuevo-draft', onDraftUpdate);
-      websocketService.off('jugar-set', onSetPlayed);
+
+  websocketService.off('jugar-set', onSetPlayed);
+
+      websocketService.off('actualizacion-secreto', onSecretUpdate);
+
     };
   }, []);
 };

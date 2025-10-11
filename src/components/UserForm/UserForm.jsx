@@ -30,7 +30,6 @@ const UserForm = ({ gameId, onClose }) => {
       try {
         const response = await apiService.joinGame(gameId, formData)
         sessionStorage.setItem('playerId', response.id_jugador);
-        console.log("Respuesta del joinGame:", response);
         onClose();
         navigate(`/partidas/${gameId}`);
       } catch (error) {
