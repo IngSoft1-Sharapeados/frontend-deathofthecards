@@ -23,6 +23,12 @@ const useGameState = () => {
 
   const [playerTurnState, setPlayerTurnState] = useState('discarding');
   const [selectedDraftCards, setSelectedDraftCards] = useState([]);
+
+  // Estado de los secretos
+  const [isSecretsModalOpen, setIsSecretsModalOpen] = useState(false);
+  const [viewingSecretsOfPlayer, setViewingSecretsOfPlayer] = useState(null);
+  const [playerSecretsData, setPlayerSecretsData] = useState([]);
+  const [isSecretsLoading, setIsSecretsLoading] = useState(false);
   
 
   // Derived state
@@ -32,11 +38,7 @@ const useGameState = () => {
 
 
   const getPlayerEmoji = (playerId) => {
-    console.log("getPlayerEmoji()", { 
-      currentPlayerId, 
-      murdererId: roles.murdererId, 
-      accompliceId: roles.accompliceId 
-    });
+
     const isPlayerInvolved = currentPlayerId === roles.murdererId || currentPlayerId === roles.accompliceId;
     if (!isPlayerInvolved || !roles.murdererId) return null;
     if (playerId === roles.murdererId) return ' 🔪';
@@ -73,17 +75,20 @@ const useGameState = () => {
     hostId, setHostId,
     roles, setRoles,
     getPlayerEmoji,
-  displayedOpponents,
+    displayedOpponents,
     winners, setWinners,
     asesinoGano, setAsesinoGano,
     secretCards, setSecretCards,
     draftCards, setDraftCards,
-    // Derived state
     isMyTurn,
     isDiscardButtonEnabled,
     isPickupButtonEnabled,
     playerTurnState, setPlayerTurnState,
     selectedDraftCards, setSelectedDraftCards,
+    isSecretsModalOpen, setIsSecretsModalOpen,
+    viewingSecretsOfPlayer, setViewingSecretsOfPlayer,
+    playerSecretsData, setPlayerSecretsData,
+    isSecretsLoading, setIsSecretsLoading,
   };
 };
 

@@ -2,18 +2,21 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { cardService } from '@/services/cardService';
 import { useMemo } from 'react';
 
+
 // Components
 import Card from '@/components/Card/Card';
 import Deck from '@/components/Deck/Deck.jsx';
 import GameOverScreen from '@/components/GameOver/GameOverModal.jsx';
 import PlayerPod from '@/components/PlayerPod/PlayerPod.jsx';
 import CardDraft from '@/components/CardDraft/CardDraft.jsx'
+import SecretsModal from '@/components/SecretsModal/SecretsModal.jsx';
+
 
 // Hooks
 import useWebSocket from '@/hooks/useGameWebSockets';
 import useGameState from '@/hooks/useGameState';
 import useGameData from '@/hooks/useGameData';
-import useCardActions from '@/hooks/useCardActions';
+import useCardActions, { useSecrets } from '@/hooks/useCardActions';
 
 // Styles
 import styles from './GamePage.module.css';
@@ -30,19 +33,19 @@ const GamePage = () => {
     winners, asesinoGano,
     isDiscardButtonEnabled, currentPlayerId,
     roles, secretCards, displayedOpponents, draftCards,
-    playerTurnState, selectedDraftCards, isPickupButtonEnabled
+    playerTurnState, selectedDraftCards, isPickupButtonEnabled,
+    isSecretsModalOpen, isSecretsLoading, playerSecretsData, viewingSecretsOfPlayer
   } = gameState;
 
-  console.log("Testing Step 1 - Initial Game State:", gameState);
-
+  const { handleOpenSecretsModal, handleCloseSecretsModal } = useSecrets(gameId, gameState);
 
   const webSocketCallbacks = {
     onDeckUpdate: (count) => gameState.setDeckCount(count),
-        onTurnUpdate: (turn) => {
+    onTurnUpdate: (turn) => {
       gameState.setCurrentTurn(turn);
-      gameState.setPlayerTurnState('discarding'); 
+      gameState.setPlayerTurnState('discarding');
     },
-    
+
     onDraftUpdate: (newDraftData) => {
       const processedDraftCards = cardService.getPlayingHand(newDraftData);
       const draftWithInstanceIds = processedDraftCards.map((card, index) => ({
@@ -51,7 +54,7 @@ const GamePage = () => {
       }));
       gameState.setDraftCards(draftWithInstanceIds);
     },
-    
+
     onGameEnd: ({ winners, asesinoGano }) => {
       gameState.setWinners(winners);
       gameState.setAsesinoGano(asesinoGano);
@@ -67,8 +70,6 @@ const GamePage = () => {
   }, [hand]);
   const getPlayerEmoji = gameState.getPlayerEmoji;
   const isDrawingPhase = playerTurnState === 'drawing' && gameState.isMyTurn;
-  console.log("ispickupenabled", isPickupButtonEnabled);
-  console.log
 
 
   if (isLoading) {
@@ -97,6 +98,7 @@ const GamePage = () => {
               player={player}
               isCurrentTurn={player.id_jugador === currentTurn}
               roleEmoji={getPlayerEmoji(player.id_jugador)}
+              onSecretsClick={handleOpenSecretsModal}
             />
           </div>
         ))}
@@ -159,6 +161,13 @@ const GamePage = () => {
           </div>
         </div>
       </div>
+      <SecretsModal
+        isOpen={isSecretsModalOpen}
+        onClose={handleCloseSecretsModal}
+        player={viewingSecretsOfPlayer}
+        secrets={playerSecretsData}
+        isLoading={isSecretsLoading}
+      />
     </div>
   );
 };

@@ -11,7 +11,6 @@ const GameList = ({ games = [], onJoinClick }) => {
       </div>
     );
   }
-console.log("Partidas recibidas:", games);
   return (
     <div className={styles.listContainer}>
       

@@ -27,7 +27,6 @@ const GameLobbyPage = () => {
         setGameDetails(data);
         setPlayers(data.listaJugadores);
         setIsLoading(false);
-        console.log("Datos de la sala cargados:", data);
 
         if (storedPlayerId) {
           websocketService.connect(gameId, storedPlayerId);
@@ -70,7 +69,6 @@ const GameLobbyPage = () => {
     if (!currentPlayerId) return;
 
     try {
-      console.log(gameId, currentPlayerId);
       await apiService.startGame(gameId, currentPlayerId);
     } catch (err) {
       alert(`Error al iniciar la partida: ${err.message}`);
