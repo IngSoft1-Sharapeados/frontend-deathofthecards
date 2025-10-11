@@ -32,7 +32,7 @@ describe('DiscardDeck', () => {
   it('debería mostrar la carta superior correctamente', () => {
     render(<DiscardDeck cards={mockCards} />);
     const topCard = screen.getByTestId('card');
-    expect(topCard).toHaveTextContent('07-detective_poirot.png');
+    expect(topCard).toHaveTextContent('16-Instant_notsofast.png');
   });
 
   it('debería renderizar cartas de fondo para el mazo', () => {

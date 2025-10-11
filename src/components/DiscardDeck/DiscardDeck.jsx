@@ -4,7 +4,7 @@ import cardBack from "../../assets/images/cards/misc/01-card_back.png";
 import Card from "../Card/Card"; // Importar tu componente Card existente
 
 const DiscardDeck = ({ cards = [] }) => {
-  const topCard = cards.length > 0 ? cards[0] : null;
+  const topCard = cards.length > 0 ? cards[cards.length - 1] : null;
   const deckSize = cards.length;
     // Función para convertir ID a nombre de archivo
   const getImageNameFromId = (cardId) => {
