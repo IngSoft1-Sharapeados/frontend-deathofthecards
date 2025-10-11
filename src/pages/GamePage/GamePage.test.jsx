@@ -23,6 +23,7 @@ const mockUseGameState = {
   selectedDraftCards: [],
   isPickupButtonEnabled: false,
   isPlayButtonEnabled: false,
+  playedSetsByPlayer: {},
   displayedOpponents: [],
   getPlayerEmoji: () => null,
   setDeckCount: vi.fn(),
@@ -30,6 +31,7 @@ const mockUseGameState = {
   setDraftCards: vi.fn(),
   setWinners: vi.fn(),
   setAsesinoGano: vi.fn(),
+  setPlayedSetsByPlayer: vi.fn(),
 };
 
 const mockUseCardActions = {

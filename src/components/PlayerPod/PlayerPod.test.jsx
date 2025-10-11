@@ -5,84 +5,85 @@ import PlayerPod from './PlayerPod';
 import { cardService } from '@/services/cardService';
 import styles from './PlayerPod.module.css';
 
-// --- MOCKS (remain the same) ---
+// Mock Card to avoid image imports/URLs and make querying deterministic
 vi.mock('@/components/Card/Card', () => ({
   default: ({ imageName }) => <div data-testid={`card-${imageName}`}>{imageName}</div>,
 }));
+
+// Mock cardService to control getPlayingHand mapping
 vi.mock('@/services/cardService', () => ({
   cardService: {
-    getRandomDetectives: vi.fn(),
+    getPlayingHand: vi.fn(),
   },
 }));
 
-// --- SETUP (remains the same) ---
 const mockPlayer = { id_jugador: 2, nombre_jugador: 'Opponent' };
-const mockDetectives = Array.from({ length: 7 }, (_, i) => ({
-  id: 100 + i,
-  url: `detective-${i}.png`,
-}));
+const mockSets = [
+  { id: 7 },
+  { id: 8 },
+  { id: 9 },
+  { id: 10 },
+  { id: 11 },
+  { id: 12 },
+  { id: 13 },
+];
 
-// --- TESTS ---
 describe('PlayerPod', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    cardService.getRandomDetectives.mockReturnValue(mockDetectives);
+    // Map incoming ids to pretend card objects with url strings
+    cardService.getPlayingHand.mockImplementation((arr) =>
+      arr.map(({ id }) => ({ id, url: `detective-${id}.png` }))
+    );
   });
 
-  test('should render player info and initial 3 sets', () => {
-    render(<PlayerPod player={mockPlayer} />);
+  test('renders player info and first 3 set cards when sets provided', () => {
+    render(<PlayerPod player={mockPlayer} sets={mockSets} />);
     expect(screen.getByText('Opponent')).toBeInTheDocument();
-    expect(screen.getByTestId('card-detective-0.png')).toBeInTheDocument();
-    expect(screen.queryByTestId('card-detective-3.png')).not.toBeInTheDocument();
+    // Should show first 3
+    expect(screen.getByTestId('card-detective-7.png')).toBeInTheDocument();
+    expect(screen.getByTestId('card-detective-8.png')).toBeInTheDocument();
+    expect(screen.getByTestId('card-detective-9.png')).toBeInTheDocument();
+    // Next one should not be visible yet
+    expect(screen.queryByTestId('card-detective-10.png')).not.toBeInTheDocument();
   });
 
-  // --- FIX: This is the single, corrected version of the test ---
-  test('should apply current turn styles when isCurrentTurn is true', () => {
-    render(<PlayerPod player={mockPlayer} isCurrentTurn={true} />);
-    
-    // Now it can find the element by its test ID
+  test('applies current turn styles when isCurrentTurn is true', () => {
+    render(<PlayerPod player={mockPlayer} sets={mockSets} isCurrentTurn={true} />);
     const podElement = screen.getByTestId('player-pod');
     expect(podElement).toHaveClass(styles.currentTurn);
   });
 
-  test('should display role emoji when provided', () => {
-    render(<PlayerPod player={mockPlayer} roleEmoji="🔪" />);
+  test('displays role emoji when provided', () => {
+    render(<PlayerPod player={mockPlayer} sets={mockSets} roleEmoji="🔪" />);
     expect(screen.getByText('🔪')).toBeInTheDocument();
   });
 
-  describe('Carousel Functionality', () => {
-    // ... (the carousel tests were correct and remain the same)
-    test('carousel scrolls to the next set of cards', () => {
-      render(<PlayerPod player={mockPlayer} />);
-      const rightArrow = screen.getByRole('button', { name: /Next Detective/i });
-      fireEvent.click(rightArrow);
-      expect(screen.queryByTestId('card-detective-0.png')).not.toBeInTheDocument();
-      expect(screen.getByTestId('card-detective-3.png')).toBeInTheDocument();
+  describe('Carousel', () => {
+    test('navigates to next and previous sets', () => {
+      render(<PlayerPod player={mockPlayer} sets={mockSets} />);
+      const nextBtn = screen.getByRole('button', { name: /next detective/i });
+      fireEvent.click(nextBtn); // index becomes 1, shows ids 8,9,10
+      expect(screen.queryByTestId('card-detective-7.png')).not.toBeInTheDocument();
+      expect(screen.getByTestId('card-detective-10.png')).toBeInTheDocument();
+
+      const prevBtn = screen.getByRole('button', { name: /previous detective/i });
+      fireEvent.click(prevBtn); // back to 0, shows 7,8,9
+      expect(screen.getByTestId('card-detective-7.png')).toBeInTheDocument();
+      expect(screen.queryByTestId('card-detective-10.png')).not.toBeInTheDocument();
     });
 
-    test('carousel scrolls back to the previous set', () => {
-      render(<PlayerPod player={mockPlayer} />);
-      const rightArrow = screen.getByRole('button', { name: /Next Detective/i });
-      fireEvent.click(rightArrow);
-      const leftArrow = screen.getByRole('button', { name: /Previous Detective/i });
-      fireEvent.click(leftArrow);
-      expect(screen.getByTestId('card-detective-0.png')).toBeInTheDocument();
-      expect(screen.queryByTestId('card-detective-3.png')).not.toBeInTheDocument();
-    });
-    
-    test('should disable right arrow at the end of the list', () => {
-        render(<PlayerPod player={mockPlayer} />);
-        // Click through until we reach the end (7 cards, showing 3 at a time, can move 4 times)
-        const rightArrow = screen.getByRole('button', { name: /Next detective/i });
-        
-        // Click 4 times to reach the end (indices 0->1->2->3->4, showing last 3 cards)
-        fireEvent.click(rightArrow); // index 1
-        fireEvent.click(rightArrow); // index 2
-        fireEvent.click(rightArrow); // index 3
-        fireEvent.click(rightArrow); // index 4 (showing cards 4, 5, 6)
-        
-        // At the end, the button should be disabled
-        expect(rightArrow).toBeDisabled();
+    test('disables next button at end of list', () => {
+      render(<PlayerPod player={mockPlayer} sets={mockSets} />);
+      const nextBtn = screen.getByRole('button', { name: /next detective/i });
+      // 7 cards, visible 3 => last start index is 4; click 4 times
+      fireEvent.click(nextBtn);
+      fireEvent.click(nextBtn);
+      fireEvent.click(nextBtn);
+      fireEvent.click(nextBtn);
+      expect(nextBtn).toBeDisabled();
+      // At end, last visible includes id 13
+      expect(screen.getByTestId('card-detective-13.png')).toBeInTheDocument();
     });
   });
 });

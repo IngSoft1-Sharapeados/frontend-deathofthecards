@@ -42,7 +42,8 @@ describe('useGameData', () => {
     setAsesinoGano: vi.fn(),
     setRoles: vi.fn(),
     setSecretCards: vi.fn(),
-    setDraftCards: vi.fn()
+    setDraftCards: vi.fn(),
+    setPlayedSetsByPlayer: vi.fn(),
   };
 
   const mockGameData = {
@@ -79,6 +80,7 @@ describe('useGameData', () => {
     apiService.getRoles.mockResolvedValue(mockGameData.rolesData);
     apiService.getMySecrets.mockResolvedValue(mockGameData.secretCardsData);
     apiService.getDraftCards.mockResolvedValue([]);
+  apiService.getPlayedSets.mockResolvedValue([]);
 
     // Mock cardService
     cardService.getPlayingHand.mockImplementation(cards => cards);

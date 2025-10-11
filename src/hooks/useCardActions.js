@@ -9,7 +9,8 @@ const useCardActions = (gameId, gameState) => {
     selectedCards, setSelectedCards,
     currentPlayerId,
     isMyTurn,
-    playerTurnState, setPlayerTurnState, setSelectedDraftCards
+    playerTurnState, setPlayerTurnState, setSelectedDraftCards,
+    hasPlayedSetThisTurn, setHasPlayedSetThisTurn
   } = gameState;
 
   const handleCardClick = useCallback((instanceId) => {
@@ -22,7 +23,9 @@ const useCardActions = (gameId, gameState) => {
   }, [isMyTurn, playerTurnState, setSelectedCards]);
 
   const handleDraftCardClick = useCallback((instanceId) => {
-    if (!isMyTurn || playerTurnState !== 'drawing') return;
+    // Allow selecting from draft while drawing OR if a set was played and hand < 6
+    const canSelectFromDraft = playerTurnState === 'drawing' || (hasPlayedSetThisTurn && hand.length < 6);
+    if (!isMyTurn || !canSelectFromDraft) return;
 
     const slotsAvailable = 6 - hand.length;
 
@@ -35,7 +38,7 @@ const useCardActions = (gameId, gameState) => {
       }
       return prev;
     });
-  }, [isMyTurn, playerTurnState, setSelectedDraftCards, hand.length]);
+  }, [isMyTurn, playerTurnState, hasPlayedSetThisTurn, setSelectedDraftCards, hand.length]);
 
   const handleDiscard = useCallback(async () => {
     if (selectedCards.length === 0 || !isMyTurn) return;
@@ -50,8 +53,13 @@ const useCardActions = (gameId, gameState) => {
   setHand(prev => prev.filter(card => !selectedCards.includes(card.instanceId)));
       setSelectedCards([]);
 
-      // Switch to the 'drawing' phase
-      setPlayerTurnState('drawing');
+      // If after discarding you still have 6 or more, remain discarding.
+      // Otherwise, move to drawing to fill up to 6.
+      setPlayerTurnState(prev => {
+        // We don't know new hand size synchronously here due to async state, so infer using prev hand and selected
+        const remaining = hand.filter(c => !selectedCards.includes(c.instanceId)).length;
+        return remaining < 6 ? 'drawing' : 'discarding';
+      });
 
     } catch (error) {
       console.error("Error al descartar:", error);
@@ -62,7 +70,8 @@ const useCardActions = (gameId, gameState) => {
 
 
   const handlePickUp = useCallback(async () => {
-    if (!isMyTurn || playerTurnState !== 'drawing') {
+    // Allow pickup if drawing OR if a set was played this turn (and you haven't reached 6 yet)
+    if (!isMyTurn || !(playerTurnState === 'drawing' || (hasPlayedSetThisTurn && hand.length < 6))) {
       return;
     }
 
@@ -84,8 +93,7 @@ const useCardActions = (gameId, gameState) => {
         setHand(prevHand => [...prevHand, ...newCardsWithDetails]);
       }
 
-      // 4. Reset local state. No need to set playerTurnState, as the
-      //    backend now controls the turn and will notify us via WebSocket.
+  // 4. Reset local state. Phase control: if still below 6 after pickup, remain in drawing; if reached 6, end drawing phase here.
       setSelectedDraftCards([]);
 
       // 5. Ensure UI matches backend: fetch authoritative hand after pickup
@@ -108,7 +116,8 @@ const useCardActions = (gameId, gameState) => {
     }
   }, [
     gameId, currentPlayerId, isMyTurn, playerTurnState,
-    selectedDraftCards, draftCards, setHand, setSelectedDraftCards
+    selectedDraftCards, draftCards, setHand, setSelectedDraftCards,
+    hasPlayedSetThisTurn, hand.length
   ]);
 
   const handlePlay = useCallback(async () => {
@@ -117,7 +126,7 @@ const useCardActions = (gameId, gameState) => {
     // Validate selection
     if (!isValidDetectiveSet(hand, selectedCards)) return;
 
-    try {
+  try {
       // Map selected instance IDs to card ids
       const cardIdsToPlay = selectedCards
         .map((instanceId) => hand.find((c) => c.instanceId === instanceId)?.id)
@@ -129,16 +138,17 @@ const useCardActions = (gameId, gameState) => {
       }
 
       // Update local hand and clear selection
-  // Use functional update to avoid races with pickup updates
-  setHand(prev => prev.filter(card => !selectedCards.includes(card.instanceId)));
+      // Use functional update to avoid races with pickup updates
+      setHand(prev => prev.filter(card => !selectedCards.includes(card.instanceId)));
       setSelectedCards([]);
-  // Tras jugar un set, pasamos a la fase 'drawing' para levantar hasta tener 6.
-  setPlayerTurnState('drawing');
+      // Mark that a set was played this turn. Allow either discard or pickup now.
+      setHasPlayedSetThisTurn(true);
+      setPlayerTurnState('discarding');
     } catch (error) {
       console.error('Error al jugar set de detectives:', error);
       alert(`Error: ${error.message}`);
     }
-  }, [isMyTurn, playerTurnState, hand, selectedCards, setHand, setSelectedCards, gameId, currentPlayerId]);
+  }, [isMyTurn, playerTurnState, hand, selectedCards, setHand, setSelectedCards, gameId, currentPlayerId, setHasPlayedSetThisTurn]);
 
   return {
     handleCardClick,

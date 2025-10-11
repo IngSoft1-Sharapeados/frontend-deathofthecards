@@ -41,9 +41,11 @@ const GamePage = () => {
   const webSocketCallbacks = {
     onDeckUpdate: (count) => gameState.setDeckCount(count),
         onTurnUpdate: (turn) => {
-      gameState.setCurrentTurn(turn);
-      gameState.setPlayerTurnState('discarding'); 
-    },
+          gameState.setCurrentTurn(turn);
+          gameState.setPlayerTurnState('discarding');
+          // New rule: reset flag at the beginning of your turn
+          gameState.setHasPlayedSetThisTurn(false);
+        },
     
     onDraftUpdate: (newDraftData) => {
       const processedDraftCards = cardService.getDraftCards(newDraftData);
@@ -79,6 +81,8 @@ const GamePage = () => {
   }, [hand]);
   const getPlayerEmoji = gameState.getPlayerEmoji;
   const isDrawingPhase = playerTurnState === 'drawing' && gameState.isMyTurn;
+  // Also glow the deck/draft when a set was played and player can pick up to reach 6
+  const canPickAfterSet = gameState.hasPlayedSetThisTurn && gameState.isMyTurn && hand.length < 6;
   console.log("ispickupenabled", isPickupButtonEnabled);
   console.log
 
@@ -116,12 +120,12 @@ const GamePage = () => {
       </div>
 
       <div className={styles.centerArea}>
-        <Deck count={deckCount} isGlowing={isDrawingPhase} />
+        <Deck count={deckCount} isGlowing={isDrawingPhase || canPickAfterSet} />
         <CardDraft
           cards={draftCards}
           selectedCards={selectedDraftCards}
           onCardClick={handleDraftCardClick}
-          isGlowing={isDrawingPhase}
+          isGlowing={isDrawingPhase || canPickAfterSet}
         />
       </div>
 
@@ -177,7 +181,8 @@ const GamePage = () => {
                 Jugar
               </button>
             </div>
-            {playerTurnState === 'discarding' ? (
+            {/* Descartar is visible during discarding phase */}
+            {playerTurnState === 'discarding' && (
               <button
                 onClick={handleDiscard}
                 disabled={!isDiscardButtonEnabled}
@@ -185,7 +190,9 @@ const GamePage = () => {
               >
                 Descartar
               </button>
-            ) : (
+            )}
+            {/* Levantar is visible while drawing OR after playing a set (hand < 6) even in discarding */}
+            {(playerTurnState !== 'discarding' || (gameState.hasPlayedSetThisTurn && gameState.isMyTurn && hand.length < 6)) && (
               <button
                 onClick={handlePickUp}
                 disabled={!isPickupButtonEnabled}
