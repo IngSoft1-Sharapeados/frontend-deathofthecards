@@ -34,12 +34,21 @@ const useWebSocket = (callbacks) => {
       callbacksRef.current.onDraftUpdate?.(message['mazo-draft']);
     };
 
+    const onSecretUpdate = (message) => {
+      console.log('Actualización de secreto:', message);
+      callbacksRef.current.onSecretUpdate?.({
+        playerId: message['jugador-id'],
+        secrets: message['lista-secretos'],
+      });
+    };
+
 
     // Suscribirse a eventos
     websocketService.on('actualizacion-mazo', onDeckUpdate);
     websocketService.on('turno-actual', onTurnUpdate);
     websocketService.on('fin-partida', onGameEnd);
     websocketService.on('nuevo-draft', onDraftUpdate);
+    websocketService.on('actualizacion-secreto', onSecretUpdate);
 
     // Función de limpieza - SOLO remover listeners, NO desconectar
     return () => {
@@ -47,6 +56,7 @@ const useWebSocket = (callbacks) => {
       websocketService.off('turno-actual', onTurnUpdate);
       websocketService.off('fin-partida', onGameEnd);
       websocketService.off('nuevo-draft', onDraftUpdate);
+      websocketService.off('actualizacion-secreto', onSecretUpdate);
     };
   }, []);
 };
