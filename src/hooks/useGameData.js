@@ -97,7 +97,10 @@ const useGameData = (gameId, gameState) => {
           }
 
           if (Array.isArray(discardData)) {
-            setDiscardPile(discardData);
+            const processedDiscardPile = discardData.map(carta => ({
+              id: carta.id,
+            }));
+            setDiscardPile(processedDiscardPile);
           }
 
         } catch (error) {

@@ -37,7 +37,9 @@ const useWebSocket = (callbacks) => {
 
     const onDiscardUpdate = (message) => {
       console.log('Carta descartada:', message);
-      callbacksRef.current.onDiscardUpdate?.(message.payload?.discardted || []);
+      const discardCardIds = message.payload?.discardted || message || [];
+      const discardCards = discardCardIds.map(id => ({ id }));
+      callbacksRef.current.onDiscardUpdate?.(discardCards);
     };
     // Suscribirse a eventos
     websocketService.on('actualizacion-mazo', onDeckUpdate);
