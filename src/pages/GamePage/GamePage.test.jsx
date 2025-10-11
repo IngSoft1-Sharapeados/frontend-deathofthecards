@@ -132,6 +132,11 @@ describe('GamePage', () => {
       currentPlayerId: 1,
       playerTurnState: 'discarding',
       roles: { murdererId: null, accompliceId: null },
+      playersSecrets: {
+        1: { revealed: 0, hidden: 3 },
+        2: { revealed: 0, hidden: 3 },
+        3: { revealed: 0, hidden: 3 },
+      },
     });
     updateDerivedMockState();
   });
