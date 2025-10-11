@@ -36,7 +36,7 @@ const useGameData = (gameId, gameState) => {
             apiService.getRoles(gameId),
             apiService.getMySecrets(gameId, storedPlayerId),
             apiService.getDraftCards(gameId),
-            apiService.getDiscardPile(gameId, 1), 
+            apiService.getDiscardPile(gameId, storedPlayerId, 1), 
           ]);
 
 

@@ -135,7 +135,7 @@ describe('useGameData', () => {
       expect(mockGameState.setAsesinoGano).toHaveBeenCalledWith(true);
     });
   });
-
+//-------------------------------Tests de carta de descarte --------------------------------
   test('should handle loading errors', async () => {
     const error = new Error('Failed to load');
     apiService.getHand.mockRejectedValue(error);
@@ -176,7 +176,7 @@ describe('useGameData', () => {
     renderHook(() => useGameData('game-123', mockGameState));
 
     await waitFor(() => {
-      expect(apiService.getDiscardPile).toHaveBeenCalledWith('game-123', 1);
+      expect(apiService.getDiscardPile).toHaveBeenCalledWith('game-123','1', 1);
     });
 
     await waitFor(() => {
@@ -193,7 +193,7 @@ describe('useGameData', () => {
     renderHook(() => useGameData('game-123', mockGameState));
     await waitFor(() => {
       // Si en el futuro se añade query parameter player_id modificar aca
-      expect(apiService.getDiscardPile).toHaveBeenCalledWith('game-123', 1);
+      expect(apiService.getDiscardPile).toHaveBeenCalledWith('game-123','1', 1);
     });
     await waitFor(() => {
       expect(mockGameState.setDiscardPile).not.toHaveBeenCalled();

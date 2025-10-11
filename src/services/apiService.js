@@ -134,8 +134,8 @@ const createHttpService = () => {
       method: "GET",
     });
   };
-  const getDiscardPile = async (gameId, cantidad = 1)  => {
-    return request(`/partidas/${gameId}/descarte?cantidad=${cantidad}`, {
+  const getDiscardPile = async (gameId, playerID, cantidad = 1)  => {
+    return request(`/partidas/${gameId}/descarte?id_jugador=${playerID}&cantidad=${cantidad}`, {
       method: "GET",
     });
   };
