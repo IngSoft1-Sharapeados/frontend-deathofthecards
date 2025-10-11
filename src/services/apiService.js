@@ -46,7 +46,6 @@ const createHttpService = () => {
 
   const startGame = async (gameId, playerId) => {
     const gameIdInt = parseInt(gameId, 10);
-    console.log("startGame llamado con:", gameIdInt, playerId);
 
     return request(`/partidas/${gameIdInt}`, {
       method: "PUT",
@@ -129,11 +128,17 @@ const createHttpService = () => {
       body: JSON.stringify(payload),
     });
   };
+
+  const getPlayerSecrets = async (gameId, playerId) => {
+    return request(`/partidas/${gameId}/secretosjugador?id_jugador=${playerId}`, {
+      method: "GET",
+    });
+  };
   const getDiscardPile = async (gameId, cantidad = 1)  => {
     return request(`/partidas/${gameId}/descarte?cantidad=${cantidad}`, {
       method: "GET",
     });
-  }
+  };
   
   return {
     createGame,
@@ -152,6 +157,7 @@ const createHttpService = () => {
     getDraftCards,
     takeDraftCard,
     pickUpCards,
+    getPlayerSecrets,
     getDiscardPile
   };
 };
