@@ -8,7 +8,8 @@ const useGameData = (gameId, gameState) => {
     setHand, setIsLoading, setCurrentPlayerId,
     setDeckCount, setCurrentTurn, setTurnOrder,
     setPlayers, setHostId, setWinners, setAsesinoGano,
-    setRoles, setSecretCards, setDraftCards,setDiscardPile
+    setRoles, setSecretCards, setDraftCards, 
+    setPlayersSecrets,setDiscardPile
   } = gameState;
 
   const hasConnectedRef = useRef(false); // evita reconexiones extras
@@ -46,6 +47,17 @@ const useGameData = (gameId, gameState) => {
           setTurnOrder(turnOrderData);
           setHostId(gameData.id_anfitrion);
           setPlayers(gameData.listaJugadores || []);
+
+          if (gameData.listaJugadores) {
+            const initialSecrets = {};
+            for (const player of gameData.listaJugadores) {
+              initialSecrets[player.id_jugador] = {
+                revealed: 0,
+                hidden: 3,
+              };
+            }
+            setPlayersSecrets(initialSecrets);
+          }
 
           if (rolesData) {
             setRoles({

@@ -35,7 +35,7 @@ const GamePage = () => {
     isDiscardButtonEnabled, currentPlayerId,
     roles, secretCards, displayedOpponents, draftCards, discardPile,
     playerTurnState, selectedDraftCards, isPickupButtonEnabled,
-    isSecretsModalOpen, isSecretsLoading, playerSecretsData, viewingSecretsOfPlayer
+    isSecretsModalOpen, isSecretsLoading, playerSecretsData, viewingSecretsOfPlayer, playersSecrets, setPlayersSecrets
   } = gameState;
       // Desarrollo solamente
   if (process.env.NODE_ENV === 'development') {
@@ -64,6 +64,20 @@ const GamePage = () => {
       gameState.setWinners(winners);
       gameState.setAsesinoGano(asesinoGano);
     },
+
+    onSecretUpdate: ({ playerId, secrets }) => {
+      const revealedCount = secrets.filter(s => s.revelado).length;
+      const hiddenCount = secrets.length - revealedCount;
+
+      setPlayersSecrets(prevSecrets => ({
+        ...prevSecrets,
+        [playerId]: {
+          revealed: revealedCount,
+          hidden: hiddenCount,
+        }
+      }));
+    },
+
     onDiscardUpdate: (discardPile) => gameState.setDiscardPile(discardPile),
   };
 
@@ -105,6 +119,7 @@ const GamePage = () => {
               isCurrentTurn={player.id_jugador === currentTurn}
               roleEmoji={getPlayerEmoji(player.id_jugador)}
               onSecretsClick={handleOpenSecretsModal}
+              playerSecrets={playersSecrets[player.id_jugador]}
             />
           </div>
         ))}

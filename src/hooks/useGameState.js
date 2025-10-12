@@ -30,6 +30,7 @@ const useGameState = () => {
   const [viewingSecretsOfPlayer, setViewingSecretsOfPlayer] = useState(null);
   const [playerSecretsData, setPlayerSecretsData] = useState([]);
   const [isSecretsLoading, setIsSecretsLoading] = useState(false);
+  const [playersSecrets, setPlayersSecrets] = useState({});
   
 
   // Derived state
@@ -92,6 +93,7 @@ const useGameState = () => {
     viewingSecretsOfPlayer, setViewingSecretsOfPlayer,
     playerSecretsData, setPlayerSecretsData,
     isSecretsLoading, setIsSecretsLoading,
+    playersSecrets, setPlayersSecrets
   };
 };
 
