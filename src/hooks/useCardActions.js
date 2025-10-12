@@ -2,6 +2,8 @@ import { useCallback } from 'react';
 import { cardService } from '@/services/cardService';
 import { apiService } from '@/services/apiService';
 import { isValidDetectiveSet } from '@/utils/detectiveSetValidation';
+import { isValidEventCard } from '@/utils/eventCardValidation';
+
 
 const useCardActions = (gameId, gameState) => {
   const {
@@ -124,7 +126,7 @@ const useCardActions = (gameId, gameState) => {
     // Only allow during discarding phase and player's turn
     if (!isMyTurn || playerTurnState !== 'discarding') return;
     // Validate selection
-    if (!isValidDetectiveSet(hand, selectedCards)) return;
+    if (!isValidDetectiveSet(hand, selectedCards) && !isValidEventCard(hand, selectedCards)) return;
 
   try {
       // Map selected instance IDs to card ids
