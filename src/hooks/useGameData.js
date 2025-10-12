@@ -8,8 +8,8 @@ const useGameData = (gameId, gameState) => {
     setHand, setIsLoading, setCurrentPlayerId,
     setDeckCount, setCurrentTurn, setTurnOrder,
     setPlayers, setHostId, setWinners, setAsesinoGano,
-    setRoles, setSecretCards, setDraftCards, setPlayersSecrets
-
+    setRoles, setSecretCards, setDraftCards, 
+    setPlayersSecrets,setDiscardPile
   } = gameState;
 
   const hasConnectedRef = useRef(false); // evita reconexiones extras
@@ -27,7 +27,8 @@ const useGameData = (gameId, gameState) => {
     const loadGameData = async () => {
       if (gameId && storedPlayerId) {
         try {
-          const [handData, turnData, deckData, turnOrderData, gameData, rolesData, secretCardsData, draftData, playedSets] = await Promise.all([
+          const [handData, turnData, deckData, turnOrderData, gameData, rolesData, secretCardsData,
+             draftData, discardData, playedSets] = await Promise.all([
             apiService.getHand(gameId, storedPlayerId),
             apiService.getTurn(gameId),
             apiService.getDeckCount(gameId),
@@ -36,6 +37,7 @@ const useGameData = (gameId, gameState) => {
             apiService.getRoles(gameId),
             apiService.getMySecrets(gameId, storedPlayerId),
             apiService.getDraftCards(gameId),
+            apiService.getDiscardPile(gameId, storedPlayerId, 1), 
             apiService.getPlayedSets(gameId),
           ]);
 
@@ -114,6 +116,13 @@ const useGameData = (gameId, gameState) => {
           if (!hasConnectedRef.current) {
             websocketService.connect(gameId, storedPlayerId);
             hasConnectedRef.current = true;
+          }
+
+          if (Array.isArray(discardData)) {
+            const processedDiscardPile = discardData.map(carta => ({
+              id: carta.id,
+            }));
+            setDiscardPile(processedDiscardPile);
           }
 
         } catch (error) {

@@ -9,7 +9,8 @@ describe('useWebSocket', () => {
   const mockCallbacks = {
     onDeckUpdate: vi.fn(),
     onTurnUpdate: vi.fn(),
-    onGameEnd: vi.fn()
+    onGameEnd: vi.fn(),
+    onDiscardUpdate: vi.fn()
   };
 
   beforeEach(() => {
@@ -22,6 +23,7 @@ describe('useWebSocket', () => {
     expect(websocketService.on).toHaveBeenCalledWith('actualizacion-mazo', expect.any(Function));
     expect(websocketService.on).toHaveBeenCalledWith('turno-actual', expect.any(Function));
     expect(websocketService.on).toHaveBeenCalledWith('fin-partida', expect.any(Function));
+    expect(websocketService.on).toHaveBeenCalledWith('carta-descartada', expect.any(Function));
   });
 
   test('should unsubscribe from WebSocket events on unmount', () => {
@@ -35,12 +37,13 @@ describe('useWebSocket', () => {
   });
 
   test('should call callbacks when WebSocket events are received', () => {
-    let deckUpdateHandler, turnUpdateHandler, gameEndHandler;
+    let deckUpdateHandler, turnUpdateHandler, gameEndHandler, discardUpdateHandler; 
     
     websocketService.on.mockImplementation((event, handler) => {
       if (event === 'actualizacion-mazo') deckUpdateHandler = handler;
       if (event === 'turno-actual') turnUpdateHandler = handler;
       if (event === 'fin-partida') gameEndHandler = handler;
+      if (event === 'carta-descartada') discardUpdateHandler = handler;
     });
 
     renderHook(() => useWebSocket(mockCallbacks));
@@ -56,15 +59,28 @@ describe('useWebSocket', () => {
       winners: ['Player1'],
       asesinoGano: true
     });
+
+    discardUpdateHandler({ payload: { discardted: [23, 21, 20] } });
+    expect(mockCallbacks.onDiscardUpdate).toHaveBeenCalledWith([
+      { id: 23 },
+      { id: 21 },
+      { id: 20 }
+    ]);
   });
 
   test('should update callbacks when they change', () => {
-    const initialCallbacks = { onDeckUpdate: vi.fn() };
+    const initialCallbacks = { 
+      onDeckUpdate: vi.fn(),
+      onDiscardUpdate: vi.fn() 
+    };
     const { rerender } = renderHook(({ callbacks }) => useWebSocket(callbacks), {
       initialProps: { callbacks: initialCallbacks }
     });
 
-    const newCallbacks = { onDeckUpdate: vi.fn() };
+    const newCallbacks = { 
+      onDeckUpdate: vi.fn(),
+      onDiscardUpdate: vi.fn() 
+    };
     rerender({ callbacks: newCallbacks });
 
     let deckUpdateHandler;
@@ -95,5 +111,192 @@ describe('useWebSocket', () => {
       asesinoGano: false 
     });
   });
-  
+
+  describe('discard update event', () => {
+    test('should transform discard IDs to card objects', () => {
+      let discardHandler;
+      websocketService.on.mockImplementation((event, handler) => {
+        if (event === 'carta-descartada') discardHandler = handler;
+      });
+
+      renderHook(() => useWebSocket(mockCallbacks));
+
+      discardHandler({ payload: { discardted: [23, 21, 20] } });
+
+      expect(mockCallbacks.onDiscardUpdate).toHaveBeenCalledWith([
+        { id: 23 },
+        { id: 21 },
+        { id: 20 }
+      ]);
+    });
+
+    test('should handle empty discard array', () => {
+      let discardHandler;
+      websocketService.on.mockImplementation((event, handler) => {
+        if (event === 'carta-descartada') discardHandler = handler;
+      });
+
+      renderHook(() => useWebSocket(mockCallbacks));
+
+      discardHandler({ payload: { discardted: [] } });
+
+      expect(mockCallbacks.onDiscardUpdate).toHaveBeenCalledWith([]);
+    });
+
+    test('should handle missing payload gracefully', () => {
+      let discardHandler;
+      websocketService.on.mockImplementation((event, handler) => {
+        if (event === 'carta-descartada') discardHandler = handler;
+      });
+
+      renderHook(() => useWebSocket(mockCallbacks));
+
+      discardHandler({}); // Sin payload
+
+      expect(mockCallbacks.onDiscardUpdate).toHaveBeenCalledWith([]);
+    });
+
+    test('should handle direct array message (backward compatibility)', () => {
+      let discardHandler;
+      websocketService.on.mockImplementation((event, handler) => {
+        if (event === 'carta-descartada') discardHandler = handler;
+      });
+
+      renderHook(() => useWebSocket(mockCallbacks));
+
+      discardHandler([23, 21, 20]); 
+
+      expect(mockCallbacks.onDiscardUpdate).toHaveBeenCalledWith([
+        { id: 23 },
+        { id: 21 },
+        { id: 20 }
+      ]);
+    });
+  });
+
+  describe('Endpoint and WebSocket consistency', () => {
+    test('should show same top card from endpoint and WebSocket', () => {
+      // Simular datos del endpoint (formato backend)
+      const endpointDiscardData = [
+        { id: 23, nombre: 'Event Delay Escape' },
+        { id: 21, nombre: 'Event Card Trade' },
+        { id: 20, nombre: 'Event Another Victim' }
+      ];
+
+      // Simular mensaje WebSocket (formato backend)
+      const websocketDiscardData = {
+        payload: { discardted: [23, 21, 20] }
+      };
+
+      let endpointTopCard, websocketTopCard;
+
+      // Procesar datos del endpoint (como lo hace useGameData)
+      if (Array.isArray(endpointDiscardData) && endpointDiscardData.length > 0) {
+        endpointTopCard = { id: endpointDiscardData[0].id };
+      }
+
+      // Procesar datos del WebSocket (como lo hace useWebSocket)
+      let discardHandler;
+      websocketService.on.mockImplementation((event, handler) => {
+        if (event === 'carta-descartada') discardHandler = handler;
+      });
+
+      const mockCallbacks = {
+        onDiscardUpdate: vi.fn((discardCards) => {
+          if (discardCards.length > 0) {
+            websocketTopCard = discardCards[0]; // Primera carta del WebSocket
+          }
+        })
+      };
+
+      renderHook(() => useWebSocket(mockCallbacks));
+      
+      // Simular el mensaje WebSocket
+      discardHandler(websocketDiscardData);
+
+      // Verificar que ambas fuentes muestran la misma carta top
+      expect(endpointTopCard).toEqual({ id: 23 });
+      expect(websocketTopCard).toEqual({ id: 23 });
+      expect(endpointTopCard.id).toBe(websocketTopCard.id);
+    });
+
+    test('should handle empty discard pile consistently', () => {
+      const endpointDiscardData = [];
+      const websocketDiscardData = {
+        payload: { discardted: [] }
+      };
+
+      let endpointTopCard, websocketTopCard;
+
+      // Procesar endpoint
+      if (Array.isArray(endpointDiscardData) && endpointDiscardData.length > 0) {
+        endpointTopCard = { id: endpointDiscardData[0].id };
+      } else {
+        endpointTopCard = null;
+      }
+
+      // Procesar WebSocket
+      let discardHandler;
+      websocketService.on.mockImplementation((event, handler) => {
+        if (event === 'carta-descartada') discardHandler = handler;
+      });
+
+      const mockCallbacks = {
+        onDiscardUpdate: vi.fn((discardCards) => {
+          websocketTopCard = discardCards.length > 0 ? discardCards[0] : null;
+        })
+      };
+
+      renderHook(() => useWebSocket(mockCallbacks));
+      discardHandler(websocketDiscardData);
+
+      // Ambos deberían ser null/empty cuando no hay cartas
+      expect(endpointTopCard).toBeNull();
+      expect(websocketTopCard).toBeNull();
+    });
+
+    test('should maintain card order consistency between endpoint and WebSocket', () => {
+      // Simular que el endpoint devuelve las cartas en cierto orden
+      const endpointDiscardData = [
+        { id: 20, nombre: 'Event Another Victim' },
+        { id: 21, nombre: 'Event Card Trade' },
+        { id: 23, nombre: 'Event Delay Escape' }
+      ];
+
+      // WebSocket envía las mismas cartas en el mismo orden
+      const websocketDiscardData = {
+        payload: { discardted: [20, 21, 23] }
+      };
+
+      let endpointCards, websocketCards;
+
+      // Procesar endpoint
+      if (Array.isArray(endpointDiscardData)) {
+        endpointCards = endpointDiscardData.map(card => ({ id: card.id }));
+      }
+
+      // Procesar WebSocket
+      let discardHandler;
+      websocketService.on.mockImplementation((event, handler) => {
+        if (event === 'carta-descartada') discardHandler = handler;
+      });
+
+      const mockCallbacks = {
+        onDiscardUpdate: vi.fn((discardCards) => {
+          websocketCards = discardCards;
+        })
+      };
+
+      renderHook(() => useWebSocket(mockCallbacks));
+      discardHandler(websocketDiscardData);
+
+      // Verificar que ambas fuentes tienen el mismo orden de cartas
+      expect(endpointCards).toEqual([{ id: 20 }, { id: 21 }, { id: 23 }]);
+      expect(websocketCards).toEqual([{ id: 20 }, { id: 21 }, { id: 23 }]);
+      
+      // Verificar específicamente la top card
+      expect(endpointCards[0].id).toBe(20);
+      expect(websocketCards[0].id).toBe(20);
+    });
+  });
 });

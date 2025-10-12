@@ -44,6 +44,7 @@ describe('useGameData', () => {
     setSecretCards: vi.fn(),
     setDraftCards: vi.fn(),
     setPlayersSecrets: vi.fn(),
+    setDiscardPile: vi.fn(),
     setPlayedSetsByPlayer: vi.fn(),
   };
 
@@ -143,7 +144,7 @@ describe('useGameData', () => {
       expect(mockGameState.setAsesinoGano).toHaveBeenCalledWith(true);
     });
   });
-
+//-------------------------------Tests de carta de descarte --------------------------------
   test('should handle loading errors', async () => {
     const error = new Error('Failed to load');
     apiService.getHand.mockRejectedValue(error);
@@ -172,5 +173,67 @@ describe('useGameData', () => {
 
     // Verificar que no se llamó a las APIs
     expect(apiService.getHand).not.toHaveBeenCalled();
+  });
+
+  test('should process discard pile when discardData is an array', async () => {
+    const mockDiscardData = [
+      { id: 7, nombre: 'Detective Poirot' },
+      { id: 8, nombre: 'Miss Marple' }
+    ];
+
+    apiService.getDiscardPile.mockResolvedValue(mockDiscardData);
+    renderHook(() => useGameData('game-123', mockGameState));
+
+    await waitFor(() => {
+      expect(apiService.getDiscardPile).toHaveBeenCalledWith('game-123','1', 1);
+    });
+
+    await waitFor(() => {
+      expect(mockGameState.setDiscardPile).toHaveBeenCalledWith([
+        { id: 7 },
+        { id: 8 }
+      ]);
+    });
+  });
+
+  test('should not process discard pile when discardData is not an array', async () => {
+  // Mock para que coincida con los argumentos reales
+    apiService.getDiscardPile.mockResolvedValue(null);
+    renderHook(() => useGameData('game-123', mockGameState));
+    await waitFor(() => {
+      // Si en el futuro se añade query parameter player_id modificar aca
+      expect(apiService.getDiscardPile).toHaveBeenCalledWith('game-123','1', 1);
+    });
+    await waitFor(() => {
+      expect(mockGameState.setDiscardPile).not.toHaveBeenCalled();
+    });
+  });
+
+  test('should handle empty discard pile array', async () => {
+    apiService.getDiscardPile.mockResolvedValue([]); 
+    renderHook(() => useGameData('game-123', mockGameState));
+
+    await waitFor(() => {
+      expect(mockGameState.setDiscardPile).toHaveBeenCalledWith([]);
+    });
+  });
+
+  test('should process discard pile with complex card objects', async () => {
+    const mockDiscardData = [
+      { id: 7, nombre: 'Detective Poirot', url: 'poirot.jpg', tipo: 'detective' },
+      { id: 8, nombre: 'Miss Marple', url: 'marple.jpg', tipo: 'detective' }
+    ];
+
+    apiService.getDiscardPile.mockResolvedValue(mockDiscardData);
+
+    renderHook(() => useGameData('game-123', mockGameState));
+
+    await waitFor(() => {
+      // Verifica que solo se conserva el id y se eliminan las otras propiedades
+      expect(mockGameState.setDiscardPile).toHaveBeenCalledWith([
+        { id: 7 },
+        { id: 8 }
+      ]);
+    });
   });
 });
