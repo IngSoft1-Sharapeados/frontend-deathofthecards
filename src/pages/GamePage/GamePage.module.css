@@ -1,4 +1,3 @@
-/* --- Keep html, body styles --- */
 html, body {
   height: 100%;
   margin: 0;
@@ -7,8 +6,7 @@ html, body {
 
 .gameContainer {
   display: grid;
-  /* Grid rows: 1. Opponents, 2. Deck/Center, 3. Player Hand, 4. Actions */
-  grid-template-rows: 1fr auto auto auto; /* Added one more 'auto' row for actions */
+  grid-template-rows: 1fr 1fr auto auto;
   height: 100vh;
   width: 100vw;
   overflow: hidden;
@@ -24,25 +22,30 @@ html, body {
   pointer-events: none;
 }
 
-.discardButton.pickup-enabled {
-  background-color: #ffc107; 
-  border-color: #ffca28;
-  color: #111; 
-  cursor: pointer;
-}
-
-.discardButton.pickup-enabled:hover {
-  background-color: #ffb300;
-}
-
+/* CENTER AREA - Una sola definición limpia */
 .centerArea {
   grid-row: 2 / 3;
   display: flex;
-  flex-direction: column; 
-  align-items: center;    
+  flex-direction: column;
+  align-items: center;
   justify-content: center;
-  gap: 1rem;              
-  padding: 10px 0;
+  gap: 0.4rem;
+  padding: 0;
+  width: 100%;
+  position: relative;
+  z-index: 50;
+}
+
+/* DECKS CONTAINER - Una sola definición limpia */
+.decksContainer {
+  display: flex;
+  flex-direction: row;
+  gap: 15px;
+  align-items: flex-start;
+  justify-content: center;
+  position: relative;
+  z-index: 10;
+  margin: 0 auto;
 }
 
 .playerArea {
@@ -109,11 +112,39 @@ html, body {
 }
 .playButton.enabled:hover { transform: scale(1.05); }
 
+.bottomContainer {
+  grid-row: 3 / 4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  margin: 0 1rem 1rem 1rem; 
+  border: 2px solid transparent;
+  border-radius: 16px;
+  transition: all 0.3s ease;
+  width: fit-content;
+  justify-self: center;
+}
+
+.bottomContainer.myTurn {
+  border: 2px solid #22c55e;
+  border-radius: 16px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 0 15px rgba(34, 197, 94, 0.6);
+  animation: pulse-green 2s infinite;
+  background-color: rgba(34, 197, 94, 0.1);
+}
+
+/* --- Opponent Positioning --- */
+
 .opponent {
   position: absolute;
   pointer-events: all;
   transition: transform 0.5s ease-out;
   transform: scale(0.9);
+  z-index:800;
 }
 
 .opponent:has(.carouselCard:hover) {
@@ -132,7 +163,7 @@ html, body {
 [data-player-count="5"] .opponent-4 { top: 200%; right: 55px; transform: translateY(-50%) scale(0.9); }
 [data-player-count="6"] .opponent-1 { top: 200%; left: 20px; transform: translateY(-50%) scale(0.8); }
 [data-player-count="6"] .opponent-2 { top: 50%; left: 10%; transform: translateX(-50%) scale(0.8); }
-[data-player-count="6"] .opponent-3 { top: 0; left: 75%; transform: translateX(-50%) scale(0.8); }
+[data-player-count="6"] .opponent-3 { top: 0; left: 50%; transform: translateX(-50%) scale(0.8); }
 [data-player-count="6"] .opponent-4 { top: 50%; right: -160px; transform: translateX(-50%) scale(0.8); }
 [data-player-count="6"] .opponent-5 { top: 200%; right: 10px; transform: translateY(-50%) scale(0.8); }
 
@@ -142,18 +173,19 @@ html, body {
   padding-bottom: 0.5rem;
   text-align: center;
   color: #e0e0e0;
+  font-size: 1.2rem;
 }
-.title { font-size: 1.2rem; }
-.secretTitle { font-size: 1.2rem; }
+
 
 .handContainer, .secretCardsContainer {
   display: flex;
   justify-content: center;
   padding-left: 60px;
 }
+
 .handContainer > *,
 .secretCardsContainer > * {
-  margin-left: -45px; /* Overlap cards by 60px */
+  margin-left: -45px;
   transition: transform 0.2s ease-out, margin 0.2s ease-out;
 }
 
@@ -168,17 +200,32 @@ html, body {
   background-color: #333;
   cursor: not-allowed;
   transition: all 0.2s ease-in-out;
-  margin: 0; /* Remove margin-bottom */
+  margin: 0;
 }
 
-/* ... keep the rest of your styles ... */
 .discardButton.enabled {
   background-color: #b22222; 
   border-color: #ff6347; 
   color: white;
   cursor: pointer;
 }
-.discardButton.enabled:hover { transform: scale(1.05); }
+
+.discardButton.enabled:hover { 
+  transform: scale(1.05); 
+}
+
+.discardButton.pickup-enabled {
+  background-color: #ffc107; 
+  border-color: #ffca28;
+  color: #111; 
+  cursor: pointer;
+}
+
+.discardButton.pickup-enabled:hover {
+  background-color: #ffb300;
+}
+
+
 .loadingSpinner {
   border: 6px solid #f3f3f3;
   border-top: 6px solid #3498db;
@@ -199,33 +246,7 @@ html, body {
   100% { box-shadow: 0 0 15px rgba(34, 197, 94, 0.6); }
 }
 
-.bottomContainer.myTurn {
-  border: 2px solid #22c55e;
-  border-radius: 16px;
-  padding: 1rem;
-  margin-bottom: 1rem; /* Adjust spacing to account for padding */
-  box-shadow: 0 0 15px rgba(34, 197, 94, 0.6);
-  animation: pulse-green 2s infinite;
-  background-color: rgba(34, 197, 94, 0.1); /* Optional: slight green background tint */
-}
 
-.bottomContainer {
-  grid-row: 3 / 4;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 1rem;
-  margin: 0 1rem 1rem 1rem; 
-  border: 2px solid transparent;
-  border-radius: 16px;
-  transition: all 0.3s ease;
-  width: fit-content;
-  justify-self: center;
-}
-
-
-/* --- Responsive Design for Smaller Screens --- */
 
 /* Tablet and smaller laptops (max-width: 1200px) */
 @media (max-width: 1200px) {
@@ -260,6 +281,14 @@ html, body {
   
   .actionsContainer {
     padding-bottom: 2rem;
+  }
+  
+  .centerArea {
+    gap: 1rem;
+  }
+  
+  .decksContainer {
+    gap: 12px;
   }
 }
 
@@ -303,8 +332,12 @@ html, body {
   }
   
   .centerArea {
-    gap: 0.5rem;
-    padding: 5px 0;
+    gap: 0.75rem;
+    padding: 0.5rem 0;
+  }
+  
+  .decksContainer {
+    gap: 10px;
   }
   
   .playerArea {
@@ -320,15 +353,3 @@ html, body {
     padding-bottom: 1.5rem;
   }
 }
-
-
-
-/* --- Your other styles --- */
-.title, .secretTitle {
-  margin: 0;
-  padding-bottom: 0.5rem;
-  text-align: center;
-  color: #e0e0e0;
-}
-.title { font-size: 1.2rem; }
-.secretTitle { font-size: 1.2rem; }

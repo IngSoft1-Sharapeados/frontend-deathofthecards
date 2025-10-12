@@ -7,6 +7,7 @@ const useGameState = () => {
   const [selectedCards, setSelectedCards] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentPlayerId, setCurrentPlayerId] = useState(null);
+  const [discardPile, setDiscardPile] = useState([]);
 
   // Estados globales del juego
   const [deckCount, setDeckCount] = useState(0);
@@ -90,8 +91,8 @@ const useGameState = () => {
     draftCards, setDraftCards,
   playedSetsByPlayer, setPlayedSetsByPlayer,
   hasPlayedSetThisTurn, setHasPlayedSetThisTurn,
+    discardPile,setDiscardPile,
     // Derived state
-
     isMyTurn,
     isDiscardButtonEnabled,
     isPickupButtonEnabled,

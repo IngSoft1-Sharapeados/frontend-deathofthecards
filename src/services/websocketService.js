@@ -82,7 +82,19 @@ const websocketService = {
     if (eventHandlers[eventName]) {
       eventHandlers[eventName] = eventHandlers[eventName].filter(cb => cb !== callback);
     }
+  },
+
+  emit(eventName, message) {
+    if (eventHandlers[eventName]) {
+      eventHandlers[eventName].forEach(callback => callback(message));
+    }
   }
 };
+
+// Exponer para desarrollo - ELIMINAR EN PRODUCCIÓN
+if (process.env.NODE_ENV === 'development') {
+  window.websocketService = websocketService;
+  window.eventHandlers = eventHandlers; 
+}
 
 export default websocketService;
