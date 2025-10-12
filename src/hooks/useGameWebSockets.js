@@ -43,10 +43,18 @@ const useWebSocket = (callbacks) => {
     };
 
 
+    const onDiscardUpdate = (message) => {
+      console.log('Carta descartada:', message);
+      const discardCardIds = message.payload?.discardted || message || [];
+      const safeDiscardCardIds = Array.isArray(discardCardIds) ? discardCardIds : [];
+      const discardCards = safeDiscardCardIds.map(id => ({ id }));
+      callbacksRef.current.onDiscardUpdate?.(discardCards);
+    };
     // Suscribirse a eventos
     websocketService.on('actualizacion-mazo', onDeckUpdate);
     websocketService.on('turno-actual', onTurnUpdate);
     websocketService.on('fin-partida', onGameEnd);
+    websocketService.on('carta-descartada', onDiscardUpdate);  
     websocketService.on('nuevo-draft', onDraftUpdate);
     websocketService.on('actualizacion-secreto', onSecretUpdate);
 

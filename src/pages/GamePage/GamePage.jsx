@@ -11,7 +11,7 @@ import PlayerPod from '@/components/PlayerPod/PlayerPod.jsx';
 import CardDraft from '@/components/CardDraft/CardDraft.jsx'
 import SecretsModal from '@/components/SecretsModal/SecretsModal.jsx';
 
-
+import DiscardDeck from '@/components/DiscardDeck/DiscardDeck.jsx';
 // Hooks
 import useWebSocket from '@/hooks/useGameWebSockets';
 import useGameState from '@/hooks/useGameState';
@@ -22,6 +22,7 @@ import useCardActions, { useSecrets } from '@/hooks/useCardActions';
 import styles from './GamePage.module.css';
 
 const GamePage = () => {
+
   const { id: gameId } = useParams();
   const navigate = useNavigate();
 
@@ -32,11 +33,15 @@ const GamePage = () => {
     deckCount, currentTurn, turnOrder, players,
     winners, asesinoGano,
     isDiscardButtonEnabled, currentPlayerId,
-    roles, secretCards, displayedOpponents, draftCards,
+    roles, secretCards, displayedOpponents, draftCards, discardPile,
     playerTurnState, selectedDraftCards, isPickupButtonEnabled,
     isSecretsModalOpen, isSecretsLoading, playerSecretsData, viewingSecretsOfPlayer, playersSecrets, setPlayersSecrets
   } = gameState;
-
+      // Desarrollo solamente
+  if (process.env.NODE_ENV === 'development') {
+    window.gameState = gameState;
+  }
+  //borrar despues
   const { handleOpenSecretsModal, handleCloseSecretsModal } = useSecrets(gameId, gameState);
 
   const webSocketCallbacks = {
@@ -73,6 +78,7 @@ const GamePage = () => {
       }));
     },
 
+    onDiscardUpdate: (discardPile) => gameState.setDiscardPile(discardPile),
   };
 
   useWebSocket(webSocketCallbacks);
@@ -120,7 +126,10 @@ const GamePage = () => {
       </div>
 
       <div className={styles.centerArea}>
+        <div className={styles.decksContainer}>
         <Deck count={deckCount} isGlowing={isDrawingPhase} />
+        <DiscardDeck cards={discardPile} />
+      </div>
         <CardDraft
           cards={draftCards}
           selectedCards={selectedDraftCards}
