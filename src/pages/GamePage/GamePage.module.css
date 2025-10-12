@@ -94,6 +94,7 @@ html, body {
   pointer-events: all;
   transition: transform 0.5s ease-out;
   transform: scale(0.9);
+  z-index:800;
 }
 
 .opponent:has(.carouselCard:hover) {
