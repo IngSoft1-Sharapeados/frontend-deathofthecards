@@ -10,6 +10,7 @@ import GameOverScreen from '@/components/GameOver/GameOverModal.jsx';
 import PlayerPod from '@/components/PlayerPod/PlayerPod.jsx';
 import CardDraft from '@/components/CardDraft/CardDraft.jsx'
 import SecretsModal from '@/components/SecretsModal/SecretsModal.jsx';
+import MySetsCarousel from '@/components/MySetsCarousel/MySetsCarousel.jsx';
 
 
 // Hooks
@@ -184,16 +185,11 @@ const GamePage = () => {
             </div>
           </div>
 
-          {/* My played sets */}
+          {/* My played sets (compact carousel with max 3 visible) */}
           <div className={styles.mySetsContainer}>
-            {(playedSetsByPlayer[currentPlayerId] || []).map((item, index) => {
-              const card = cardService.getPlayingHand([{ id: item.representacion_id_carta }])[0];
-              return (
-                <div key={`myset-${index}`} className={styles.mySetCard}>
-                  <Card imageName={card.url} subfolder="game-cards" />
-                </div>
-              );
-            })}
+            <MySetsCarousel
+              sets={(playedSetsByPlayer[currentPlayerId] || []).map(item => ({ id: item.representacion_id_carta }))}
+            />
           </div>
 
           <div className={styles.actionsContainer}>
