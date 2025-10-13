@@ -1,0 +1,76 @@
+.carouselWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  width: 260px; /* compact width */
+  height: auto; /* let content define height to align with hand */
+}
+
+.scroller {
+  width: 100%;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end; /* align track/cards to bottom */
+}
+
+.track {
+  display: flex;
+  gap: 6px; /* tighter spacing between cards */
+  padding: 0;
+  transition: transform 0.3s ease;
+  position: relative;
+  z-index: 2;
+  justify-content: center;
+  width: fit-content;
+}
+
+.miniCard {
+  width: 58px; /* slightly smaller than opponent carousel */
+  flex-shrink: 0;
+  /* Remove default scale to avoid layout vs visual height mismatch */
+  transition: all 0.2s ease;
+  position: relative;
+  z-index: 2;
+  cursor: default;
+}
+
+.miniCard:hover {
+  transform: translateY(-8px) scale(0.95);
+}
+
+.arrowButton {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(47, 47, 79, 0.9);
+  color: white;
+  border: 2px solid #3a3a5e;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10;
+  opacity: 0.85;
+  transition: opacity 0.2s ease, transform 0.2s ease, background 0.2s ease;
+}
+
+.arrowButton:disabled {
+  opacity: 0.2;
+  cursor: not-allowed;
+}
+
+.left { left: -6px; transform: translateY(-50%) rotate(180deg); }
+.right { right: -6px; }
+
+@media (max-width: 768px) {
+  .carouselWrapper {
+    width: 220px;
+    height: 100px;
+  }
+  .miniCard { width: 52px; }
+}

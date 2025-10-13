@@ -10,6 +10,7 @@ import GameOverScreen from '@/components/GameOver/GameOverModal.jsx';
 import PlayerPod from '@/components/PlayerPod/PlayerPod.jsx';
 import CardDraft from '@/components/CardDraft/CardDraft.jsx'
 import SecretsModal from '@/components/SecretsModal/SecretsModal.jsx';
+import MySetsCarousel from '@/components/MySetsCarousel/MySetsCarousel.jsx';
 
 import DiscardDeck from '@/components/DiscardDeck/DiscardDeck.jsx';
 // Hooks
@@ -35,7 +36,10 @@ const GamePage = () => {
     isDiscardButtonEnabled, currentPlayerId,
     roles, secretCards, displayedOpponents, draftCards, discardPile,
     playerTurnState, selectedDraftCards, isPickupButtonEnabled,
+    playedSetsByPlayer,
+    isPlayButtonEnabled,
     isSecretsModalOpen, isSecretsLoading, playerSecretsData, viewingSecretsOfPlayer, playersSecrets, setPlayersSecrets
+
   } = gameState;
       // Desarrollo solamente
   if (process.env.NODE_ENV === 'development') {
@@ -46,13 +50,17 @@ const GamePage = () => {
 
   const webSocketCallbacks = {
     onDeckUpdate: (count) => gameState.setDeckCount(count),
-    onTurnUpdate: (turn) => {
-      gameState.setCurrentTurn(turn);
-      gameState.setPlayerTurnState('discarding');
-    },
+
+        onTurnUpdate: (turn) => {
+          gameState.setCurrentTurn(turn);
+          gameState.setPlayerTurnState('discarding');
+          // New rule: reset flag at the beginning of your turn
+          gameState.setHasPlayedSetThisTurn(false);
+        },
+    
 
     onDraftUpdate: (newDraftData) => {
-      const processedDraftCards = cardService.getPlayingHand(newDraftData);
+      const processedDraftCards = cardService.getDraftCards(newDraftData);
       const draftWithInstanceIds = processedDraftCards.map((card, index) => ({
         ...card,
         instanceId: `draft-${card.id}-${Date.now()}-${index}`
@@ -64,6 +72,18 @@ const GamePage = () => {
       gameState.setWinners(winners);
       gameState.setAsesinoGano(asesinoGano);
     },
+
+    onSetPlayed: (payload) => {
+      const { jugador_id, representacion_id, cartas_ids } = payload;
+      gameState.setPlayedSetsByPlayer(prev => {
+        const next = { ...prev };
+        const arr = next[jugador_id] ? [...next[jugador_id]] : [];
+        arr.push({ jugador_id, representacion_id_carta: representacion_id, cartas_ids });
+        next[jugador_id] = arr;
+        return next;
+      });
+    },
+
 
     onSecretUpdate: ({ playerId, secrets }) => {
       const revealedCount = secrets.filter(s => s.revelado).length;
@@ -83,13 +103,19 @@ const GamePage = () => {
 
   useWebSocket(webSocketCallbacks);
   useGameData(gameId, gameState);
-  const { handleCardClick, handleDraftCardClick, handleDiscard, handlePickUp } = useCardActions(gameId, gameState);
+  const { handleCardClick, handleDraftCardClick, handleDiscard, handlePickUp, handlePlay } = useCardActions(gameId, gameState);
 
   const sortedHand = useMemo(() => {
     return [...hand].sort((a, b) => a.id - b.id);
   }, [hand]);
   const getPlayerEmoji = gameState.getPlayerEmoji;
   const isDrawingPhase = playerTurnState === 'drawing' && gameState.isMyTurn;
+
+  // Also glow the deck/draft when a set was played and player can pick up to reach 6
+  const canPickAfterSet = gameState.hasPlayedSetThisTurn && gameState.isMyTurn && hand.length < 6;
+  console.log("ispickupenabled", isPickupButtonEnabled);
+  console.log
+
 
 
   if (isLoading) {
@@ -118,23 +144,28 @@ const GamePage = () => {
               player={player}
               isCurrentTurn={player.id_jugador === currentTurn}
               roleEmoji={getPlayerEmoji(player.id_jugador)}
+
+              sets={(playedSetsByPlayer[player.id_jugador] || []).map(item => ({ id: item.representacion_id_carta }))}
+
               onSecretsClick={handleOpenSecretsModal}
               playerSecrets={playersSecrets[player.id_jugador]}
+
             />
           </div>
         ))}
       </div>
 
       <div className={styles.centerArea}>
+
         <div className={styles.decksContainer}>
-        <Deck count={deckCount} isGlowing={isDrawingPhase} />
-        <DiscardDeck cards={discardPile} />
-      </div>
+          <Deck count={deckCount} isGlowing={isDrawingPhase || canPickAfterSet} />
+          <DiscardDeck cards={discardPile} />
+        </div>
         <CardDraft
           cards={draftCards}
           selectedCards={selectedDraftCards}
           onCardClick={handleDraftCardClick}
-          isGlowing={isDrawingPhase}
+          isGlowing={isDrawingPhase || canPickAfterSet}
         />
       </div>
 
@@ -164,8 +195,29 @@ const GamePage = () => {
             </div>
           </div>
 
+          {/* My played sets (compact carousel with max 3 visible) */}
+          <div className={styles.mySetsContainer}>
+            <MySetsCarousel
+              sets={(playedSetsByPlayer[currentPlayerId] || []).map(item => ({ id: item.representacion_id_carta }))}
+            />
+          </div>
+
           <div className={styles.actionsContainer}>
-            {playerTurnState === 'discarding' ? (
+            {/* Selected indicator and Play button */}
+            <div className={styles.playControls}>
+              <span className={styles.selectedInfo}>
+                Seleccionadas: {selectedCards.length}
+              </span>
+              <button
+                onClick={handlePlay}
+                disabled={!isPlayButtonEnabled}
+                className={`${styles.playButton} ${isPlayButtonEnabled ? styles.enabled : ''}`}
+              >
+                Jugar
+              </button>
+            </div>
+            {/* Descartar is visible during discarding phase */}
+            {playerTurnState === 'discarding' && (
               <button
                 onClick={handleDiscard}
                 disabled={!isDiscardButtonEnabled}
@@ -173,7 +225,9 @@ const GamePage = () => {
               >
                 Descartar
               </button>
-            ) : (
+            )}
+            {/* Levantar is visible while drawing OR after playing a set (hand < 6) even in discarding */}
+            {(playerTurnState !== 'discarding' || (gameState.hasPlayedSetThisTurn && gameState.isMyTurn && hand.length < 6)) && (
               <button
                 onClick={handlePickUp}
                 disabled={!isPickupButtonEnabled}

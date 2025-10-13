@@ -9,7 +9,7 @@ const useGameData = (gameId, gameState) => {
     setDeckCount, setCurrentTurn, setTurnOrder,
     setPlayers, setHostId, setWinners, setAsesinoGano,
     setRoles, setSecretCards, setDraftCards, 
-    setPlayersSecrets,setDiscardPile
+    setPlayersSecrets, setPlayedSetsByPlayer, setDiscardPile
   } = gameState;
 
   const hasConnectedRef = useRef(false); // evita reconexiones extras
@@ -27,8 +27,9 @@ const useGameData = (gameId, gameState) => {
     const loadGameData = async () => {
       if (gameId && storedPlayerId) {
         try {
+
           const [handData, turnData, deckData, turnOrderData, gameData, rolesData, secretCardsData,
-             draftData, discardData] = await Promise.all([
+             draftData, discardData, playedSets] = await Promise.all([
             apiService.getHand(gameId, storedPlayerId),
             apiService.getTurn(gameId),
             apiService.getDeckCount(gameId),
@@ -38,6 +39,7 @@ const useGameData = (gameId, gameState) => {
             apiService.getMySecrets(gameId, storedPlayerId),
             apiService.getDraftCards(gameId),
             apiService.getDiscardPile(gameId, storedPlayerId, 1), 
+            apiService.getPlayedSets(gameId),
           ]);
 
 
@@ -93,6 +95,15 @@ const useGameData = (gameId, gameState) => {
             instanceId: `${card.id}-secret-${index}`
           }));
           setSecretCards(secretsWithInstanceIds);
+
+          // Played sets
+          const grouped = {};
+          (playedSets || []).forEach(item => {
+            const arr = grouped[item.jugador_id] || [];
+            arr.push(item);
+            grouped[item.jugador_id] = arr;
+          });
+          setPlayedSetsByPlayer(grouped);
 
           // Procesar mano de cartas
           const playingHand = cardService.getPlayingHand(handData);

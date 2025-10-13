@@ -1,4 +1,5 @@
 import { useState, useCallback, useMemo } from 'react';
+import { isValidDetectiveSet } from '@/utils/detectiveSetValidation';
 
 const useGameState = () => {
   // Estados de la UI y datos del jugador
@@ -17,6 +18,9 @@ const useGameState = () => {
   const [roles, setRoles] = useState({ murdererId: null, accompliceId: null });
   const [secretCards, setSecretCards] = useState([]);
   const [draftCards, setDraftCards] = useState([]);
+  const [playedSetsByPlayer, setPlayedSetsByPlayer] = useState({});
+  // Track if player has played a set in the current turn
+  const [hasPlayedSetThisTurn, setHasPlayedSetThisTurn] = useState(false);
 
   // Estados para el fin de la partida
   const [winners, setWinners] = useState(null);
@@ -36,7 +40,10 @@ const useGameState = () => {
   // Derived state
   const isMyTurn = currentTurn === currentPlayerId;
   const isDiscardButtonEnabled = selectedCards.length > 0 && isMyTurn && playerTurnState === 'discarding';
-  const isPickupButtonEnabled = isMyTurn && playerTurnState === 'drawing';
+  // Pickup is enabled while drawing, or if a set was already played this turn (to allow choosing pickup without discarding again),
+  // but only when it's still your turn.
+  const isPickupButtonEnabled = isMyTurn && (playerTurnState === 'drawing' || (hasPlayedSetThisTurn && hand.length < 6));
+  const isPlayButtonEnabled = isMyTurn && playerTurnState === 'discarding' && isValidDetectiveSet(hand, selectedCards);
 
 
   const getPlayerEmoji = (playerId) => {
@@ -82,11 +89,14 @@ const useGameState = () => {
     asesinoGano, setAsesinoGano,
     secretCards, setSecretCards,
     draftCards, setDraftCards,
+  playedSetsByPlayer, setPlayedSetsByPlayer,
+  hasPlayedSetThisTurn, setHasPlayedSetThisTurn,
     discardPile,setDiscardPile,
     // Derived state
     isMyTurn,
     isDiscardButtonEnabled,
     isPickupButtonEnabled,
+    isPlayButtonEnabled,
     playerTurnState, setPlayerTurnState,
     selectedDraftCards, setSelectedDraftCards,
     isSecretsModalOpen, setIsSecretsModalOpen,

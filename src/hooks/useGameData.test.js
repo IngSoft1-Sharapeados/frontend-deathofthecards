@@ -44,6 +44,7 @@ describe('useGameData', () => {
     setSecretCards: vi.fn(),
     setDraftCards: vi.fn(),
     setPlayersSecrets: vi.fn(),
+    setPlayedSetsByPlayer: vi.fn(),
     setDiscardPile: vi.fn()
   };
 
@@ -81,6 +82,7 @@ describe('useGameData', () => {
     apiService.getRoles.mockResolvedValue(mockGameData.rolesData);
     apiService.getMySecrets.mockResolvedValue(mockGameData.secretCardsData);
     apiService.getDraftCards.mockResolvedValue([]);
+  apiService.getPlayedSets.mockResolvedValue([]);
 
     // Mock cardService
     cardService.getPlayingHand.mockImplementation(cards => cards.map(c => ({ ...c, url: 'card1.png' })));

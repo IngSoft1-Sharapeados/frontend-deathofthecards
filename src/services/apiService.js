@@ -112,6 +112,12 @@ const createHttpService = () => {
     });
   }
 
+  const getPlayedSets = async (gameId) => {
+    return request(`/partidas/${gameId}/sets`, {
+      method: "GET",
+    });
+  }
+
   const takeDraftCard = async (gameId, playerId, cardIds) => {
     return request(`/partidas/${gameId}/draft?id_jugador=${playerId}`, {
       method: "PUT",
@@ -126,6 +132,14 @@ const createHttpService = () => {
     return request(`/partidas/${gameId}/jugador/${playerId}/recoger`, {
       method: "PUT",
       body: JSON.stringify(payload),
+    });
+  };
+
+  const playDetectiveSet = async (gameId, playerId, cardIds) => {
+    // Backend expects: POST /partidas/{id_partida}/Jugar-set?id_jugador=... body: [int, int, int]
+    return request(`/partidas/${gameId}/Jugar-set?id_jugador=${playerId}`, {
+      method: "POST",
+      body: JSON.stringify(cardIds),
     });
   };
 
@@ -155,10 +169,12 @@ const createHttpService = () => {
     getMySecrets,
     getRoles,
     getDraftCards,
-    takeDraftCard,
-    pickUpCards,
-    getPlayerSecrets,
-    getDiscardPile
+  takeDraftCard,
+  pickUpCards,
+  playDetectiveSet,
+  getPlayedSets,
+  getPlayerSecrets,
+  getDiscardPile
   };
 };
 
