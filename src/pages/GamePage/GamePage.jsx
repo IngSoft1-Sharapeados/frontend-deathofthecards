@@ -42,11 +42,10 @@ const GamePage = () => {
     isSecretsModalOpen, isSecretsLoading, playerSecretsData, viewingSecretsOfPlayer, playersSecrets, setPlayersSecrets
 
   } = gameState;
-      // Desarrollo solamente
   if (process.env.NODE_ENV === 'development') {
     window.gameState = gameState;
   }
-  //borrar despues
+
   const { handleOpenSecretsModal, handleCloseSecretsModal } = useSecrets(gameId, gameState);
   const { handleSetPlayedEvent, modals: detectiveModals } = useDetectiveSecretReveal(gameId, gameState, players);
 

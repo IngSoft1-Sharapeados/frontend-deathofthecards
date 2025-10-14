@@ -5,11 +5,7 @@ import PlayerSelectModal from '@/components/UI/PlayerSelectModal/PlayerSelectMod
 import SecretsModal from '@/components/SecretsModal/SecretsModal.jsx';
 import websocketService from '@/services/websocketService';
 
-/**
- * Flow genérico para sets de detectives que revelan secretos (Poirot y Miss Marple).
- * Dispara: jugador actual juega set con representacion_id 7 (Poirot) o 8 (Miss Marple).
- * Pasos: seleccionar jugador → seleccionar uno de sus secretos → revelar.
- */
+
 export default function useDetectiveSecretReveal(gameId, gameState, players) {
   const { currentPlayerId } = gameState;
 
