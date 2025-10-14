@@ -29,7 +29,7 @@ const useSecretActions = (gameId, gameState) => {
       // Actualizar los datos locales
       setPlayerSecretsData(prev => prev.filter(secret => secret.id !== selectedSecretCard));
       setSelectedSecretCard(null);
-      setCanRevealSecrets(false);
+      setCanRevealSecrets(false); //luego de revelar una carta de secreto ya no se puede aplicar el mismo efecto 
       
     } catch (error) {
       console.error("Error al revelar secreto:", error);

@@ -42,7 +42,7 @@ const useGameData = (gameId, gameState) => {
             apiService.getPlayedSets(gameId),
           ]);
           
-          setCanRevealSecrets(true); // Inicialmente no se pueden revelar secretos 
+          setCanRevealSecrets(false); // Inicialmente no se pueden revelar secretos, setear a true para testear
 
           // Actualizar estado del juego
           setDeckCount(deckData);
