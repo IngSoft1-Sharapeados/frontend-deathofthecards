@@ -1,0 +1,7 @@
+.overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+.modal { background: #1d1f27; color: #fff; padding: 16px; border-radius: 8px; width: 320px; max-width: 90vw; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+.title { margin: 0 0 12px; font-size: 18px; }
+.list { list-style: none; padding: 0; margin: 0 0 12px; max-height: 260px; overflow: auto; }
+.playerButton { width: 100%; text-align: left; background: #2a2d3a; color: #fff; border: 1px solid #3a3f5a; border-radius: 6px; padding: 8px 10px; margin-bottom: 8px; cursor: pointer; }
+.playerButton:hover { background: #34384a; }
+.closeButton { background: transparent; border: 1px solid #666; color: #ddd; padding: 6px 10px; border-radius: 6px; cursor: pointer; }
