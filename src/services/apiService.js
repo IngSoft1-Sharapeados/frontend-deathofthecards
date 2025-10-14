@@ -148,6 +148,13 @@ const createHttpService = () => {
       method: "GET",
     });
   };
+
+  const revealSecret = async (gameId, playerId, secretId) => {
+    return request(
+      `/partidas/${gameId}/revelacion?id_jugador=${playerId}&id_unico_secreto=${secretId}`,
+      { method: "PATCH" }
+    );
+  };
   const getDiscardPile = async (gameId, playerID, cantidad = 1)  => {
     return request(`/partidas/${gameId}/descarte?id_jugador=${playerID}&cantidad=${cantidad}`, {
       method: "GET",
@@ -174,7 +181,8 @@ const createHttpService = () => {
   playDetectiveSet,
   getPlayedSets,
   getPlayerSecrets,
-  getDiscardPile
+  getDiscardPile,
+  revealSecret
   };
 };
 

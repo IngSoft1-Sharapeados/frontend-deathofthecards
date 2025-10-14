@@ -8,7 +8,7 @@ const useGameData = (gameId, gameState) => {
     setHand, setIsLoading, setCurrentPlayerId,
     setDeckCount, setCurrentTurn, setTurnOrder,
     setPlayers, setHostId, setWinners, setAsesinoGano,
-    setRoles, setSecretCards, setDraftCards, 
+    setRoles, setSecretCards, setCanRevealSecrets, setDraftCards, 
     setPlayersSecrets, setPlayedSetsByPlayer, setDiscardPile
   } = gameState;
 
@@ -41,7 +41,8 @@ const useGameData = (gameId, gameState) => {
             apiService.getDiscardPile(gameId, storedPlayerId, 1), 
             apiService.getPlayedSets(gameId),
           ]);
-
+          
+          setCanRevealSecrets(true); // Inicialmente no se pueden revelar secretos 
 
           // Actualizar estado del juego
           setDeckCount(deckData);

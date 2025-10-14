@@ -35,8 +35,8 @@ const useGameState = () => {
   const [playerSecretsData, setPlayerSecretsData] = useState([]);
   const [isSecretsLoading, setIsSecretsLoading] = useState(false);
   const [playersSecrets, setPlayersSecrets] = useState({});
-  
-
+  const [selectedSecretCard, setSelectedSecretCard] = useState(null);
+  const [canRevealSecrets, setCanRevealSecrets] = useState(true);
   // Derived state
   const isMyTurn = currentTurn === currentPlayerId;
   const isDiscardButtonEnabled = selectedCards.length > 0 && isMyTurn && playerTurnState === 'discarding';
@@ -89,9 +89,11 @@ const useGameState = () => {
     asesinoGano, setAsesinoGano,
     secretCards, setSecretCards,
     draftCards, setDraftCards,
-  playedSetsByPlayer, setPlayedSetsByPlayer,
-  hasPlayedSetThisTurn, setHasPlayedSetThisTurn,
+    playedSetsByPlayer, setPlayedSetsByPlayer,
+    hasPlayedSetThisTurn, setHasPlayedSetThisTurn,
     discardPile,setDiscardPile,
+    selectedSecretCard, setSelectedSecretCard,
+    canRevealSecrets, setCanRevealSecrets,
     // Derived state
     isMyTurn,
     isDiscardButtonEnabled,

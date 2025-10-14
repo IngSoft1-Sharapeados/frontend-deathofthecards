@@ -18,7 +18,7 @@ import useWebSocket from '@/hooks/useGameWebSockets';
 import useGameState from '@/hooks/useGameState';
 import useGameData from '@/hooks/useGameData';
 import useCardActions, { useSecrets } from '@/hooks/useCardActions';
-
+import useSecretActions from '@/hooks/useSecretActions';
 // Styles
 import styles from './GamePage.module.css';
 
@@ -38,8 +38,9 @@ const GamePage = () => {
     playerTurnState, selectedDraftCards, isPickupButtonEnabled,
     playedSetsByPlayer,
     isPlayButtonEnabled,
-    isSecretsModalOpen, isSecretsLoading, playerSecretsData, viewingSecretsOfPlayer, playersSecrets, setPlayersSecrets
-
+    isSecretsModalOpen, isSecretsLoading, playerSecretsData, viewingSecretsOfPlayer,
+    playersSecrets, setPlayersSecrets,
+    canRevealSecrets, selectedSecretCard
   } = gameState;
       // Desarrollo solamente
   if (process.env.NODE_ENV === 'development') {
@@ -47,6 +48,7 @@ const GamePage = () => {
   }
   //borrar despues
   const { handleOpenSecretsModal, handleCloseSecretsModal } = useSecrets(gameId, gameState);
+  const { handleSecretCardClick, handleRevealSecret } = useSecretActions(gameId, gameState);
 
   const webSocketCallbacks = {
     onDeckUpdate: (count) => gameState.setDeckCount(count),
@@ -115,7 +117,6 @@ const GamePage = () => {
   const canPickAfterSet = gameState.hasPlayedSetThisTurn && gameState.isMyTurn && hand.length < 6;
   console.log("ispickupenabled", isPickupButtonEnabled);
   console.log
-
 
 
   if (isLoading) {
@@ -245,6 +246,10 @@ const GamePage = () => {
         player={viewingSecretsOfPlayer}
         secrets={playerSecretsData}
         isLoading={isSecretsLoading}
+        canRevealSecrets={canRevealSecrets}
+        selectedSecret={selectedSecretCard}
+        onSecretSelect={handleSecretCardClick} // ← del useSecretActions
+        onRevealSecret={handleRevealSecret}
       />
     </div>
   );
