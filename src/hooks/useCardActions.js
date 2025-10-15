@@ -51,8 +51,8 @@ const useCardActions = (gameId, gameState) => {
 
       await apiService.discardCards(gameId, currentPlayerId, cardIdsToDiscard);
 
-  // Use functional update to avoid races with other state updates
-  setHand(prev => prev.filter(card => !selectedCards.includes(card.instanceId)));
+      // Use functional update to avoid races with other state updates
+      setHand(prev => prev.filter(card => !selectedCards.includes(card.instanceId)));
       setSelectedCards([]);
 
       // If after discarding you still have 6 or more, remain discarding.
@@ -95,7 +95,7 @@ const useCardActions = (gameId, gameState) => {
         setHand(prevHand => [...prevHand, ...newCardsWithDetails]);
       }
 
-  // 4. Reset local state. Phase control: if still below 6 after pickup, remain in drawing; if reached 6, end drawing phase here.
+      // 4. Reset local state. Phase control: if still below 6 after pickup, remain in drawing; if reached 6, end drawing phase here.
       setSelectedDraftCards([]);
 
       // 5. Ensure UI matches backend: fetch authoritative hand after pickup
@@ -123,20 +123,19 @@ const useCardActions = (gameId, gameState) => {
   ]);
 
   const handlePlay = useCallback(async () => {
-    // Only allow during discarding phase and player's turn
     if (!isMyTurn || playerTurnState !== 'discarding') return;
-    // Validate selection
     if (!isValidDetectiveSet(hand, selectedCards) && !isValidEventCard(hand, selectedCards)) return;
 
-  try {
+    try {
       // Map selected instance IDs to card ids
       const cardIdsToPlay = selectedCards
         .map((instanceId) => hand.find((c) => c.instanceId === instanceId)?.id)
         .filter((id) => id !== undefined);
 
-      // If backend supports a play endpoint, call it here. Otherwise, optimistically remove from hand.
-      if (apiService.playDetectiveSet) {
-        await apiService.playDetectiveSet(gameId, currentPlayerId, cardIdsToPlay);
+      if (isValidEventCard(hand, selectedCards)) {
+        handleEventPlay();
+      } else {
+        handleSetPlay(cardIdsToPlay);
       }
 
       // Update local hand and clear selection
@@ -151,6 +150,18 @@ const useCardActions = (gameId, gameState) => {
       alert(`Error: ${error.message}`);
     }
   }, [isMyTurn, playerTurnState, hand, selectedCards, setHand, setSelectedCards, gameId, currentPlayerId, setHasPlayedSetThisTurn]);
+
+  const handleSetPlay = async (cardIdsToPlay) => {
+    if (apiService.playDetectiveSet) {
+      await apiService.playDetectiveSet(gameId, currentPlayerId, cardIdsToPlay);
+    }
+  }
+
+  const handleEventPlay = async () => {
+    console.log("Aguante talleres")
+  }
+
+
 
   return {
     handleCardClick,
@@ -177,7 +188,7 @@ export const useSecrets = (gameId, gameState) => {
     try {
       const secretsFromApi = await apiService.getPlayerSecrets(gameId, player.id_jugador);
       console.log(secretsFromApi)
-      
+
       const processedSecrets = secretsFromApi.map(secret => {
         if (secret.bocaArriba) {
           const cardDetails = cardService.getSecretCards([{ id: secret.carta_id }])[0];

@@ -9,7 +9,7 @@ const useGameData = (gameId, gameState) => {
     setDeckCount, setCurrentTurn, setTurnOrder,
     setPlayers, setHostId, setWinners, setAsesinoGano,
     setRoles, setSecretCards, setDraftCards, 
-    setPlayersSecrets,setDiscardPile
+    setPlayersSecrets, setPlayedSetsByPlayer, setDiscardPile
   } = gameState;
 
   const hasConnectedRef = useRef(false); // evita reconexiones extras
@@ -27,6 +27,7 @@ const useGameData = (gameId, gameState) => {
     const loadGameData = async () => {
       if (gameId && storedPlayerId) {
         try {
+
           const [handData, turnData, deckData, turnOrderData, gameData, rolesData, secretCardsData,
              draftData, discardData, playedSets] = await Promise.all([
             apiService.getHand(gameId, storedPlayerId),
@@ -102,7 +103,7 @@ const useGameData = (gameId, gameState) => {
             arr.push(item);
             grouped[item.jugador_id] = arr;
           });
-          gameState.setPlayedSetsByPlayer(grouped);
+          setPlayedSetsByPlayer(grouped);
 
           // Procesar mano de cartas
           const playingHand = cardService.getPlayingHand(handData);

@@ -169,12 +169,12 @@ const createHttpService = () => {
     getMySecrets,
     getRoles,
     getDraftCards,
-    takeDraftCard,
-    pickUpCards,
-    playDetectiveSet,
-    getPlayedSets,
-    getPlayerSecrets,
-    getDiscardPile
+  takeDraftCard,
+  pickUpCards,
+  playDetectiveSet,
+  getPlayedSets,
+  getPlayerSecrets,
+  getDiscardPile
   };
 };
 

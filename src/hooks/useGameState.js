@@ -1,5 +1,7 @@
 import { useState, useCallback, useMemo } from 'react';
 import { isValidDetectiveSet } from '@/utils/detectiveSetValidation';
+import { isValidEventCard } from '@/utils/eventCardValidation';
+
 
 const useGameState = () => {
   // Estados de la UI y datos del jugador
@@ -35,7 +37,7 @@ const useGameState = () => {
   const [playerSecretsData, setPlayerSecretsData] = useState([]);
   const [isSecretsLoading, setIsSecretsLoading] = useState(false);
   const [playersSecrets, setPlayersSecrets] = useState({});
-  
+
 
   // Derived state
   const isMyTurn = currentTurn === currentPlayerId;
@@ -43,7 +45,7 @@ const useGameState = () => {
   // Pickup is enabled while drawing, or if a set was already played this turn (to allow choosing pickup without discarding again),
   // but only when it's still your turn.
   const isPickupButtonEnabled = isMyTurn && (playerTurnState === 'drawing' || (hasPlayedSetThisTurn && hand.length < 6));
-  const isPlayButtonEnabled = isMyTurn && playerTurnState === 'discarding' && isValidDetectiveSet(hand, selectedCards);
+  const isPlayButtonEnabled = isMyTurn && playerTurnState === 'discarding' && (isValidDetectiveSet(hand, selectedCards) || isValidEventCard(hand, selectedCards)) ;
 
 
   const getPlayerEmoji = (playerId) => {
@@ -89,12 +91,12 @@ const useGameState = () => {
     asesinoGano, setAsesinoGano,
     secretCards, setSecretCards,
     draftCards, setDraftCards,
-    discardPile,setDiscardPile,
-    // Derived state
-  playedSetsByPlayer, setPlayedSetsByPlayer,
-  hasPlayedSetThisTurn, setHasPlayedSetThisTurn,
     // Derived state
 
+    playedSetsByPlayer, setPlayedSetsByPlayer,
+    hasPlayedSetThisTurn, setHasPlayedSetThisTurn,
+    discardPile, setDiscardPile,
+    // Derived state
     isMyTurn,
     isDiscardButtonEnabled,
     isPickupButtonEnabled,

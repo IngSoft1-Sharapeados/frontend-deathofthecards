@@ -26,7 +26,6 @@ const REQUIRED_SIZES = {
 
 // Returns true if selected instanceIds from hand form a valid set
 export function isValidDetectiveSet(hand, selectedInstanceIds) {
-  console.log("sdfqwd");
   if (!Array.isArray(hand) || !Array.isArray(selectedInstanceIds)) return false;
   if (selectedInstanceIds.length < 2 || selectedInstanceIds.length > 3) return false; // only 2 or 3 sized sets are valid
 
