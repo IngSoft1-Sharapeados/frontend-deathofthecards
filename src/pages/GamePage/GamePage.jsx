@@ -10,6 +10,7 @@ import GameOverScreen from '@/components/GameOver/GameOverModal.jsx';
 import PlayerPod from '@/components/PlayerPod/PlayerPod.jsx';
 import CardDraft from '@/components/CardDraft/CardDraft.jsx'
 import SecretsModal from '@/components/SecretsModal/SecretsModal.jsx';
+import useDetectiveSecretReveal from '@/hooks/useDetectiveSecretReveal.jsx';
 import MySetsCarousel from '@/components/MySetsCarousel/MySetsCarousel.jsx';
 
 import DiscardDeck from '@/components/DiscardDeck/DiscardDeck.jsx';
@@ -41,12 +42,12 @@ const GamePage = () => {
     isSecretsModalOpen, isSecretsLoading, playerSecretsData, viewingSecretsOfPlayer, playersSecrets, setPlayersSecrets
 
   } = gameState;
-      // Desarrollo solamente
   if (process.env.NODE_ENV === 'development') {
     window.gameState = gameState;
   }
-  //borrar despues
+
   const { handleOpenSecretsModal, handleCloseSecretsModal } = useSecrets(gameId, gameState);
+  const { handleSetPlayedEvent, modals: detectiveModals } = useDetectiveSecretReveal(gameId, gameState, players);
 
   const webSocketCallbacks = {
     onDeckUpdate: (count) => gameState.setDeckCount(count),
@@ -82,11 +83,14 @@ const GamePage = () => {
         next[jugador_id] = arr;
         return next;
       });
+      
+      handleSetPlayedEvent(payload, currentPlayerId);
     },
 
 
     onSecretUpdate: ({ playerId, secrets }) => {
-      const revealedCount = secrets.filter(s => s.revelado).length;
+      // Consider multiple possible flags for revealed state (backend may send 'bocaArriba')
+      const revealedCount = secrets.filter(s => s.bocaArriba || s.revelado || s.revelada).length;
       const hiddenCount = secrets.length - revealedCount;
 
       setPlayersSecrets(prevSecrets => ({
@@ -246,6 +250,7 @@ const GamePage = () => {
         secrets={playerSecretsData}
         isLoading={isSecretsLoading}
       />
+  {detectiveModals}
     </div>
   );
 };

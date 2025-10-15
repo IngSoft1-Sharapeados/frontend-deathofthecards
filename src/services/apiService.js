@@ -148,6 +148,21 @@ const createHttpService = () => {
       method: "GET",
     });
   };
+  const revealSecret = async (gameId, playerId, secretUniqueId) => {
+    return request(`/partidas/${gameId}/revelacion?id_jugador=${playerId}&id_unico_secreto=${secretUniqueId}`, {
+      method: "PATCH",
+    });
+  };
+  const hideSecret = async (gameId, playerId, secretUniqueId) => {
+    return request(`/partidas/${gameId}/ocultamiento?id_jugador=${playerId}&id_unico_secreto=${secretUniqueId}`, {
+      method: 'PATCH',
+    });
+  };
+  const requestTargetToRevealSecret = async (gameId, requesterId, targetPlayerId, motivo = 'lady-brent') => {
+    return request(`/partidas/${gameId}/solicitar-revelacion?id_jugador_solicitante=${requesterId}&id_jugador_objetivo=${targetPlayerId}&motivo=${encodeURIComponent(motivo)}`, {
+      method: 'POST',
+    });
+  };
   const getDiscardPile = async (gameId, playerID, cantidad = 1)  => {
     return request(`/partidas/${gameId}/descarte?id_jugador=${playerID}&cantidad=${cantidad}`, {
       method: "GET",
@@ -174,7 +189,10 @@ const createHttpService = () => {
   playDetectiveSet,
   getPlayedSets,
   getPlayerSecrets,
-  getDiscardPile
+  getDiscardPile,
+  revealSecret,
+  requestTargetToRevealSecret,
+  hideSecret
   };
 };
 
