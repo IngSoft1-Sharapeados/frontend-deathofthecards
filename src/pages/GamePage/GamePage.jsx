@@ -40,7 +40,7 @@ const GamePage = () => {
     isPlayButtonEnabled,
     isSecretsModalOpen, isSecretsLoading, playerSecretsData, viewingSecretsOfPlayer,
     playersSecrets, setPlayersSecrets,
-    canRevealSecrets, selectedSecretCard
+    canRevealSecrets,canHideSecrets, selectedSecretCard
   } = gameState;
       // Desarrollo solamente
   if (process.env.NODE_ENV === 'development') {
@@ -48,7 +48,7 @@ const GamePage = () => {
   }
   //borrar despues
   const { handleOpenSecretsModal, handleCloseSecretsModal } = useSecrets(gameId, gameState);
-  const { handleSecretCardClick, handleRevealSecret } = useSecretActions(gameId, gameState);
+  const { handleSecretCardClick, handleRevealSecret, handleHideSecret } = useSecretActions(gameId, gameState);
 
   const webSocketCallbacks = {
     onDeckUpdate: (count) => gameState.setDeckCount(count),
@@ -246,10 +246,12 @@ const GamePage = () => {
         player={viewingSecretsOfPlayer}
         secrets={playerSecretsData}
         isLoading={isSecretsLoading}
+        canHideSecrets={canHideSecrets}
         canRevealSecrets={canRevealSecrets}
         selectedSecret={selectedSecretCard}
         onSecretSelect={handleSecretCardClick} // ← del useSecretActions
         onRevealSecret={handleRevealSecret}
+        onHideSecret={handleHideSecret}
       />
     </div>
   );

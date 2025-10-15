@@ -10,14 +10,24 @@ const SecretsModal = ({
   secrets,
   isLoading,
   canRevealSecrets,
+  canHideSecrets,
   selectedSecret,
   onSecretSelect,
-  onRevealSecret
+  onRevealSecret,
+  onHideSecret
 }) => {
   if (!isOpen) return null;
+    // Debug logs
+  console.log('SecretsModal props:', {
+    canRevealSecrets,
+    canHideSecrets,
+    selectedSecret,
+    secrets: secrets?.map(s => ({ id: s.id, bocaArriba: s.bocaArriba }))
+  });
 
   const handleCardClick = (secretId, isFaceUp) => {
-    if (!canRevealSecrets || isFaceUp) return; // solo los ocultos pueden clickearse
+    const canClick = (!isFaceUp && canRevealSecrets) || (isFaceUp && canHideSecrets);
+    if (!canClick) return; 
     onSecretSelect(secretId);
   };
 
@@ -32,13 +42,19 @@ const SecretsModal = ({
           ) : (
             secrets.map((secret) => {
               const isSelected = selectedSecret === secret.id;
-              const isClickable = canRevealSecrets && !secret.bocaArriba;
+              const isClickable =
+                (!secret.bocaArriba && canRevealSecrets) ||
+                (secret.bocaArriba && canHideSecrets);
 
               return (
                 <div
                   key={secret.id}
-                  className={`${styles.secretCard} ${isClickable ? styles.clickable : ''} ${isSelected ? styles.selected : ''}`}
-                  onClick={() => handleCardClick(secret.id, secret.bocaArriba)}
+                  className={`${styles.secretCard} ${
+                    isClickable ? styles.clickable : ''
+                  } ${isSelected ? styles.selected : ''}`}
+                  onClick={() =>
+                    handleCardClick(secret.id, secret.bocaArriba)
+                  } 
                 >
                   {secret.bocaArriba ? (
                     <Card imageName={secret.url} subfolder="secret-cards" />
@@ -55,14 +71,30 @@ const SecretsModal = ({
           )}
         </div>
 
-        {/* Solo mostrar botón si puede revelar */}
-        {canRevealSecrets && selectedSecret && (
-          <button onClick={onRevealSecret} className={styles.revealButton}>
-            Revelar secreto
-          </button>
-        )}
+        {/* --- BOTONES DE ACCIÓN --- */}
+        <div className={styles.buttonsContainer}>
+          {/* Botón de revelar: solo si la carta seleccionada está oculta */}
+          {canRevealSecrets &&
+            selectedSecret &&
+            !secrets.find((s) => s.id === selectedSecret)?.bocaArriba && (
+              <button onClick={onRevealSecret} className={styles.revealButton}>
+                Revelar secreto
+              </button>
+            )}
 
-        <button onClick={onClose} className={styles.closeButton}>Cerrar</button>
+          {/* Botón de ocultar: solo si la carta seleccionada está revelada */}
+          {canHideSecrets &&
+            selectedSecret &&
+            secrets.find((s) => s.id === selectedSecret)?.bocaArriba && (
+              <button onClick={onHideSecret} className={styles.revealButton}>
+                Ocultar secreto
+              </button>
+            )}
+
+          <button onClick={onClose} className={styles.closeButton}>
+            Cerrar
+          </button>
+        </div>
       </div>
     </div>
   );

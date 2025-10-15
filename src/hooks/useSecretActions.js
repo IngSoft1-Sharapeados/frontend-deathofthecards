@@ -6,13 +6,14 @@ const useSecretActions = (gameId, gameState) => {
     currentPlayerId,
     playerSecretsData, setPlayerSecretsData,
     selectedSecretCard, setSelectedSecretCard,
-    canRevealSecrets, setCanRevealSecrets
+    canRevealSecrets, setCanRevealSecrets, 
+    canHideSecrets, setCanHideSecrets
   } = gameState;
 
   const handleSecretCardClick = useCallback((secretId) => {
-    if (!canRevealSecrets) return;
+    if (!canRevealSecrets && !canHideSecrets) return;
     setSelectedSecretCard(prev => prev === secretId ? null : secretId);
-  }, [canRevealSecrets, setSelectedSecretCard]);
+  }, [canRevealSecrets, canHideSecrets, setSelectedSecretCard]);
 
   const handleRevealSecret = useCallback(async () => {
     if (!selectedSecretCard || !canRevealSecrets) return;
@@ -29,18 +30,52 @@ const useSecretActions = (gameId, gameState) => {
       // Actualizar los datos locales
       setPlayerSecretsData(prev => prev.filter(secret => secret.id !== selectedSecretCard));
       setSelectedSecretCard(null);
-      setCanRevealSecrets(false); //luego de revelar una carta de secreto ya no se puede aplicar el mismo efecto 
-      
+      setCanRevealSecrets(true); //luego de revelar una carta de secreto ya no se puede aplicar el mismo efecto 
+      setCanHideSecrets(true);
     } catch (error) {
       console.error("Error al revelar secreto:", error);
       alert(`Error: ${error.message}`);
     }
   }, [gameId, currentPlayerId, selectedSecretCard, canRevealSecrets, setPlayerSecretsData, setSelectedSecretCard, setCanRevealSecrets]);
+  
+  const handleHideSecret = useCallback(async () => {
+    if (!selectedSecretCard || !canHideSecrets) return;
+
+    try {
+      console.log("➡️ Enviando ocultamiento:", {
+        gameId,
+        currentPlayerId,
+        selectedSecretCard,
+      });
+      const response = await apiService.hideSecret(
+        gameId,
+        currentPlayerId,
+        selectedSecretCard
+      );
+      console.log("Secreto oculto:", response);
+
+      setPlayerSecretsData(prev => prev.filter(secret => secret.id !== selectedSecretCard));
+      setSelectedSecretCard(null);
+      setCanHideSecrets(true); //luego de ocultar una carta de secreto ya no se puede aplicar el mismo efecto
+      
+    } catch (error) {
+      console.error("Error al ocultar secreto:", error);
+      alert(`Error: ${error.message}`);
+    }
+  }, [
+    gameId,
+    currentPlayerId,
+    selectedSecretCard,
+    canHideSecrets,
+    setSelectedSecretCard,
+  ]);
 
   return {
     handleSecretCardClick,
-    handleRevealSecret
+    handleRevealSecret,
+    handleHideSecret
   };
 };
+
 
 export default useSecretActions;

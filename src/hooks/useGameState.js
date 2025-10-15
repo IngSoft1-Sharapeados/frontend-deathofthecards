@@ -36,7 +36,8 @@ const useGameState = () => {
   const [isSecretsLoading, setIsSecretsLoading] = useState(false);
   const [playersSecrets, setPlayersSecrets] = useState({});
   const [selectedSecretCard, setSelectedSecretCard] = useState(null);
-  const [canRevealSecrets, setCanRevealSecrets] = useState(true);
+  const [canRevealSecrets, setCanRevealSecrets] = useState(true); // aca logica real deberia setearlo dependiente de si jugo las cartas correspondientes
+  const [canHideSecrets, setCanHideSecrets] = useState(true); 
   // Derived state
   const isMyTurn = currentTurn === currentPlayerId;
   const isDiscardButtonEnabled = selectedCards.length > 0 && isMyTurn && playerTurnState === 'discarding';
@@ -94,6 +95,7 @@ const useGameState = () => {
     discardPile,setDiscardPile,
     selectedSecretCard, setSelectedSecretCard,
     canRevealSecrets, setCanRevealSecrets,
+    canHideSecrets, setCanHideSecrets,
     // Derived state
     isMyTurn,
     isDiscardButtonEnabled,
