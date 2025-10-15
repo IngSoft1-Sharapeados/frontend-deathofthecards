@@ -17,17 +17,31 @@ const SecretsModal = ({
   onHideSecret
 }) => {
   if (!isOpen) return null;
-    // Debug logs
-  console.log('SecretsModal props:', {
+  
+  // Debug logs
+  console.log('🔍 SecretsModal ABIERTO - Estado inicial:', {
+    selectedSecret,
+    tipoDeSelectedSecret: typeof selectedSecret,
     canRevealSecrets,
     canHideSecrets,
-    selectedSecret,
-    secrets: secrets?.map(s => ({ id: s.id, bocaArriba: s.bocaArriba }))
+    secrets: secrets?.map(s => ({ 
+      id: s.id, 
+      tipoDeId: typeof s.id,
+      bocaArriba: s.bocaArriba,
+      url: s.url 
+    }))
   });
 
   const handleCardClick = (secretId, isFaceUp) => {
+    console.log('Click en carta - secretId:', secretId, 'isFaceUp:', isFaceUp);
+    
     const canClick = (!isFaceUp && canRevealSecrets) || (isFaceUp && canHideSecrets);
-    if (!canClick) return; 
+    if (!canClick) {
+      console.log('Click bloqueado - no se puede interactuar');
+      return;
+    }
+    
+    console.log('Llamando onSecretSelect con ID:', secretId);
     onSecretSelect(secretId);
   };
 
@@ -52,12 +66,18 @@ const SecretsModal = ({
                   className={`${styles.secretCard} ${
                     isClickable ? styles.clickable : ''
                   } ${isSelected ? styles.selected : ''}`}
-                  onClick={() =>
-                    handleCardClick(secret.id, secret.bocaArriba)
-                  } 
+                  onClickCapture={(e) => {
+                    e.stopPropagation();
+                    handleCardClick(secret.id, secret.bocaArriba);
+                  }}
+                  data-secret-id={secret.id}
+                  style={{ cursor: isClickable ? 'pointer' : 'default' }}
                 >
                   {secret.bocaArriba ? (
-                    <Card imageName={secret.url} subfolder="secret-cards" />
+                    <Card 
+                      imageName={secret.url} 
+                      subfolder="secret-cards"
+                    />
                   ) : (
                     <img
                       src={secretCardBack}
