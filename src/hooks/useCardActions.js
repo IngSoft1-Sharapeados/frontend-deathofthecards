@@ -4,6 +4,17 @@ import { apiService } from '@/services/apiService';
 import { isValidDetectiveSet } from '@/utils/detectiveSetValidation';
 import { isValidEventCard } from '@/utils/eventCardValidation';
 
+const CARD_IDS = {
+  CARDS_OFF_THE_TABLE: 17,
+  ANOTHER_VICTIM: 18,
+  DEAD_CARD_FOLLY: 19,
+  LOOK_ASHES: 20,
+  CARD_TRADE: 21,
+  ONE_MORE: 22,
+  DELAY_ESCAPE: 23,
+  EARLY_TRAIN: 24,
+  POINT_SUSPICIONS: 25,
+};
 
 const useCardActions = (gameId, gameState) => {
   const {
@@ -133,9 +144,9 @@ const useCardActions = (gameId, gameState) => {
         .filter((id) => id !== undefined);
 
       if (isValidEventCard(hand, selectedCards)) {
-        handleEventPlay();
+        await handleEventPlay(cardIdsToPlay);
       } else {
-        handleSetPlay(cardIdsToPlay);
+        await handleSetPlay(cardIdsToPlay);
       }
 
       // Update local hand and clear selection
@@ -157,10 +168,49 @@ const useCardActions = (gameId, gameState) => {
     }
   }
 
-  const handleEventPlay = async () => {
-    console.log("Aguante talleres")
-  }
+  const handleEventPlay = async (cardIdsToPlay) => {
+    const eventCard = cardService.getEventCardData(cardIdsToPlay);
+    const cardId = eventCard.id;
+    try {
+      switch (cardId) {
+        case CARD_IDS.CARDS_ON_THE_TABLE:
+          console.log("Played: Cards on the Table");
+          break;
+        case CARD_IDS.ANOTHER_VICTIM:
+          console.log("Played: Another Victim");
+          break;
+        case CARD_IDS.DEAD_CARD_FOLLY:
+          console.log("Played: Dead Card Folly");
+          break;
+        case CARD_IDS.LOOK_ASHES:
+          console.log("Played: Look Ashes");
+          break;
+        case CARD_IDS.CARD_TRADE:
+          console.log("Played: Card Trade");
+          break;
+        case CARD_IDS.ONE_MORE:
+          console.log("Played: One More");
+          break;
+        case CARD_IDS.DELAY_ESCAPE:
+          console.log("Played: Delay Escape");
+          break;
+        case CARD_IDS.EARLY_TRAIN:
+          console.log("Played: Early Train");
+          break;
+        case CARD_IDS.POINT_SUSPICIONS:
+          console.log("Played: Point Suspicions");
+          break;
+        default:
+          console.log("Unknown event card:", eventCard);
+      }
 
+      await apiService.discardCards(gameId, currentPlayerId, [cardId]);
+
+    } catch (error) {
+      console.error("Error while discarding event card:", error);
+      alert(`Error: ${error.message}`);
+    }
+  };
 
 
   return {

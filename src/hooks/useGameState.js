@@ -45,7 +45,7 @@ const useGameState = () => {
   // Pickup is enabled while drawing, or if a set was already played this turn (to allow choosing pickup without discarding again),
   // but only when it's still your turn.
   const isPickupButtonEnabled = isMyTurn && (playerTurnState === 'drawing' || (hasPlayedSetThisTurn && hand.length < 6));
-  const isPlayButtonEnabled = isMyTurn && playerTurnState === 'discarding' && (isValidDetectiveSet(hand, selectedCards) || isValidEventCard(hand, selectedCards)) ;
+  const isPlayButtonEnabled = isMyTurn && !hasPlayedSetThisTurn && playerTurnState === 'discarding' && (isValidDetectiveSet(hand, selectedCards) || isValidEventCard(hand, selectedCards)) ;
 
 
   const getPlayerEmoji = (playerId) => {
