@@ -162,7 +162,12 @@ const createHttpService = () => {
       { method: "PATCH" }
     );
   };
-
+  const robSecret = async (gameId, playerIdTurn, playerIdDestino, secretId) => {
+    return request(
+      `/partidas/${gameId}/robo-secreto?id_jugador_turno=${playerIdTurn}&id_jugador_destino=${playerIdDestino}&id_unico_secreto=${secretId}`,
+      { method: "PATCH" }
+    );
+  };
   const getDiscardPile = async (gameId, playerID, cantidad = 1)  => {
     return request(`/partidas/${gameId}/descarte?id_jugador=${playerID}&cantidad=${cantidad}`, {
       method: "GET",
@@ -191,7 +196,8 @@ const createHttpService = () => {
   getPlayerSecrets,
   getDiscardPile,
   revealSecret,
-  hideSecret
+  hideSecret,
+  robSecret
   };
 };
 

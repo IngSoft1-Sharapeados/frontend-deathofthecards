@@ -11,10 +11,12 @@ const SecretsModal = ({
   isLoading,
   canRevealSecrets,
   canHideSecrets,
+  canRobSecrets,
   selectedSecret,
   onSecretSelect,
   onRevealSecret,
-  onHideSecret
+  onHideSecret,
+  onRobSecret
 }) => {
   if (!isOpen) return null;
   
@@ -110,7 +112,14 @@ const SecretsModal = ({
                 Ocultar secreto
               </button>
             )}
-
+          {/* Botón de robar: solo si la carta seleccionada está revelada */}
+          {canRobSecrets &&
+            selectedSecret &&
+            secrets.find((s) => s.id === selectedSecret)?.bocaArriba && (
+              <button onClick={onRobSecret} className={styles.revealButton}>
+                Robar secreto
+              </button>
+            )}
           <button onClick={onClose} className={styles.closeButton}>
             Cerrar
           </button>

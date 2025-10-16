@@ -7,7 +7,8 @@ const useSecretActions = (gameId, gameState) => {
     playerSecretsData, setPlayerSecretsData,
     selectedSecretCard, setSelectedSecretCard,
     canRevealSecrets, setCanRevealSecrets, 
-    canHideSecrets, setCanHideSecrets
+    canHideSecrets, setCanHideSecrets,
+    canRobSecrets, setCanRobSecrets
   } = gameState;
 
   const handleSecretCardClick = useCallback((secretId) => {
@@ -70,10 +71,47 @@ const useSecretActions = (gameId, gameState) => {
     setSelectedSecretCard,
   ]);
 
+  const handleRobSecret = useCallback(async (playerIdDestino) => {
+    if (!selectedSecretCard || !canRobSecrets) return;
+  
+    try {
+      console.log("➡️ Enviando robo de secreto:", {
+        gameId,
+        jugadorTurno: currentPlayerId,
+        jugadorDestino: playerIdDestino,
+        selectedSecretCard,
+      });
+    
+      const response = await apiService.robSecret(
+        gameId,
+        currentPlayerId,
+        playerIdDestino,
+        selectedSecretCard
+      );
+      console.log("✅ Secreto robado:", response);
+    
+      // Actualizar localmente
+      setPlayerSecretsData(prev => prev.filter(s => s.id !== selectedSecretCard));
+      setSelectedSecretCard(null);
+      setCanRobSecrets(false);
+    } catch (error) {
+      console.error("❌ Error al robar secreto:", error);
+      alert(`Error: ${error.message}`);
+    }
+  }, [
+    gameId,
+    currentPlayerId,
+    selectedSecretCard,
+    canRobSecrets,
+    setPlayerSecretsData,
+    setSelectedSecretCard,
+    setCanRobSecrets
+  ]);
   return {
     handleSecretCardClick,
     handleRevealSecret,
-    handleHideSecret
+    handleHideSecret,
+    handleRobSecret
   };
 };
 

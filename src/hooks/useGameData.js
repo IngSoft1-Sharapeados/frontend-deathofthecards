@@ -8,7 +8,7 @@ const useGameData = (gameId, gameState) => {
     setHand, setIsLoading, setCurrentPlayerId,
     setDeckCount, setCurrentTurn, setTurnOrder,
     setPlayers, setHostId, setWinners, setAsesinoGano,
-    setRoles, setSecretCards, setCanRevealSecrets, setCanHideSecrets,
+    setRoles, setSecretCards, setCanRevealSecrets, setCanHideSecrets,setCanRobSecrets,
     setDraftCards,setPlayersSecrets, setPlayedSetsByPlayer, setDiscardPile
   } = gameState;
 
@@ -43,7 +43,8 @@ const useGameData = (gameId, gameState) => {
           ]);
           
           setCanRevealSecrets(true); // F5 
-          setCanHideSecrets(true);
+          setCanHideSecrets(true); // F5
+          setCanRobSecrets(true)
           // Actualizar estado del juego
           setDeckCount(deckData);
           setCurrentTurn(turnData);
