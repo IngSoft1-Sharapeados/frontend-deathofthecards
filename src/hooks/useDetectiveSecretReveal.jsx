@@ -16,6 +16,9 @@ export default function useDetectiveSecretReveal(gameId, gameState, players) {
   const [isSecretsOpen, setIsSecretsOpen] = useState(false);
   const [flowMode, setFlowMode] = useState(null); // 'detective' | 'lady' | 'parker'
   const [lastRepId, setLastRepId] = useState(null);
+  // Selected secret ids for confirm flows
+  const [selectedSecretId, setSelectedSecretId] = useState(null); // for target's secrets
+  const [mySelectedSecretId, setMySelectedSecretId] = useState(null); // for personal (lady/beresford)
 
   const shouldTriggerForDetective = (representacion_id) => representacion_id === 7 || representacion_id === 8;
   // Efecto "elige el objetivo y el objetivo elige el secreto": Lady Brent (11) y Hermanos Beresford (Tommy=12, Tuppence=13)
@@ -74,6 +77,7 @@ export default function useDetectiveSecretReveal(gameId, gameState, players) {
           return s;
         });
         setTargetSecrets(mapped);
+        setSelectedSecretId(null);
         setIsSecretsOpen(true);
       } catch (e) {
         console.error('No se pudieron obtener los secretos del jugador objetivo:', e);
@@ -112,6 +116,7 @@ export default function useDetectiveSecretReveal(gameId, gameState, players) {
           return;
         }
         setTargetSecrets(mapped);
+        setSelectedSecretId(null);
         setIsSecretsOpen(true);
       } catch (e) {
         console.error('No se pudieron obtener los secretos del jugador objetivo:', e);
@@ -122,31 +127,34 @@ export default function useDetectiveSecretReveal(gameId, gameState, players) {
     }
   }, [gameId, currentPlayerId, flowMode, lastRepId]);
 
-  const onSelectSecret = useCallback(async (secret) => {
-    if (!targetPlayer) return;
+  // Confirm actions (after selecting a secret)
+  const confirmRevealTargetSecret = useCallback(async () => {
+    if (!targetPlayer || !selectedSecretId) return;
     try {
-      await apiService.revealSecret(gameId, targetPlayer.id_jugador, secret.id);
+      await apiService.revealSecret(gameId, targetPlayer.id_jugador, selectedSecretId);
       setIsSecretsOpen(false);
       setTargetPlayer(null);
       setTargetSecrets([]);
+      setSelectedSecretId(null);
     } catch (e) {
       console.error('Error al revelar secreto:', e);
       alert(e.message || 'No se pudo revelar el secreto');
     }
-  }, [gameId, targetPlayer]);
+  }, [gameId, targetPlayer, selectedSecretId]);
 
-  const onSelectSecretToHide = useCallback(async (secret) => {
-    if (!targetPlayer) return;
+  const confirmHideTargetSecret = useCallback(async () => {
+    if (!targetPlayer || !selectedSecretId) return;
     try {
-      await apiService.hideSecret(gameId, targetPlayer.id_jugador, secret.id);
+      await apiService.hideSecret(gameId, targetPlayer.id_jugador, selectedSecretId);
       setIsSecretsOpen(false);
       setTargetPlayer(null);
       setTargetSecrets([]);
+      setSelectedSecretId(null);
     } catch (e) {
       console.error('Error al ocultar secreto:', e);
       alert(e.message || 'No se pudo ocultar el secreto');
     }
-  }, [gameId, targetPlayer]);
+  }, [gameId, targetPlayer, selectedSecretId]);
 
   // Lady Brent: el objetivo recibe solicitud personal y debe elegir su propio secreto a revelar
   const [isPersonalSecretsOpen, setIsPersonalSecretsOpen] = useState(false);
@@ -165,6 +173,7 @@ export default function useDetectiveSecretReveal(gameId, gameState, players) {
           return s;
         });
         setMySecretsForSelection(mapped);
+        setMySelectedSecretId(null);
         setIsPersonalSecretsOpen(true);
       } catch (e) {
         console.error('No se pudieron cargar mis secretos para la selección:', e);
@@ -174,16 +183,18 @@ export default function useDetectiveSecretReveal(gameId, gameState, players) {
     return () => websocketService.off('solicitar-revelacion-secreto', onPersonalRequest);
   }, [gameId, currentPlayerId]);
 
-  const onSelectMySecret = useCallback(async (secret) => {
+  const confirmRevealMySecret = useCallback(async () => {
+    if (!mySelectedSecretId) return;
     try {
-      await apiService.revealSecret(gameId, currentPlayerId, secret.id);
+      await apiService.revealSecret(gameId, currentPlayerId, mySelectedSecretId);
       setIsPersonalSecretsOpen(false);
       setMySecretsForSelection([]);
+      setMySelectedSecretId(null);
     } catch (e) {
-      console.error('Error al revelar mi secreto (Lady Brent):', e);
+      console.error('Error al revelar mi secreto (Lady/Beresford):', e);
       alert(e.message || 'No se pudo revelar el secreto');
     }
-  }, [gameId, currentPlayerId]);
+  }, [gameId, currentPlayerId, mySelectedSecretId]);
 
   const modals = (
     <>
@@ -196,22 +207,29 @@ export default function useDetectiveSecretReveal(gameId, gameState, players) {
       />
       <SecretsModal
         isOpen={isSecretsOpen}
-        onClose={() => { setIsSecretsOpen(false); setTargetPlayer(null); setTargetSecrets([]); }}
+        onClose={() => { setIsSecretsOpen(false); setTargetPlayer(null); setTargetSecrets([]); setSelectedSecretId(null); }}
         player={targetPlayer}
         secrets={targetSecrets}
         isLoading={isLoadingSecrets}
-        selectable={true}
-        selectRevealedOnly={flowMode === 'parker'}
-        onSelect={flowMode === 'parker' ? onSelectSecretToHide : onSelectSecret}
+        selectedSecret={selectedSecretId}
+        onSelect={(secret) => setSelectedSecretId(secret.id)}
+        canRevealSecrets={flowMode === 'detective'}
+        canHideSecrets={flowMode === 'parker'}
+        onRevealSecret={confirmRevealTargetSecret}
+        onHideSecret={confirmHideTargetSecret}
       />
       <SecretsModal
         isOpen={isPersonalSecretsOpen}
-        onClose={() => { setIsPersonalSecretsOpen(false); setMySecretsForSelection([]); }}
+        onClose={() => { /* obligatorio, sin cerrar manual */ }}
         player={(players || []).find(p => p.id_jugador === currentPlayerId)}
         secrets={mySecretsForSelection}
         isLoading={false}
-        selectable={true}
-        onSelect={onSelectMySecret}
+        selectedSecret={mySelectedSecretId}
+        onSelect={(secret) => setMySelectedSecretId(secret.id)}
+        canRevealSecrets={true}
+        canHideSecrets={false}
+        onRevealSecret={confirmRevealMySecret}
+        hideCloseButton={true}
       />
     </>
   );

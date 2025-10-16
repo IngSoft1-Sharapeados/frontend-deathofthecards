@@ -3,12 +3,29 @@ import Card from '@/components/Card/Card';
 import styles from './SecretsModal.module.css';
 import secretCardBack from '@/assets/images/cards/misc/05-secret_back.png';
 
-// When `selectable` is true, clicking a secret invokes onSelect(secret) and closes optionally
-const SecretsModal = ({ isOpen, onClose, player, secrets, isLoading, selectable = false, onSelect, selectRevealedOnly = false }) => {
+// Enhanced modal supporting click affordances and optional action buttons
+const SecretsModal = ({
+  isOpen,
+  onClose,
+  player,
+  secrets,
+  isLoading,
+  // selection behavior (used by detective/lady/parker flows)
+  selectable = false,
+  onSelect,
+  selectRevealedOnly = false,
+  // optional reveal/hide capability flags and actions
+  canRevealSecrets,
+  canHideSecrets,
+  selectedSecret,
+  onRevealSecret,
+  onHideSecret,
+  hideCloseButton = false,
+}) => {
   if (!isOpen) return null;
 
   return (
-    <div className={styles.overlay} onClick={onClose}>
+    <div className={styles.overlay} onClick={hideCloseButton ? undefined : onClose}>
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         <h2>Secretos de {player?.nombre_jugador || ''}</h2>
         <div className={styles.secretsGrid}>
@@ -17,31 +34,43 @@ const SecretsModal = ({ isOpen, onClose, player, secrets, isLoading, selectable 
           ) : (
             secrets.map((secret) => {
               const isRevealed = secret.bocaArriba || secret.revelada || secret.revelado;
-              const canSelect = selectable && !isLoading && (
-                selectRevealedOnly ? isRevealed : !isRevealed
-              );
-              const handleClick = () => {
-                if (!canSelect) return;
-                if (onSelect) onSelect(secret);
+              const allowSelect = selectable && !isLoading && (selectRevealedOnly ? isRevealed : !isRevealed);
+              const isClickableByFlags = (!isRevealed && canRevealSecrets) || (isRevealed && canHideSecrets);
+              const isClickable = allowSelect || isClickableByFlags;
+              const isSelected = selectedSecret === secret.id;
+
+              const handleClick = (e) => {
+                e.stopPropagation();
+                if (!isClickable) return;
+                if (onSelect) {
+                  onSelect(secret);
+                }
               };
               return (
-                <button
+                <div
                   key={secret.id}
-                  className={styles.secretCard}
+                  className={`${styles.secretCard} ${isClickable ? styles.clickable : ''} ${isSelected ? styles.selected : ''}`}
                   onClick={handleClick}
-                  disabled={!canSelect}
+                  role={isClickable ? 'button' : undefined}
                 >
                   {isRevealed && secret.url ? (
                     <Card imageName={secret.url} subfolder="secret-cards" />
                   ) : (
                     <img src={secretCardBack} alt="Secreto oculto" className={styles.hiddenCardImage} />
                   )}
-                </button>
+                </div>
               );
             })
           )}
         </div>
-        <button onClick={onClose} className={styles.closeButton}>Cerrar</button>
+        <div className={styles.buttonsContainer}>
+          {canRevealSecrets && selectedSecret && !secrets.find(s => s.id === selectedSecret)?.bocaArriba && (
+            <button onClick={onRevealSecret} className={styles.revealButton}>Revelar secreto</button>
+          )}
+          {canHideSecrets && selectedSecret && secrets.find(s => s.id === selectedSecret)?.bocaArriba && (
+            <button onClick={onHideSecret} className={styles.revealButton}>Ocultar secreto</button>
+          )}
+        </div>
       </div>
     </div>
   );

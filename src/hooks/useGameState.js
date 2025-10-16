@@ -35,6 +35,9 @@ const useGameState = () => {
   const [playerSecretsData, setPlayerSecretsData] = useState([]);
   const [isSecretsLoading, setIsSecretsLoading] = useState(false);
   const [playersSecrets, setPlayersSecrets] = useState({});
+  // Flags to control secret interactions (reveal/hide) based on played sets
+  const [canRevealSecrets, setCanRevealSecrets] = useState(true);
+  const [canHideSecrets, setCanHideSecrets] = useState(true);
   
 
   // Derived state
@@ -92,6 +95,8 @@ const useGameState = () => {
   playedSetsByPlayer, setPlayedSetsByPlayer,
   hasPlayedSetThisTurn, setHasPlayedSetThisTurn,
     discardPile,setDiscardPile,
+    canRevealSecrets, setCanRevealSecrets,
+    canHideSecrets, setCanHideSecrets,
     // Derived state
     isMyTurn,
     isDiscardButtonEnabled,
