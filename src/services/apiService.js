@@ -89,7 +89,7 @@ const createHttpService = () => {
   };
 
   const drawCards = async (gameId, playerId, amount = 1) => {
-    return request(`/partidas/${gameId}/robar?id_jugador=${playerId}&cantidad=${amount}` , {
+    return request(`/partidas/${gameId}/robar?id_jugador=${playerId}&cantidad=${amount}`, {
       method: "POST",
     });
   };
@@ -148,12 +148,18 @@ const createHttpService = () => {
       method: "GET",
     });
   };
-  const getDiscardPile = async (gameId, playerID, cantidad = 1)  => {
+  const getDiscardPile = async (gameId, playerID, cantidad = 1) => {
     return request(`/partidas/${gameId}/descarte?id_jugador=${playerID}&cantidad=${cantidad}`, {
       method: "GET",
     });
   };
-  
+
+  const playCardsOffTheTable = async (gameId, playerId, targetId, cardId) => {
+    return request(`/partidas/${gameId}/evento/CardsTable?id_jugador=${playerId}&id_objetivo=${targetId}&id_carta=${cardId}`, {
+      method: "PUT",
+    });
+  };
+
   return {
     createGame,
     listGames,
@@ -169,12 +175,13 @@ const createHttpService = () => {
     getMySecrets,
     getRoles,
     getDraftCards,
-  takeDraftCard,
-  pickUpCards,
-  playDetectiveSet,
-  getPlayedSets,
-  getPlayerSecrets,
-  getDiscardPile
+    takeDraftCard,
+    pickUpCards,
+    playDetectiveSet,
+    getPlayedSets,
+    getPlayerSecrets,
+    getDiscardPile,
+    playCardsOffTheTable
   };
 };
 

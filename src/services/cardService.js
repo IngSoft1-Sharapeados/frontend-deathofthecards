@@ -95,6 +95,12 @@ const getEventCardData = (cardId) => {
   return card
 }
 
+const getCardImageUrl = (cardId) => {
+  const card = GAME_CARDS.find(c => c.id === cardId);
+  // Devuelve la URL si existe, sino un fallback
+  return card ? card.url : '01-card_back.png';
+}
+
 
 
 export const cardService = {
@@ -103,5 +109,6 @@ export const cardService = {
   getSecretCards,
   getRandomDetectives,
   getDraftCards,
-  getEventCardData
+  getEventCardData,
+  getCardImageUrl
 };

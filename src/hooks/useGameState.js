@@ -38,6 +38,11 @@ const useGameState = () => {
   const [isSecretsLoading, setIsSecretsLoading] = useState(false);
   const [playersSecrets, setPlayersSecrets] = useState({});
 
+  const [isPlayerSelectionModalOpen, setPlayerSelectionModalOpen] = useState(false);
+  const [eventCardToPlay, setEventCardToPlay] = useState(null);
+
+  const [eventCardInPlay, setEventCardInPlay] = useState(null);
+
 
   // Derived state
   const isMyTurn = currentTurn === currentPlayerId;
@@ -107,7 +112,10 @@ const useGameState = () => {
     viewingSecretsOfPlayer, setViewingSecretsOfPlayer,
     playerSecretsData, setPlayerSecretsData,
     isSecretsLoading, setIsSecretsLoading,
-    playersSecrets, setPlayersSecrets
+    playersSecrets, setPlayersSecrets,
+    isPlayerSelectionModalOpen, setPlayerSelectionModalOpen,
+    eventCardToPlay, setEventCardToPlay,
+    eventCardInPlay, setEventCardInPlay
   };
 };
 
