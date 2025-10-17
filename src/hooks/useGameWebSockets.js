@@ -77,7 +77,6 @@ const useWebSocket = (callbacks) => {
       websocketService.off('jugar-set', onSetPlayed);
 
       websocketService.off('actualizacion-secreto', onSecretUpdate);
-      websocketService.off('actualizacion-secreto', onSecretUpdate);
     };
   }, []);
 };
