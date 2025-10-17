@@ -40,9 +40,9 @@ const GamePage = () => {
     isPlayButtonEnabled,
     isSecretsModalOpen, isSecretsLoading, playerSecretsData, viewingSecretsOfPlayer,
     playersSecrets, setPlayersSecrets, setPlayerSecretsData,
-    canRevealSecrets,canHideSecrets, selectedSecretCard, canRobSecrets
+    canRevealSecrets, canHideSecrets, selectedSecretCard, canRobSecrets
   } = gameState;
-      // Desarrollo solamente
+  // Desarrollo solamente
   if (process.env.NODE_ENV === 'development') {
     window.gameState = gameState;
   }
@@ -53,13 +53,13 @@ const GamePage = () => {
   const webSocketCallbacks = {
     onDeckUpdate: (count) => gameState.setDeckCount(count),
 
-        onTurnUpdate: (turn) => {
-          gameState.setCurrentTurn(turn);
-          gameState.setPlayerTurnState('discarding');
-          // New rule: reset flag at the beginning of your turn
-          gameState.setHasPlayedSetThisTurn(false);
-        },
-    
+    onTurnUpdate: (turn) => {
+      gameState.setCurrentTurn(turn);
+      gameState.setPlayerTurnState('discarding');
+      // New rule: reset flag at the beginning of your turn
+      gameState.setHasPlayedSetThisTurn(false);
+    },
+
 
     onDraftUpdate: (newDraftData) => {
       const processedDraftCards = cardService.getDraftCards(newDraftData);
@@ -91,22 +91,22 @@ const GamePage = () => {
       const revealedCount = secrets.filter(s => s.revelado).length;
       const hiddenCount = secrets.length - revealedCount;
 
-        setPlayersSecrets(prevSecrets => ({
-          ...prevSecrets,
-          [playerId]: {
-            revealed: revealedCount,
-            hidden: hiddenCount,
-          }
-        }));
-       //  Si el modal está abierto y mirando a este jugador, actualiza su lista
-        if (viewingSecretsOfPlayer === playerId) {
-          setPlayerSecretsData(
-            secrets.map((s, index) => ({
-              id: index, 
-              bocaArriba: s.revelado,
-            }))
-          );
+      setPlayersSecrets(prevSecrets => ({
+        ...prevSecrets,
+        [playerId]: {
+          revealed: revealedCount,
+          hidden: hiddenCount,
         }
+      }));
+      //  Si el modal está abierto y mirando a este jugador, actualiza su lista
+      if (viewingSecretsOfPlayer === playerId) {
+        setPlayerSecretsData(
+          secrets.map((s, index) => ({
+            id: index,
+            bocaArriba: s.revelado,
+          }))
+        );
+      }
     },
 
     onDiscardUpdate: (discardPile) => gameState.setDiscardPile(discardPile),
@@ -258,9 +258,9 @@ const GamePage = () => {
         canRobSecrets={canRobSecrets}
         selectedSecret={selectedSecretCard}
         onSecretSelect={handleSecretCardClick}
-        onRevealSecret={handleRevealSecret}
-        onHideSecret={handleHideSecret}
-        onRobSecret={() => handleRobSecret(viewingSecretsOfPlayer?.id_jugador)} 
+        onRevealSecret={() => handleRevealSecret(viewingSecretsOfPlayer?.id_jugador)}
+        onHideSecret={() => handleHideSecret(viewingSecretsOfPlayer?.id_jugador)}
+        onRobSecret={() => handleRobSecret(viewingSecretsOfPlayer?.id_jugador)}
       />
     </div>
   );

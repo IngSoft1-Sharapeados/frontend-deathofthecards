@@ -1,5 +1,18 @@
 import { useCallback } from 'react';
 import { apiService } from '@/services/apiService';
+import { cardService } from '@/services/cardService';
+
+
+const processSecrets = (secretsFromApi) => {
+  if (!Array.isArray(secretsFromApi)) return [];
+  return secretsFromApi.map(secret => {
+    if (secret.bocaArriba) {
+      const cardDetails = cardService.getSecretCards([{ id: secret.carta_id }])[0];
+      return { ...secret, ...cardDetails };
+    }
+    return secret;
+  });
+};
 
 const useSecretActions = (gameId, gameState) => {
   const {
@@ -16,15 +29,17 @@ const useSecretActions = (gameId, gameState) => {
     setSelectedSecretCard(prev => prev === secretId ? null : secretId);
   }, [canRevealSecrets, canHideSecrets, setSelectedSecretCard]);
 
-  const handleRevealSecret = useCallback(async () => {
-    if (!selectedSecretCard || !canRevealSecrets) return;
+  const handleRevealSecret = useCallback(async (viewingPlayerId) => {
+    if (!selectedSecretCard || !canRevealSecrets || !viewingPlayerId) return;
 
     try {
 
       const response = await apiService.revealSecret(gameId, currentPlayerId, selectedSecretCard);
+
+      const freshSecrets = await apiService.getPlayerSecrets(gameId, viewingPlayerId);
+
+      setPlayerSecretsData(processSecrets(freshSecrets));
       
-      // Actualizar los datos locales
-      setPlayerSecretsData(prev => prev.filter(secret => secret.id !== selectedSecretCard));
       setSelectedSecretCard(null);
       setCanRevealSecrets(true); //luego de revelar una carta de secreto ya no se puede aplicar el mismo efecto 
       setCanHideSecrets(true);
@@ -33,8 +48,8 @@ const useSecretActions = (gameId, gameState) => {
     }
   }, [gameId, currentPlayerId, selectedSecretCard, canRevealSecrets, setPlayerSecretsData, setSelectedSecretCard, setCanRevealSecrets]);
   
-  const handleHideSecret = useCallback(async () => {
-    if (!selectedSecretCard || !canHideSecrets) return;
+  const handleHideSecret = useCallback(async (viewingPlayerId) => {
+    if (!selectedSecretCard || !canHideSecrets || !viewingPlayerId) return;
 
     try {
       const response = await apiService.hideSecret(
@@ -42,7 +57,9 @@ const useSecretActions = (gameId, gameState) => {
         currentPlayerId,
         selectedSecretCard
       );
-      setPlayerSecretsData(prev => prev.filter(secret => secret.id !== selectedSecretCard));
+      const freshSecrets = await apiService.getPlayerSecrets(gameId, viewingPlayerId);
+
+      setPlayerSecretsData(processSecrets(freshSecrets));
       setSelectedSecretCard(null);
       setCanHideSecrets(true); 
       // setCanHideSecrets(false); luego de ocultar una carta de secreto ya no se puede aplicar el mismo efecto

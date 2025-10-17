@@ -39,7 +39,7 @@ const useGameState = () => {
   const [playersSecrets, setPlayersSecrets] = useState({});
   const [selectedSecretCard, setSelectedSecretCard] = useState(null);
   const [canRevealSecrets, setCanRevealSecrets] = useState(true); // aca logica real deberia setearlo dependiente de si jugo las cartas correspondientes
-  const [canHideSecrets, setCanHideSecrets] = useState(true); 
+  const [canHideSecrets, setCanHideSecrets] = useState(false); 
   const [canRobSecrets, setCanRobSecrets] = useState(true);
   // Derived state
   const isMyTurn = currentTurn === currentPlayerId;
