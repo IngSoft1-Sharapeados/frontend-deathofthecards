@@ -39,7 +39,7 @@ const GamePage = () => {
     playedSetsByPlayer,
     isPlayButtonEnabled,
     isSecretsModalOpen, isSecretsLoading, playerSecretsData, viewingSecretsOfPlayer,
-    playersSecrets, setPlayersSecrets,
+    playersSecrets, setPlayersSecrets, setPlayerSecretsData,
     canRevealSecrets,canHideSecrets, selectedSecretCard, canRobSecrets
   } = gameState;
       // Desarrollo solamente
@@ -91,13 +91,22 @@ const GamePage = () => {
       const revealedCount = secrets.filter(s => s.revelado).length;
       const hiddenCount = secrets.length - revealedCount;
 
-      setPlayersSecrets(prevSecrets => ({
-        ...prevSecrets,
-        [playerId]: {
-          revealed: revealedCount,
-          hidden: hiddenCount,
+        setPlayersSecrets(prevSecrets => ({
+          ...prevSecrets,
+          [playerId]: {
+            revealed: revealedCount,
+            hidden: hiddenCount,
+          }
+        }));
+       //  Si el modal está abierto y mirando a este jugador, actualiza su lista
+        if (viewingSecretsOfPlayer === playerId) {
+          setPlayerSecretsData(
+            secrets.map((s, index) => ({
+              id: index, 
+              bocaArriba: s.revelado,
+            }))
+          );
         }
-      }));
     },
 
     onDiscardUpdate: (discardPile) => gameState.setDiscardPile(discardPile),

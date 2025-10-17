@@ -74,10 +74,10 @@ const useWebSocket = (callbacks) => {
       websocketService.off('fin-partida', onGameEnd);
       websocketService.off('nuevo-draft', onDraftUpdate);
 
-  websocketService.off('jugar-set', onSetPlayed);
+      websocketService.off('jugar-set', onSetPlayed);
 
       websocketService.off('actualizacion-secreto', onSecretUpdate);
-
+      websocketService.off('actualizacion-secreto', onSecretUpdate);
     };
   }, []);
 };
