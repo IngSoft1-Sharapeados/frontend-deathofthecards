@@ -20,30 +20,13 @@ const SecretsModal = ({
 }) => {
   if (!isOpen) return null;
   
-  // Debug logs
-  console.log('🔍 SecretsModal ABIERTO - Estado inicial:', {
-    selectedSecret,
-    tipoDeSelectedSecret: typeof selectedSecret,
-    canRevealSecrets,
-    canHideSecrets,
-    secrets: secrets?.map(s => ({ 
-      id: s.id, 
-      tipoDeId: typeof s.id,
-      bocaArriba: s.bocaArriba,
-      url: s.url 
-    }))
-  });
-
   const handleCardClick = (secretId, isFaceUp) => {
-    console.log('Click en carta - secretId:', secretId, 'isFaceUp:', isFaceUp);
     
     const canClick = (!isFaceUp && canRevealSecrets) || (isFaceUp && canHideSecrets);
     if (!canClick) {
-      console.log('Click bloqueado - no se puede interactuar');
       return;
     }
     
-    console.log('Llamando onSecretSelect con ID:', secretId);
     onSecretSelect(secretId);
   };
 

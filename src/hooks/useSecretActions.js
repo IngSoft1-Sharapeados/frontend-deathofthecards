@@ -20,13 +20,8 @@ const useSecretActions = (gameId, gameState) => {
     if (!selectedSecretCard || !canRevealSecrets) return;
 
     try {
-        console.log("➡️ Enviando revelación:", {
-          gameId,
-          currentPlayerId,
-          selectedSecretCard
-        });
+
       const response = await apiService.revealSecret(gameId, currentPlayerId, selectedSecretCard);
-      console.log("Secreto revelado:", response);
       
       // Actualizar los datos locales
       setPlayerSecretsData(prev => prev.filter(secret => secret.id !== selectedSecretCard));
@@ -34,7 +29,6 @@ const useSecretActions = (gameId, gameState) => {
       setCanRevealSecrets(true); //luego de revelar una carta de secreto ya no se puede aplicar el mismo efecto 
       setCanHideSecrets(true);
     } catch (error) {
-      console.error("Error al revelar secreto:", error);
       alert(`Error: ${error.message}`);
     }
   }, [gameId, currentPlayerId, selectedSecretCard, canRevealSecrets, setPlayerSecretsData, setSelectedSecretCard, setCanRevealSecrets]);
@@ -43,24 +37,16 @@ const useSecretActions = (gameId, gameState) => {
     if (!selectedSecretCard || !canHideSecrets) return;
 
     try {
-      console.log("➡️ Enviando ocultamiento:", {
-        gameId,
-        currentPlayerId,
-        selectedSecretCard,
-      });
       const response = await apiService.hideSecret(
         gameId,
         currentPlayerId,
         selectedSecretCard
       );
-      console.log("Secreto oculto:", response);
-
       setPlayerSecretsData(prev => prev.filter(secret => secret.id !== selectedSecretCard));
       setSelectedSecretCard(null);
-      setCanHideSecrets(true); //luego de ocultar una carta de secreto ya no se puede aplicar el mismo efecto
-      
+      setCanHideSecrets(true); 
+      // setCanHideSecrets(false); luego de ocultar una carta de secreto ya no se puede aplicar el mismo efecto
     } catch (error) {
-      console.error("Error al ocultar secreto:", error);
       alert(`Error: ${error.message}`);
     }
   }, [
@@ -75,12 +61,6 @@ const useSecretActions = (gameId, gameState) => {
     if (!selectedSecretCard || !canRobSecrets) return;
   
     try {
-      console.log("➡️ Enviando robo de secreto:", {
-        gameId,
-        jugadorTurno: currentPlayerId,
-        jugadorDestino: playerIdDestino,
-        selectedSecretCard,
-      });
     
       const response = await apiService.robSecret(
         gameId,
@@ -88,14 +68,12 @@ const useSecretActions = (gameId, gameState) => {
         playerIdDestino,
         selectedSecretCard
       );
-      console.log("✅ Secreto robado:", response);
     
       // Actualizar localmente
       setPlayerSecretsData(prev => prev.filter(s => s.id !== selectedSecretCard));
       setSelectedSecretCard(null);
       setCanRobSecrets(false);
     } catch (error) {
-      console.error("❌ Error al robar secreto:", error);
       alert(`Error: ${error.message}`);
     }
   }, [

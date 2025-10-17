@@ -257,7 +257,7 @@ const GamePage = () => {
         canRevealSecrets={canRevealSecrets}
         canRobSecrets={canRobSecrets}
         selectedSecret={selectedSecretCard}
-        onSecretSelect={handleSecretCardClick} // ← del useSecretActions
+        onSecretSelect={handleSecretCardClick}
         onRevealSecret={handleRevealSecret}
         onHideSecret={handleHideSecret}
         onRobSecret={() => handleRobSecret(viewingSecretsOfPlayer?.id_jugador)} 
