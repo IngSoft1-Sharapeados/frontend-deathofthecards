@@ -113,8 +113,6 @@ const GamePage = () => {
 
   // Also glow the deck/draft when a set was played and player can pick up to reach 6
   const canPickAfterSet = gameState.hasPlayedSetThisTurn && gameState.isMyTurn && hand.length < 6;
-  console.log("ispickupenabled", isPickupButtonEnabled);
-  console.log
 
 
 

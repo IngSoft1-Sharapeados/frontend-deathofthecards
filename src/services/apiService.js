@@ -25,7 +25,7 @@ const createHttpService = () => {
     });
   };
 
-  const listGames = async (playerData) => {
+  const listGames = async () => {
     return request("/partidas", {
       method: "GET",
     });
