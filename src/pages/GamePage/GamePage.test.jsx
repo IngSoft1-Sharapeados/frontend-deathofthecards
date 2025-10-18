@@ -178,6 +178,16 @@ describe('GamePage', () => {
     expect(playButton).toBeDisabled();
   });
 
+  test('calls handlePlay when Play is enabled', () => {
+    mockUseGameState.isPlayButtonEnabled = true;
+    render(<GamePage />);
+    const playButton = screen.getByRole('button', { name: /jugar/i });
+    expect(playButton).toBeEnabled();
+    fireEvent.click(playButton);
+    expect(mockUseCardActions.handlePlay).toHaveBeenCalled();
+    mockUseGameState.isPlayButtonEnabled = false; // reset
+  });
+
   test('should call handleDraftCardClick when a draft card is clicked', () => {
     mockUseGameState.playerTurnState = 'drawing';
     render(<GamePage />);
