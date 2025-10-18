@@ -10,6 +10,7 @@ vi.mock('@/services/apiService', () => ({
         revealSecret: vi.fn(() => Promise.resolve({ ok: true })),
         hideSecret: vi.fn(() => Promise.resolve({ ok: true })),
         robSecret: vi.fn(() => Promise.resolve({ ok: true })),
+        getPlayerSecrets: vi.fn(() => Promise.resolve([])),
     },
 }));
 
@@ -118,7 +119,7 @@ describe('useSecretActions', () => {
 
 
         await act(async () => {
-        await result.current.handleRevealSecret();
+        await result.current.handleRevealSecret(99);
         });
 
         expect(apiService.revealSecret).toHaveBeenCalledWith(7, 99, 42);
@@ -128,7 +129,7 @@ describe('useSecretActions', () => {
         const { result } = renderHook(() => useSecretActions(7, gameState));
 
         await act(async () => {
-        await result.current.handleHideSecret();
+        await result.current.handleHideSecret(99);
         });
 
         expect(apiService.hideSecret).toHaveBeenCalledWith(7, 99, 42);

@@ -8,7 +8,11 @@ const processSecrets = (secretsFromApi) => {
   return secretsFromApi.map(secret => {
     if (secret.bocaArriba) {
       const cardDetails = cardService.getSecretCards([{ id: secret.carta_id }])[0];
-      return { ...secret, ...cardDetails };
+      return { 
+        ...secret, 
+        ...cardDetails,
+         id: secret.id // ✅ Mantener el ID original del secreto
+       };
     }
     return secret;
   });
@@ -42,7 +46,6 @@ const useSecretActions = (gameId, gameState) => {
       
       setSelectedSecretCard(null);
       setCanRevealSecrets(true); //luego de revelar una carta de secreto ya no se puede aplicar el mismo efecto 
-      setCanHideSecrets(true);
     } catch (error) {
       alert(`Error: ${error.message}`);
     }
@@ -72,6 +75,8 @@ const useSecretActions = (gameId, gameState) => {
     selectedSecretCard,
     canHideSecrets,
     setSelectedSecretCard,
+    setPlayerSecretsData,
+    setCanHideSecrets,
   ]);
 
   const handleRobSecret = useCallback(async (playerIdDestino) => {
