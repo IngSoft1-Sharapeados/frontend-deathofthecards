@@ -20,7 +20,7 @@ import useGameData from '@/hooks/useGameData';
 import useCardActions, { useSecrets } from '@/hooks/useCardActions';
 import PlayerSelectionModal from '@/components/EventModals/PlayerSelectionModal';
 import EventDisplay from '@/components/EventModals/EventDisplay';
-
+import useSecretActions from '@/hooks/useSecretActions';
 // Styles
 import styles from './GamePage.module.css';
 
@@ -40,14 +40,17 @@ const GamePage = () => {
     playerTurnState, selectedDraftCards, isPickupButtonEnabled,
     playedSetsByPlayer,
     isPlayButtonEnabled,
-    isSecretsModalOpen, isSecretsLoading, playerSecretsData, viewingSecretsOfPlayer, playersSecrets, setPlayersSecrets,
-    isPlayerSelectionModalOpen, eventCardToPlay, setEventCardInPlay
-
+    isSecretsModalOpen, isSecretsLoading, playerSecretsData, viewingSecretsOfPlayer,
+    playersSecrets, setPlayersSecrets,
+    isPlayerSelectionModalOpen, eventCardToPlay, setEventCardInPlay, setPlayerSecretsData,
+    canRevealSecrets, canHideSecrets, selectedSecretCard, canRobSecrets
   } = gameState;
+      // Desarrollo solamente
   if (process.env.NODE_ENV === 'development') {
     window.gameState = gameState;
   }
   const { handleOpenSecretsModal, handleCloseSecretsModal } = useSecrets(gameId, gameState);
+  const { handleSecretCardClick, handleRevealSecret, handleHideSecret, handleRobSecret } = useSecretActions(gameId, gameState);
 
   const webSocketCallbacks = {
     onDeckUpdate: (count) => gameState.setDeckCount(count),
@@ -117,6 +120,15 @@ const GamePage = () => {
         ...prev,
         [playerId]: { revealed: revealedCount, hidden: hiddenCount },
       }));
+      //  Si el modal está abierto y mirando a este jugador, actualiza su lista
+      if (viewingSecretsOfPlayer === playerId) {
+        setPlayerSecretsData(
+          secrets.map((s, index) => ({
+            id: index,
+            bocaArriba: s.revelado,
+          }))
+        );
+      }
     },
 
     onDiscardUpdate: (discardPile) => gameState.setDiscardPile(discardPile),
@@ -271,6 +283,21 @@ const GamePage = () => {
         player={viewingSecretsOfPlayer}
         secrets={playerSecretsData}
         isLoading={isSecretsLoading}
+        canHideSecrets={canHideSecrets}
+        canRevealSecrets={canRevealSecrets}
+        canRobSecrets={canRobSecrets}
+        selectedSecret={selectedSecretCard}
+        onSecretSelect={handleSecretCardClick}
+        onRevealSecret={() => handleRevealSecret(viewingSecretsOfPlayer?.id_jugador)}
+        onHideSecret={() => handleHideSecret(viewingSecretsOfPlayer?.id_jugador)}
+        onRobSecret={() => handleRobSecret(viewingSecretsOfPlayer?.id_jugador)}
+      />
+      <PlayerSelectionModal
+        isOpen={isPlayerSelectionModalOpen}
+        onClose={() => gameState.setPlayerSelectionModalOpen(false)}
+        players={opponentPlayers}
+        onPlayerSelect={handleEventActionConfirm}
+        title="Cards off the Table: Elige un jugador"
       />
       <PlayerSelectionModal
         isOpen={isPlayerSelectionModalOpen}
