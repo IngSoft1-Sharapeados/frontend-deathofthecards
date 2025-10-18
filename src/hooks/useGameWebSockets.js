@@ -47,6 +47,11 @@ const useWebSocket = (callbacks) => {
       });
     };
 
+    const onCardsOffTheTablePlayed = (message) => {
+      console.log('Evento "Cards off the Table" jugado:', message);
+      callbacksRef.current.onCardsOffTheTablePlayed?.(message);
+    };
+
 
     const onDiscardUpdate = (message) => {
       console.log('Carta descartada:', message);
@@ -55,14 +60,20 @@ const useWebSocket = (callbacks) => {
       const discardCards = safeDiscardCardIds.map(id => ({ id }));
       callbacksRef.current.onDiscardUpdate?.(discardCards);
     };
+
+    const onHandUpdate = (message) => {
+      console.log('Actualización de mano:', message);
+      callbacksRef.current.onHandUpdate?.(message);
+    };
     // Suscribirse a eventos
     websocketService.on('actualizacion-mazo', onDeckUpdate);
     websocketService.on('turno-actual', onTurnUpdate);
     websocketService.on('fin-partida', onGameEnd);
-    websocketService.on('carta-descartada', onDiscardUpdate);  
+    websocketService.on('carta-descartada', onDiscardUpdate);
     websocketService.on('nuevo-draft', onDraftUpdate);
-
+    websocketService.on('se-jugo-cards-off-the-table', onCardsOffTheTablePlayed);
     websocketService.on('jugar-set', onSetPlayed);
+    websocketService.on('actualizacion-mano', onHandUpdate);
 
     websocketService.on('actualizacion-secreto', onSecretUpdate);
 
@@ -73,7 +84,8 @@ const useWebSocket = (callbacks) => {
       websocketService.off('turno-actual', onTurnUpdate);
       websocketService.off('fin-partida', onGameEnd);
       websocketService.off('nuevo-draft', onDraftUpdate);
-
+      websocketService.off('se-jugo-cards-off-the-table', onCardsOffTheTablePlayed);
+      websocketService.off('actualizacion-mano', onHandUpdate);
       websocketService.off('jugar-set', onSetPlayed);
 
       websocketService.off('actualizacion-secreto', onSecretUpdate);

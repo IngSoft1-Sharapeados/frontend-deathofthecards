@@ -41,6 +41,13 @@ const useGameState = () => {
   const [canRevealSecrets, setCanRevealSecrets] = useState(true); // aca logica real deberia setearlo dependiente de si jugo las cartas correspondientes
   const [canHideSecrets, setCanHideSecrets] = useState(false); 
   const [canRobSecrets, setCanRobSecrets] = useState(true);
+
+  const [isPlayerSelectionModalOpen, setPlayerSelectionModalOpen] = useState(false);
+  const [eventCardToPlay, setEventCardToPlay] = useState(null);
+
+  const [eventCardInPlay, setEventCardInPlay] = useState(null);
+
+
   // Derived state
   const isMyTurn = currentTurn === currentPlayerId;
   const isDiscardButtonEnabled = selectedCards.length > 0 && isMyTurn && playerTurnState === 'discarding';
@@ -113,7 +120,10 @@ const useGameState = () => {
     viewingSecretsOfPlayer, setViewingSecretsOfPlayer,
     playerSecretsData, setPlayerSecretsData,
     isSecretsLoading, setIsSecretsLoading,
-    playersSecrets, setPlayersSecrets
+    playersSecrets, setPlayersSecrets,
+    isPlayerSelectionModalOpen, setPlayerSelectionModalOpen,
+    eventCardToPlay, setEventCardToPlay,
+    eventCardInPlay, setEventCardInPlay
   };
 };
 

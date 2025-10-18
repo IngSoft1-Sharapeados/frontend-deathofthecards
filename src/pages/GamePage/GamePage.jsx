@@ -18,6 +18,8 @@ import useWebSocket from '@/hooks/useGameWebSockets';
 import useGameState from '@/hooks/useGameState';
 import useGameData from '@/hooks/useGameData';
 import useCardActions, { useSecrets } from '@/hooks/useCardActions';
+import PlayerSelectionModal from '@/components/EventModals/PlayerSelectionModal';
+import EventDisplay from '@/components/EventModals/EventDisplay';
 import useSecretActions from '@/hooks/useSecretActions';
 // Styles
 import styles from './GamePage.module.css';
@@ -39,33 +41,59 @@ const GamePage = () => {
     playedSetsByPlayer,
     isPlayButtonEnabled,
     isSecretsModalOpen, isSecretsLoading, playerSecretsData, viewingSecretsOfPlayer,
-    playersSecrets, setPlayersSecrets, setPlayerSecretsData,
+    playersSecrets, setPlayersSecrets,
+    isPlayerSelectionModalOpen, eventCardToPlay, setEventCardInPlay, setPlayerSecretsData,
     canRevealSecrets, canHideSecrets, selectedSecretCard, canRobSecrets
   } = gameState;
-  // Desarrollo solamente
+      // Desarrollo solamente
   if (process.env.NODE_ENV === 'development') {
     window.gameState = gameState;
   }
-  //borrar despues
   const { handleOpenSecretsModal, handleCloseSecretsModal } = useSecrets(gameId, gameState);
   const { handleSecretCardClick, handleRevealSecret, handleHideSecret, handleRobSecret } = useSecretActions(gameId, gameState);
 
   const webSocketCallbacks = {
     onDeckUpdate: (count) => gameState.setDeckCount(count),
 
+    onCardsOffTheTablePlayed: (message) => {
+      const { jugador_id: actorId, objetivo_id: targetId } = message;
+      const actorName = gameState.players.find(p => p.id_jugador === actorId)?.nombre_jugador || 'Un jugador';
+      const targetName = gameState.players.find(p => p.id_jugador === targetId)?.nombre_jugador || 'otro jugador';
+
+      setEventCardInPlay({
+        imageName: '17-event_cardsonthetable.png',
+        message: `${actorName} jugó "Cards off the Table" sobre ${targetName}`,
+      });
+    },
+
+    onHandUpdate: (message) => {
+      console.log("Mensaje completo de WS:", message);
+      const nuevaMano = message.data;
+
+      const handWithInstanceIds = nuevaMano.map((card, index) => {
+        console.log("Procesando carta:", card);
+        return {
+          ...card,
+          instanceId: `${card.id}-update-${Date.now()}-${index}`,
+          url: cardService.getCardImageUrl(card.id) // <--- agregar URL
+        };
+      });
+
+      console.log("Mano final que se setea:", handWithInstanceIds);
+      gameState.setHand(handWithInstanceIds);
+    },
+
     onTurnUpdate: (turn) => {
       gameState.setCurrentTurn(turn);
       gameState.setPlayerTurnState('discarding');
-      // New rule: reset flag at the beginning of your turn
       gameState.setHasPlayedSetThisTurn(false);
     },
-
 
     onDraftUpdate: (newDraftData) => {
       const processedDraftCards = cardService.getDraftCards(newDraftData);
       const draftWithInstanceIds = processedDraftCards.map((card, index) => ({
         ...card,
-        instanceId: `draft-${card.id}-${Date.now()}-${index}`
+        instanceId: `draft-${card.id}-${Date.now()}-${index}`,
       }));
       gameState.setDraftCards(draftWithInstanceIds);
     },
@@ -75,8 +103,7 @@ const GamePage = () => {
       gameState.setAsesinoGano(asesinoGano);
     },
 
-    onSetPlayed: (payload) => {
-      const { jugador_id, representacion_id, cartas_ids } = payload;
+    onSetPlayed: ({ jugador_id, representacion_id, cartas_ids }) => {
       gameState.setPlayedSetsByPlayer(prev => {
         const next = { ...prev };
         const arr = next[jugador_id] ? [...next[jugador_id]] : [];
@@ -86,17 +113,12 @@ const GamePage = () => {
       });
     },
 
-
     onSecretUpdate: ({ playerId, secrets }) => {
       const revealedCount = secrets.filter(s => s.revelado).length;
       const hiddenCount = secrets.length - revealedCount;
-
-      setPlayersSecrets(prevSecrets => ({
-        ...prevSecrets,
-        [playerId]: {
-          revealed: revealedCount,
-          hidden: hiddenCount,
-        }
+      setPlayersSecrets(prev => ({
+        ...prev,
+        [playerId]: { revealed: revealedCount, hidden: hiddenCount },
       }));
       //  Si el modal está abierto y mirando a este jugador, actualiza su lista
       if (viewingSecretsOfPlayer === playerId) {
@@ -114,7 +136,7 @@ const GamePage = () => {
 
   useWebSocket(webSocketCallbacks);
   useGameData(gameId, gameState);
-  const { handleCardClick, handleDraftCardClick, handleDiscard, handlePickUp, handlePlay } = useCardActions(gameId, gameState);
+  const { handleCardClick, handleDraftCardClick, handleDiscard, handlePickUp, handlePlay, handleEventActionConfirm } = useCardActions(gameId, gameState);
 
   const sortedHand = useMemo(() => {
     return [...hand].sort((a, b) => a.id - b.id);
@@ -124,6 +146,10 @@ const GamePage = () => {
 
   // Also glow the deck/draft when a set was played and player can pick up to reach 6
   const canPickAfterSet = gameState.hasPlayedSetThisTurn && gameState.isMyTurn && hand.length < 6;
+
+  const opponentPlayers = useMemo(() => {
+    return players.filter(p => p.id_jugador !== currentPlayerId);
+  }, [players, currentPlayerId]);
 
 
   if (isLoading) {
@@ -143,6 +169,10 @@ const GamePage = () => {
           onReturnToMenu={() => navigate("/")}
         />
       )}
+      <EventDisplay
+        card={gameState.eventCardInPlay}
+        onDisplayComplete={() => gameState.setEventCardInPlay(null)}
+      />
 
       {/* --- Opponents Area --- */}
       <div className={styles.opponentsContainer} data-player-count={players.length}>
@@ -261,6 +291,20 @@ const GamePage = () => {
         onRevealSecret={() => handleRevealSecret(viewingSecretsOfPlayer?.id_jugador)}
         onHideSecret={() => handleHideSecret(viewingSecretsOfPlayer?.id_jugador)}
         onRobSecret={() => handleRobSecret(viewingSecretsOfPlayer?.id_jugador)}
+      />
+      <PlayerSelectionModal
+        isOpen={isPlayerSelectionModalOpen}
+        onClose={() => gameState.setPlayerSelectionModalOpen(false)}
+        players={opponentPlayers}
+        onPlayerSelect={handleEventActionConfirm}
+        title="Cards off the Table: Elige un jugador"
+      />
+      <PlayerSelectionModal
+        isOpen={isPlayerSelectionModalOpen}
+        onClose={() => gameState.setPlayerSelectionModalOpen(false)}
+        players={opponentPlayers}
+        onPlayerSelect={handleEventActionConfirm}
+        title="Cards off the Table: Elige un jugador"
       />
     </div>
   );
