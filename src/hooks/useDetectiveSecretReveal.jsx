@@ -131,6 +131,7 @@ export default function useDetectiveSecretReveal(gameId, gameState, players) {
   const confirmRevealTargetSecret = useCallback(async () => {
     if (!targetPlayer || !selectedSecretId) return;
     try {
+      // Backend expects the TARGET player's id as id_jugador
       await apiService.revealSecret(gameId, targetPlayer.id_jugador, selectedSecretId);
       setIsSecretsOpen(false);
       setTargetPlayer(null);
@@ -145,6 +146,7 @@ export default function useDetectiveSecretReveal(gameId, gameState, players) {
   const confirmHideTargetSecret = useCallback(async () => {
     if (!targetPlayer || !selectedSecretId) return;
     try {
+      // Backend expects the TARGET player's id as id_jugador
       await apiService.hideSecret(gameId, targetPlayer.id_jugador, selectedSecretId);
       setIsSecretsOpen(false);
       setTargetPlayer(null);
@@ -186,7 +188,8 @@ export default function useDetectiveSecretReveal(gameId, gameState, players) {
   const confirmRevealMySecret = useCallback(async () => {
     if (!mySelectedSecretId) return;
     try {
-      await apiService.revealSecret(gameId, currentPlayerId, mySelectedSecretId);
+      
+      await apiService.revealOwnSecret(gameId, currentPlayerId, mySelectedSecretId);
       setIsPersonalSecretsOpen(false);
       setMySecretsForSelection([]);
       setMySelectedSecretId(null);

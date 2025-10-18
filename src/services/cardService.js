@@ -90,6 +90,11 @@ const getRandomDetectives = (count) => {
   return shuffled.slice(0, count);
 };
 
+const getEventCardData = (cardId) => {
+  const card = EVENT_CARDS.find((gameCard) => gameCard.id == cardId);
+  return card
+}
+
 
 
 export const cardService = {
@@ -97,5 +102,6 @@ export const cardService = {
   getPlayingHand,
   getSecretCards,
   getRandomDetectives,
-  getDraftCards
+  getDraftCards,
+  getEventCardData
 };

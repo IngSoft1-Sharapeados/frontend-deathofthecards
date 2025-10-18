@@ -25,7 +25,7 @@ const createHttpService = () => {
     });
   };
 
-  const listGames = async (playerData) => {
+  const listGames = async () => {
     return request("/partidas", {
       method: "GET",
     });
@@ -148,13 +148,22 @@ const createHttpService = () => {
       method: "GET",
     });
   };
-  const revealSecret = async (gameId, playerId, secretUniqueId) => {
-    return request(`/partidas/${gameId}/revelacion?id_jugador=${playerId}&id_unico_secreto=${secretUniqueId}`, {
+
+  const revealSecret = async (gameId, targetPlayerId, secretUniqueId) => {
+    // Revelar secreto de jugador objetivo (backend espera id_jugador del objetivo)
+    return request(`/partidas/${gameId}/revelacion?id_jugador=${targetPlayerId}&id_unico_secreto=${secretUniqueId}`, {
       method: "PATCH",
     });
   };
-  const hideSecret = async (gameId, playerId, secretUniqueId) => {
-    return request(`/partidas/${gameId}/ocultamiento?id_jugador=${playerId}&id_unico_secreto=${secretUniqueId}`, {
+  const hideSecret = async (gameId, targetPlayerId, secretUniqueId) => {
+    // Ocultar secreto de jugador objetivo (backend espera id_jugador del objetivo)
+    return request(`/partidas/${gameId}/ocultamiento?id_jugador=${targetPlayerId}&id_unico_secreto=${secretUniqueId}`, {
+      method: 'PATCH',
+    });
+  };
+  const revealOwnSecret = async (gameId, playerId, secretUniqueId) => {
+    // Jugador revela su propio secreto (lady/beresford)
+    return request(`/partidas/${gameId}/revelacion?id_jugador=${playerId}&id_unico_secreto=${secretUniqueId}`, {
       method: 'PATCH',
     });
   };
@@ -162,11 +171,16 @@ const createHttpService = () => {
     return request(`/partidas/${gameId}/solicitar-revelacion?id_jugador_solicitante=${requesterId}&id_jugador_objetivo=${targetPlayerId}&motivo=${encodeURIComponent(motivo)}`, {
       method: 'POST',
     });
+
   };
   const getDiscardPile = async (gameId, playerID, cantidad = 1)  => {
     return request(`/partidas/${gameId}/descarte?id_jugador=${playerID}&cantidad=${cantidad}`, {
       method: "GET",
     });
+  };
+  const robSecret = async (gameId, playerIdTurno, targetPlayerId, secretUniqueId) => {
+    return request(`/partidas/${gameId}/robo-secreto?id_jugador_turno=${playerIdTurno}&id_jugador_destino=${targetPlayerId}&id_unico_secreto=${secretUniqueId}`,
+    { method: 'PATCH' });
   };
   
   return {
@@ -191,8 +205,12 @@ const createHttpService = () => {
   getPlayerSecrets,
   getDiscardPile,
   revealSecret,
+  revealOwnSecret,
+  robSecret,
+
   requestTargetToRevealSecret,
   hideSecret
+
   };
 };
 

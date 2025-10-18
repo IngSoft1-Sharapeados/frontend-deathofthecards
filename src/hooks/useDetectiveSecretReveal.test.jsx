@@ -79,7 +79,8 @@ describe('useDetectiveSecretReveal', () => {
     const revealBtn = await screen.findByRole('button', { name: /Revelar secreto/i });
     fireEvent.click(revealBtn);
 
-    expect(apiService.revealSecret).toHaveBeenCalledWith('1', 2, 100);
+  // Backend expects target player's id for id_jugador
+  expect(apiService.revealSecret).toHaveBeenCalledWith('1', 2, 100);
   });
 
   it('flujo parker: seleccionar objetivo, cargar secretos revelados y confirmar ocultar', async () => {
@@ -117,7 +118,8 @@ describe('useDetectiveSecretReveal', () => {
 
     const hideBtn = await screen.findByRole('button', { name: /Ocultar secreto/i });
     fireEvent.click(hideBtn);
-    expect(apiService.hideSecret).toHaveBeenCalledWith('1', 2, 101);
+  // Backend expects target player's id for id_jugador
+  expect(apiService.hideSecret).toHaveBeenCalledWith('1', 2, 101);
   });
   
 });

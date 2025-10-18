@@ -44,8 +44,11 @@ describe('useGameData', () => {
     setSecretCards: vi.fn(),
     setDraftCards: vi.fn(),
     setPlayersSecrets: vi.fn(),
+    setDiscardPile: vi.fn(),
     setPlayedSetsByPlayer: vi.fn(),
-    setDiscardPile: vi.fn()
+    setCanRevealSecrets: vi.fn(),
+    setCanHideSecrets: vi.fn(),
+    setCanRobSecrets: vi.fn(),
   };
 
   const mockGameData = {

@@ -19,7 +19,7 @@ import useWebSocket from '@/hooks/useGameWebSockets';
 import useGameState from '@/hooks/useGameState';
 import useGameData from '@/hooks/useGameData';
 import useCardActions, { useSecrets } from '@/hooks/useCardActions';
-
+import useSecretActions from '@/hooks/useSecretActions';
 // Styles
 import styles from './GamePage.module.css';
 
@@ -32,33 +32,40 @@ const GamePage = () => {
   const gameState = useGameState();
   const {
     hand, selectedCards, isLoading,
-    deckCount, currentTurn, turnOrder, players,
+  deckCount, currentTurn, /* turnOrder */ players,
     winners, asesinoGano,
     isDiscardButtonEnabled, currentPlayerId,
     roles, secretCards, displayedOpponents, draftCards, discardPile,
     playerTurnState, selectedDraftCards, isPickupButtonEnabled,
     playedSetsByPlayer,
     isPlayButtonEnabled,
-    isSecretsModalOpen, isSecretsLoading, playerSecretsData, viewingSecretsOfPlayer, playersSecrets, setPlayersSecrets
-
+    isSecretsModalOpen, isSecretsLoading, playerSecretsData, viewingSecretsOfPlayer,
+    playersSecrets, setPlayersSecrets, setPlayerSecretsData,
+    canRevealSecrets, canHideSecrets, selectedSecretCard, canRobSecrets
   } = gameState;
-  if (process.env.NODE_ENV === 'development') {
+
+  // Desarrollo solamente
+
+  if (import.meta.env.DEV) {
     window.gameState = gameState;
   }
 
   const { handleOpenSecretsModal, handleCloseSecretsModal } = useSecrets(gameId, gameState);
   const { handleSetPlayedEvent, modals: detectiveModals } = useDetectiveSecretReveal(gameId, gameState, players);
+  // Secret actions handlers used by SecretsModal
+  const { handleSecretCardClick, handleRevealSecret, handleHideSecret, handleRobSecret } = useSecretActions(gameId, gameState);
+
 
   const webSocketCallbacks = {
     onDeckUpdate: (count) => gameState.setDeckCount(count),
 
-        onTurnUpdate: (turn) => {
-          gameState.setCurrentTurn(turn);
-          gameState.setPlayerTurnState('discarding');
-          // New rule: reset flag at the beginning of your turn
-          gameState.setHasPlayedSetThisTurn(false);
-        },
-    
+    onTurnUpdate: (turn) => {
+      gameState.setCurrentTurn(turn);
+      gameState.setPlayerTurnState('discarding');
+      // New rule: reset flag at the beginning of your turn
+      gameState.setHasPlayedSetThisTurn(false);
+    },
+
 
     onDraftUpdate: (newDraftData) => {
       const processedDraftCards = cardService.getDraftCards(newDraftData);
@@ -100,6 +107,15 @@ const GamePage = () => {
           hidden: hiddenCount,
         }
       }));
+      //  Si el modal está abierto y mirando a este jugador, actualiza su lista
+      if (viewingSecretsOfPlayer === playerId) {
+        setPlayerSecretsData(
+          secrets.map((s, index) => ({
+            id: index,
+            bocaArriba: s.revelado,
+          }))
+        );
+      }
     },
 
     onDiscardUpdate: (discardPile) => gameState.setDiscardPile(discardPile),
@@ -117,9 +133,6 @@ const GamePage = () => {
 
   // Also glow the deck/draft when a set was played and player can pick up to reach 6
   const canPickAfterSet = gameState.hasPlayedSetThisTurn && gameState.isMyTurn && hand.length < 6;
-  console.log("ispickupenabled", isPickupButtonEnabled);
-  console.log
-
 
 
   if (isLoading) {
@@ -249,6 +262,14 @@ const GamePage = () => {
         player={viewingSecretsOfPlayer}
         secrets={playerSecretsData}
         isLoading={isSecretsLoading}
+        canHideSecrets={canHideSecrets}
+        canRevealSecrets={canRevealSecrets}
+        canRobSecrets={canRobSecrets}
+        selectedSecret={selectedSecretCard}
+        onSecretSelect={handleSecretCardClick}
+        onRevealSecret={() => handleRevealSecret(viewingSecretsOfPlayer?.id_jugador)}
+        onHideSecret={() => handleHideSecret(viewingSecretsOfPlayer?.id_jugador)}
+        onRobSecret={() => handleRobSecret(viewingSecretsOfPlayer?.id_jugador)}
       />
   {detectiveModals}
     </div>

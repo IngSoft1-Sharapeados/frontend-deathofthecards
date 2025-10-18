@@ -2,6 +2,19 @@ import { useCallback } from 'react';
 import { cardService } from '@/services/cardService';
 import { apiService } from '@/services/apiService';
 import { isValidDetectiveSet } from '@/utils/detectiveSetValidation';
+import { isValidEventCard } from '@/utils/eventCardValidation';
+
+const CARD_IDS = {
+  CARDS_OFF_THE_TABLE: 17,
+  ANOTHER_VICTIM: 18,
+  DEAD_CARD_FOLLY: 19,
+  LOOK_ASHES: 20,
+  CARD_TRADE: 21,
+  ONE_MORE: 22,
+  DELAY_ESCAPE: 23,
+  EARLY_TRAIN: 24,
+  POINT_SUSPICIONS: 25,
+};
 
 const useCardActions = (gameId, gameState) => {
   const {
@@ -49,8 +62,8 @@ const useCardActions = (gameId, gameState) => {
 
       await apiService.discardCards(gameId, currentPlayerId, cardIdsToDiscard);
 
-  // Use functional update to avoid races with other state updates
-  setHand(prev => prev.filter(card => !selectedCards.includes(card.instanceId)));
+      // Use functional update to avoid races with other state updates
+      setHand(prev => prev.filter(card => !selectedCards.includes(card.instanceId)));
       setSelectedCards([]);
 
       // If after discarding you still have 6 or more, remain discarding.
@@ -93,7 +106,7 @@ const useCardActions = (gameId, gameState) => {
         setHand(prevHand => [...prevHand, ...newCardsWithDetails]);
       }
 
-  // 4. Reset local state. Phase control: if still below 6 after pickup, remain in drawing; if reached 6, end drawing phase here.
+      // 4. Reset local state. Phase control: if still below 6 after pickup, remain in drawing; if reached 6, end drawing phase here.
       setSelectedDraftCards([]);
 
       // 5. Ensure UI matches backend: fetch authoritative hand after pickup
@@ -121,20 +134,19 @@ const useCardActions = (gameId, gameState) => {
   ]);
 
   const handlePlay = useCallback(async () => {
-    // Only allow during discarding phase and player's turn
     if (!isMyTurn || playerTurnState !== 'discarding') return;
-    // Validate selection
-    if (!isValidDetectiveSet(hand, selectedCards)) return;
+    if (!isValidDetectiveSet(hand, selectedCards) && !isValidEventCard(hand, selectedCards)) return;
 
-  try {
+    try {
       // Map selected instance IDs to card ids
       const cardIdsToPlay = selectedCards
         .map((instanceId) => hand.find((c) => c.instanceId === instanceId)?.id)
         .filter((id) => id !== undefined);
 
-      // If backend supports a play endpoint, call it here. Otherwise, optimistically remove from hand.
-      if (apiService.playDetectiveSet) {
-        await apiService.playDetectiveSet(gameId, currentPlayerId, cardIdsToPlay);
+      if (isValidEventCard(hand, selectedCards)) {
+        await handleEventPlay(cardIdsToPlay);
+      } else {
+        await handleSetPlay(cardIdsToPlay);
       }
 
       // Update local hand and clear selection
@@ -149,6 +161,57 @@ const useCardActions = (gameId, gameState) => {
       alert(`Error: ${error.message}`);
     }
   }, [isMyTurn, playerTurnState, hand, selectedCards, setHand, setSelectedCards, gameId, currentPlayerId, setHasPlayedSetThisTurn]);
+
+  const handleSetPlay = async (cardIdsToPlay) => {
+    if (apiService.playDetectiveSet) {
+      await apiService.playDetectiveSet(gameId, currentPlayerId, cardIdsToPlay);
+    }
+  }
+
+  const handleEventPlay = async (cardIdsToPlay) => {
+    const eventCard = cardService.getEventCardData(cardIdsToPlay);
+    const cardId = eventCard.id;
+    try {
+      switch (cardId) {
+        case CARD_IDS.CARDS_ON_THE_TABLE:
+          console.log("Played: Cards on the Table");
+          break;
+        case CARD_IDS.ANOTHER_VICTIM:
+          console.log("Played: Another Victim");
+          break;
+        case CARD_IDS.DEAD_CARD_FOLLY:
+          console.log("Played: Dead Card Folly");
+          break;
+        case CARD_IDS.LOOK_ASHES:
+          console.log("Played: Look Ashes");
+          break;
+        case CARD_IDS.CARD_TRADE:
+          console.log("Played: Card Trade");
+          break;
+        case CARD_IDS.ONE_MORE:
+          console.log("Played: One More");
+          break;
+        case CARD_IDS.DELAY_ESCAPE:
+          console.log("Played: Delay Escape");
+          break;
+        case CARD_IDS.EARLY_TRAIN:
+          console.log("Played: Early Train");
+          break;
+        case CARD_IDS.POINT_SUSPICIONS:
+          console.log("Played: Point Suspicions");
+          break;
+        default:
+          console.log("Unknown event card:", eventCard);
+      }
+
+      await apiService.discardCards(gameId, currentPlayerId, [cardId]);
+
+    } catch (error) {
+      console.error("Error while discarding event card:", error);
+      alert(`Error: ${error.message}`);
+    }
+  };
+
 
   return {
     handleCardClick,
@@ -175,11 +238,18 @@ export const useSecrets = (gameId, gameState) => {
     try {
       const secretsFromApi = await apiService.getPlayerSecrets(gameId, player.id_jugador);
       console.log(secretsFromApi)
-      
+
       const processedSecrets = secretsFromApi.map(secret => {
         if (secret.bocaArriba && secret.carta_id) {
           const cardDetails = cardService.getSecretCards([{ id: secret.carta_id }])[0];
-          return { ...secret, url: cardDetails?.url };
+
+          console.log(cardDetails)
+          return { 
+            ...secret, 
+            url: cardDetails.url,
+            nombre: cardDetails.nombre || secret.nombre 
+          };
+
         }
         return secret;
       });

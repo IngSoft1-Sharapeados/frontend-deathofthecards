@@ -8,8 +8,8 @@ const useGameData = (gameId, gameState) => {
     setHand, setIsLoading, setCurrentPlayerId,
     setDeckCount, setCurrentTurn, setTurnOrder,
     setPlayers, setHostId, setWinners, setAsesinoGano,
-    setRoles, setSecretCards, setDraftCards, 
-    setPlayersSecrets, setPlayedSetsByPlayer, setDiscardPile
+    setRoles, setSecretCards,
+    setDraftCards, setPlayersSecrets, setPlayedSetsByPlayer, setDiscardPile
   } = gameState;
 
   const hasConnectedRef = useRef(false); // evita reconexiones extras
@@ -42,9 +42,11 @@ const useGameData = (gameId, gameState) => {
             apiService.getPlayedSets(gameId),
           ]);
 
+
           // Habilitar interacciones de secretos (se ajustará según sets jugados)
           if (gameState.setCanRevealSecrets) gameState.setCanRevealSecrets(true); // F5
           if (gameState.setCanHideSecrets) gameState.setCanHideSecrets(true);
+
 
           // Actualizar estado del juego
           setDeckCount(deckData);
