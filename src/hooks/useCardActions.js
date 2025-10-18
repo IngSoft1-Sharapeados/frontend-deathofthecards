@@ -243,7 +243,11 @@ export const useSecrets = (gameId, gameState) => {
         if (secret.bocaArriba) {
           const cardDetails = cardService.getSecretCards([{ id: secret.carta_id }])[0];
           console.log(cardDetails)
-          return { ...secret, ...cardDetails };
+          return { 
+            ...secret, 
+            url: cardDetails.url,
+            nombre: cardDetails.nombre || secret.nombre 
+          };
         }
         return secret;
       });

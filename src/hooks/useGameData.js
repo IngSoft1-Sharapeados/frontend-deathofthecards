@@ -8,8 +8,8 @@ const useGameData = (gameId, gameState) => {
     setHand, setIsLoading, setCurrentPlayerId,
     setDeckCount, setCurrentTurn, setTurnOrder,
     setPlayers, setHostId, setWinners, setAsesinoGano,
-    setRoles, setSecretCards, setDraftCards, 
-    setPlayersSecrets, setPlayedSetsByPlayer, setDiscardPile
+    setRoles, setSecretCards, setCanRevealSecrets, setCanHideSecrets,setCanRobSecrets,
+    setDraftCards,setPlayersSecrets, setPlayedSetsByPlayer, setDiscardPile
   } = gameState;
 
   const hasConnectedRef = useRef(false); // evita reconexiones extras
@@ -41,8 +41,10 @@ const useGameData = (gameId, gameState) => {
             apiService.getDiscardPile(gameId, storedPlayerId, 1), 
             apiService.getPlayedSets(gameId),
           ]);
-
-
+          
+          setCanRevealSecrets(true); // F5 
+          setCanHideSecrets(true); // F5
+          setCanRobSecrets(true)
           // Actualizar estado del juego
           setDeckCount(deckData);
           setCurrentTurn(turnData);
