@@ -11,7 +11,7 @@ const processSecrets = (secretsFromApi) => {
       return { 
         ...secret, 
         ...cardDetails,
-         id: secret.id // ✅ Mantener el ID original del secreto
+         id: secret.id 
        };
     }
     return secret;

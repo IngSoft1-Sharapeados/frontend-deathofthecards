@@ -1,6 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { cardService } from '@/services/cardService';
 import { useMemo } from 'react';
+import { apiService } from '@/services/apiService';
 
 
 // Components
@@ -11,6 +12,7 @@ import PlayerPod from '@/components/PlayerPod/PlayerPod.jsx';
 import CardDraft from '@/components/CardDraft/CardDraft.jsx'
 import SecretsModal from '@/components/SecretsModal/SecretsModal.jsx';
 import MySetsCarousel from '@/components/MySetsCarousel/MySetsCarousel.jsx';
+import SetSelectionModal from '@/components/EventModals/SetSelectionModal';
 
 import DiscardDeck from '@/components/DiscardDeck/DiscardDeck.jsx';
 // Hooks
@@ -43,9 +45,9 @@ const GamePage = () => {
     isSecretsModalOpen, isSecretsLoading, playerSecretsData, viewingSecretsOfPlayer,
     playersSecrets, setPlayersSecrets,
     isPlayerSelectionModalOpen, eventCardToPlay, setEventCardInPlay, setPlayerSecretsData,
-    canRevealSecrets, canHideSecrets, selectedSecretCard, canRobSecrets
+    canRevealSecrets, canHideSecrets, selectedSecretCard, canRobSecrets, isSetSelectionModalOpen
   } = gameState;
-      // Desarrollo solamente
+  // Desarrollo solamente
   if (process.env.NODE_ENV === 'development') {
     window.gameState = gameState;
   }
@@ -65,6 +67,33 @@ const GamePage = () => {
         message: `${actorName} jugó "Cards off the Table" sobre ${targetName}`,
       });
     },
+
+    onAnotherVictimPlayed: async (message) => {
+      const { jugador_id: actorId, objetivo_id: targetId } = message;
+      const actorName = gameState.players.find(p => p.id_jugador === actorId)?.nombre_jugador || 'Un jugador';
+      const targetName = gameState.players.find(p => p.id_jugador === targetId)?.nombre_jugador || 'otro jugador';
+
+      gameState.setEventCardInPlay({
+        imageName: '18-event_anothervictim.png',
+        message: `${actorName} robó un set de ${targetName}`
+      });
+
+      // Refrescar los sets para todos los jugadores
+      try {
+        const allSets = await apiService.getPlayedSets(gameId);
+        const groupedSets = {};
+        (allSets || []).forEach(item => {
+          const arr = groupedSets[item.jugador_id] || [];
+          arr.push(item);
+          groupedSets[item.jugador_id] = arr;
+        });
+        gameState.setPlayedSetsByPlayer(groupedSets);
+      } catch (error) {
+        console.error("Error al refrescar sets tras Another Victim:", error);
+      }
+    },
+
+
 
     onHandUpdate: (message) => {
       console.log("Mensaje completo de WS:", message);
@@ -103,14 +132,22 @@ const GamePage = () => {
       gameState.setAsesinoGano(asesinoGano);
     },
 
-    onSetPlayed: ({ jugador_id, representacion_id, cartas_ids }) => {
-      gameState.setPlayedSetsByPlayer(prev => {
-        const next = { ...prev };
-        const arr = next[jugador_id] ? [...next[jugador_id]] : [];
-        arr.push({ jugador_id, representacion_id_carta: representacion_id, cartas_ids });
-        next[jugador_id] = arr;
-        return next;
-      });
+    onSetPlayed: async (payload) => {
+      try {
+        const allSets = await apiService.getPlayedSets(gameId);
+        
+        const groupedSets = {};
+        (allSets || []).forEach(item => {
+          const arr = groupedSets[item.jugador_id] || [];
+          arr.push(item);
+          groupedSets[item.jugador_id] = arr;
+        });
+        
+        gameState.setPlayedSetsByPlayer(groupedSets);
+
+      } catch (error) {
+        console.error("Error al refrescar sets tras 'onSetPlayed':", error);
+      }
     },
 
     onSecretUpdate: ({ playerId, secrets }) => {
@@ -150,6 +187,14 @@ const GamePage = () => {
   const opponentPlayers = useMemo(() => {
     return players.filter(p => p.id_jugador !== currentPlayerId);
   }, [players, currentPlayerId]);
+
+  const opponentSets = useMemo(() => {
+    const sets = { ...playedSetsByPlayer };
+    if (sets[currentPlayerId]) {
+      delete sets[currentPlayerId];
+    }
+    return sets;
+  }, [playedSetsByPlayer, currentPlayerId]);
 
 
   if (isLoading) {
@@ -299,12 +344,13 @@ const GamePage = () => {
         onPlayerSelect={handleEventActionConfirm}
         title="Cards off the Table: Elige un jugador"
       />
-      <PlayerSelectionModal
-        isOpen={isPlayerSelectionModalOpen}
-        onClose={() => gameState.setPlayerSelectionModalOpen(false)}
-        players={opponentPlayers}
-        onPlayerSelect={handleEventActionConfirm}
-        title="Cards off the Table: Elige un jugador"
+      <SetSelectionModal
+        isOpen={isSetSelectionModalOpen}
+        onClose={() => gameState.setSetSelectionModalOpen(false)}
+        opponentSets={opponentSets}
+        players={players}
+        onSetSelect={handleEventActionConfirm}
+        title="Another Victim: Elige un set para robar"
       />
     </div>
   );
