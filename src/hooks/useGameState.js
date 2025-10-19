@@ -48,17 +48,20 @@ const useGameState = () => {
   const [eventCardToPlay, setEventCardToPlay] = useState(null);
 
   const [eventCardInPlay, setEventCardInPlay] = useState(null);
+  const [disgracedPlayerIds, setDisgracedPlayerIds] = useState(new Set());
 
 
 
   // Derived state
   const isMyTurn = currentTurn === currentPlayerId;
-  const isDiscardButtonEnabled = selectedCards.length > 0 && isMyTurn && playerTurnState === 'discarding';
+  const isLocalPlayerDisgraced = disgracedPlayerIds.has(currentPlayerId);
   // Pickup is enabled while drawing, or if a set was already played this turn (to allow choosing pickup without discarding again),
   // but only when it's still your turn.
   const isPickupButtonEnabled = isMyTurn && (playerTurnState === 'drawing' || (hasPlayedSetThisTurn && hand.length < 6));
-  const isPlayButtonEnabled = isMyTurn && !hasPlayedSetThisTurn && playerTurnState === 'discarding' && (isValidDetectiveSet(hand, selectedCards) || isValidEventCard(hand, selectedCards)) ;
+  const isPlayButtonEnabled = isMyTurn && !isLocalPlayerDisgraced && !hasPlayedSetThisTurn && playerTurnState === 'discarding' && (isValidDetectiveSet(hand, selectedCards) || isValidEventCard(hand, selectedCards));
 
+  const maxSelect = (isLocalPlayerDisgraced) ? 1 : 6;
+  const isDiscardButtonEnabled = selectedCards.length > 0 && selectedCards.length <= maxSelect && isMyTurn && playerTurnState === 'discarding';
 
   const getPlayerEmoji = (playerId) => {
 
@@ -125,7 +128,9 @@ const useGameState = () => {
     isPlayerSelectionModalOpen, setPlayerSelectionModalOpen,
     eventCardToPlay, setEventCardToPlay,
     eventCardInPlay, setEventCardInPlay,
-    isSetSelectionModalOpen, setSetSelectionModalOpen
+    isSetSelectionModalOpen, setSetSelectionModalOpen,
+    disgracedPlayerIds, setDisgracedPlayerIds,
+    isLocalPlayerDisgraced
   };
 };
 

@@ -14,6 +14,7 @@ import SecretsModal from '@/components/SecretsModal/SecretsModal.jsx';
 import useDetectiveSecretReveal from '@/hooks/useDetectiveSecretReveal.jsx';
 import MySetsCarousel from '@/components/MySetsCarousel/MySetsCarousel.jsx';
 import SetSelectionModal from '@/components/EventModals/SetSelectionModal';
+import DisgraceOverlay from '@/components/UI/DisgraceOverlay';
 
 import DiscardDeck from '@/components/DiscardDeck/DiscardDeck.jsx';
 // Hooks
@@ -36,7 +37,7 @@ const GamePage = () => {
   const gameState = useGameState();
   const {
     hand, selectedCards, isLoading,
-  deckCount, currentTurn, /* turnOrder */ players,
+    deckCount, currentTurn, /* turnOrder */ players,
     winners, asesinoGano,
     isDiscardButtonEnabled, currentPlayerId,
     roles, secretCards, displayedOpponents, draftCards, discardPile,
@@ -46,7 +47,8 @@ const GamePage = () => {
     isSecretsModalOpen, isSecretsLoading, playerSecretsData, viewingSecretsOfPlayer,
     playersSecrets, setPlayersSecrets,
     isPlayerSelectionModalOpen, eventCardToPlay, setEventCardInPlay, setPlayerSecretsData,
-    canRevealSecrets, canHideSecrets, selectedSecretCard, canRobSecrets, isSetSelectionModalOpen
+    canRevealSecrets, canHideSecrets, selectedSecretCard, canRobSecrets, isSetSelectionModalOpen,
+    disgracedPlayerIds, isLocalPlayerDisgraced
   } = gameState;
 
   // Desarrollo solamente
@@ -161,21 +163,37 @@ const GamePage = () => {
     },
 
     onSecretUpdate: ({ playerId, secrets }) => {
-      // Consider multiple possible flags for revealed state (backend may send 'bocaArriba')
-      const revealedCount = secrets.filter(s => s.bocaArriba || s.revelado || s.revelada).length;
+      const isNowDisgraced = secrets.every(s => s.revelado);
+
+      gameState.setDisgracedPlayerIds(prevSet => {
+        const newSet = new Set(prevSet);
+        if (isNowDisgraced) {
+          newSet.add(playerId);
+        } else {
+          newSet.delete(playerId);
+        }
+        return newSet;
+      });
+
+      const revealedCount = secrets.filter(s => s.revelado).length;
       const hiddenCount = secrets.length - revealedCount;
-      setPlayersSecrets(prev => ({
+
+      gameState.setPlayersSecrets(prev => ({
         ...prev,
         [playerId]: { revealed: revealedCount, hidden: hiddenCount },
       }));
-      //  Si el modal está abierto y mirando a este jugador, actualiza su lista
-      if (viewingSecretsOfPlayer === playerId) {
-        setPlayerSecretsData(
-          secrets.map((s, index) => ({
-            id: index,
-            bocaArriba: s.revelado,
-          }))
-        );
+
+      if (gameState.viewingSecretsOfPlayer?.id_jugador === playerId) {
+        apiService.getPlayerSecrets(gameId, playerId).then(freshSecrets => {
+          const processed = freshSecrets.map(secret => {
+            if (secret.bocaArriba) {
+              const cardDetails = cardService.getSecretCards([{ id: secret.carta_id }])[0];
+              return { ...secret, ...cardDetails };
+            }
+            return secret;
+          });
+          gameState.setPlayerSecretsData(processed);
+        });
       }
     },
 
@@ -230,7 +248,6 @@ const GamePage = () => {
         onDisplayComplete={() => gameState.setEventCardInPlay(null)}
       />
 
-      {/* --- Opponents Area --- */}
       <div className={styles.opponentsContainer} data-player-count={players.length}>
         {displayedOpponents.map((player, index) => (
           <div key={player.id_jugador} className={`${styles.opponent} ${styles[`opponent-${index + 1}`]}`}>
@@ -238,12 +255,10 @@ const GamePage = () => {
               player={player}
               isCurrentTurn={player.id_jugador === currentTurn}
               roleEmoji={getPlayerEmoji(player.id_jugador)}
-
               sets={(playedSetsByPlayer[player.id_jugador] || []).map(item => ({ id: item.representacion_id_carta }))}
-
               onSecretsClick={handleOpenSecretsModal}
               playerSecrets={playersSecrets[player.id_jugador]}
-
+              isDisgraced={disgracedPlayerIds.has(player.id_jugador)}
             />
           </div>
         ))}
@@ -264,6 +279,7 @@ const GamePage = () => {
       </div>
 
       <div className={`${styles.bottomContainer} ${(gameState.isMyTurn && !isDrawingPhase) ? styles.myTurn : ''}`}>
+        {isLocalPlayerDisgraced && <DisgraceOverlay />}
         <div className={styles.playerArea}>
           <div>
             <div className={styles.secretCardsContainer}>
@@ -349,7 +365,7 @@ const GamePage = () => {
         onRobSecret={() => handleRobSecret(viewingSecretsOfPlayer?.id_jugador)}
       />
 
-  {detectiveModals}
+      {detectiveModals}
 
       <PlayerSelectionModal
         isOpen={isPlayerSelectionModalOpen}

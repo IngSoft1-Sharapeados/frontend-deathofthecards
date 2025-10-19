@@ -1,0 +1,36 @@
+.banner {
+  display: inline-flex; /* para que se adapte al contenido */
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: linear-gradient(90deg, rgba(179, 58, 58, 0.9) 0%, rgba(128, 29, 29, 0.9) 100%);
+  border-radius: 8px;
+  padding: 0.4rem 0.8rem;
+  border: 1px solid #ff8a8a;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  margin-bottom: 0.5rem;
+}
+
+.icon {
+  font-size: 1.5rem;
+}
+
+.textContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  color: white;
+}
+
+.message {
+  font-size: 1rem;
+  font-weight: bold;
+  margin: 0;
+  text-shadow: 1px 1px 2px #000;
+}
+
+.instruction {
+  font-size: 0.75rem;
+  opacity: 0.9;
+  margin: 0;
+}
