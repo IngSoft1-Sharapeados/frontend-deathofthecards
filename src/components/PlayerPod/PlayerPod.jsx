@@ -16,7 +16,9 @@ const PlayerPod = ({ player, isCurrentTurn, roleEmoji, onSecretsClick, playerSec
 
     const [allSets, setAllSets] = useState([]);
     const [currentIndex, setCurrentIndex] = useState(0);
+    const [secretIndex, setSecretIndex] = useState(0);
     const visibleSetsCount = 3; // Number of cards to show at once
+    const visibleSecretsCount = 3; // Number of secrets to show at once
     const trackRef = useRef(null);
 
     useEffect(() => {
@@ -32,6 +34,9 @@ const PlayerPod = ({ player, isCurrentTurn, roleEmoji, onSecretsClick, playerSec
 
     const revealedCount = playerSecrets?.revealed ?? 0;
     const hiddenCount = playerSecrets?.hidden ?? 3;
+    const totalSecrets = revealedCount + hiddenCount;
+    const canGoPrevSecret = secretIndex > 0;
+    const canGoNextSecret = secretIndex < totalSecrets - visibleSecretsCount;
 
 
     const handleNext = (e) => {
@@ -48,8 +53,32 @@ const PlayerPod = ({ player, isCurrentTurn, roleEmoji, onSecretsClick, playerSec
         }
     };
 
+    const handleNextSecret = (e) => {
+        e.stopPropagation();
+        if (canGoNextSecret) {
+            setSecretIndex(prev => Math.min(prev + 1, totalSecrets - visibleSecretsCount));
+        }
+    };
+
+    const handlePrevSecret = (e) => {
+        e.stopPropagation();
+        if (canGoPrevSecret) {
+            setSecretIndex(prev => Math.max(prev - 1, 0));
+        }
+    };
+
     // Calculate the visible cards with some overlap
     const visibleSets = allSets.slice(currentIndex, currentIndex + visibleSetsCount);
+
+    // Generate secret cards array for carousel
+    const secretCardsArray = [];
+    for (let i = 0; i < totalSecrets; i++) {
+        secretCardsArray.push({
+            id: i,
+            type: i < revealedCount ? 'revealed' : 'hidden'
+        });
+    }
+    const visibleSecrets = secretCardsArray.slice(secretIndex, secretIndex + visibleSecretsCount);
 
     return (
         <div className={styles.podWrapper}>
@@ -104,11 +133,60 @@ const PlayerPod = ({ player, isCurrentTurn, roleEmoji, onSecretsClick, playerSec
                         <span className={styles.playerName}>{player.nombre_jugador}</span>
                     </div>
                     <div className={styles.secretsInfo} onClick={() => onSecretsClick(player)}>
-                        <img src={secretCardBack} alt="Secret card back" className={styles.secretCardImage} />
-                        <div className={styles.secretStats}>
-                            <span><EyeIcon /> {revealedCount}</span>
-                            <span><LockIcon /> {hiddenCount}</span>
-                        </div>
+                        {totalSecrets <= 3 ? (
+                            // Original display for 3 or fewer secrets
+                            <>
+                                <img src={secretCardBack} alt="Secret card back" className={styles.secretCardImage} />
+                                <div className={styles.secretStats}>
+                                    <span><EyeIcon /> {revealedCount}</span>
+                                    <span><LockIcon /> {hiddenCount}</span>
+                                </div>
+                            </>
+                        ) : (
+                            // Carousel display for more than 3 secrets
+                            <div className={styles.secretsCarousel}>
+                                <div className={styles.secretsScroller}>
+                                    {canGoPrevSecret && (
+                                        <button
+                                            aria-label="Previous secret"
+                                            className={`${styles.secretArrowButton} ${styles.left}`}
+                                            onClick={handlePrevSecret}
+                                        >
+                                            <ArrowIcon />
+                                        </button>
+                                    )}
+                                    
+                                    <div className={styles.secretsTrack}>
+                                        {visibleSecrets.map((secret, index) => (
+                                            <div key={`secret-${secret.id}`} className={styles.miniSecretCard}>
+                                                <img 
+                                                    src={secretCardBack} 
+                                                    alt={secret.type === 'revealed' ? 'Secreto revelado' : 'Secreto oculto'} 
+                                                    className={styles.miniSecretImage}
+                                                />
+                                                <div className={styles.miniSecretIcon}>
+                                                    {secret.type === 'revealed' ? <EyeIcon /> : <LockIcon />}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    
+                                    {canGoNextSecret && (
+                                        <button
+                                            aria-label="Next secret"
+                                            className={`${styles.secretArrowButton} ${styles.right}`}
+                                            onClick={handleNextSecret}
+                                        >
+                                            <ArrowIcon />
+                                        </button>
+                                    )}
+                                </div>
+                                <div className={styles.secretStats}>
+                                    <span><EyeIcon /> {revealedCount}</span>
+                                    <span><LockIcon /> {hiddenCount}</span>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

@@ -39,15 +39,21 @@ const useGameState = () => {
   const [playersSecrets, setPlayersSecrets] = useState({});
 
   const [selectedSecretCard, setSelectedSecretCard] = useState(null);
-  const [canRevealSecrets, setCanRevealSecrets] = useState(true);
+  const [canRevealSecrets, setCanRevealSecrets] = useState(false);
   const [canHideSecrets, setCanHideSecrets] = useState(false); 
-  const [canRobSecrets, setCanRobSecrets] = useState(true);
+  const [canRobSecrets, setCanRobSecrets] = useState(false);
 
   const [isPlayerSelectionModalOpen, setPlayerSelectionModalOpen] = useState(false);
   const [isSetSelectionModalOpen, setSetSelectionModalOpen] = useState(false);
   const [eventCardToPlay, setEventCardToPlay] = useState(null);
 
   const [eventCardInPlay, setEventCardInPlay] = useState(null);
+
+  // Estados para OneMore event flow
+  const [oneMoreStep, setOneMoreStep] = useState(0); // 0: not active, 1: select source, 2: select secret, 3: select destination
+  const [oneMoreSourcePlayer, setOneMoreSourcePlayer] = useState(null);
+  const [oneMoreSelectedSecret, setOneMoreSelectedSecret] = useState(null);
+  const [oneMoreDestinationPlayer, setOneMoreDestinationPlayer] = useState(null);
 
 
 
@@ -125,7 +131,15 @@ const useGameState = () => {
     isPlayerSelectionModalOpen, setPlayerSelectionModalOpen,
     eventCardToPlay, setEventCardToPlay,
     eventCardInPlay, setEventCardInPlay,
-    isSetSelectionModalOpen, setSetSelectionModalOpen
+    isSetSelectionModalOpen, setSetSelectionModalOpen,
+    selectedSecretCard, setSelectedSecretCard,
+    canRobSecrets, setCanRobSecrets,
+    
+    // OneMore event states
+    oneMoreStep, setOneMoreStep,
+    oneMoreSourcePlayer, setOneMoreSourcePlayer,
+    oneMoreSelectedSecret, setOneMoreSelectedSecret,
+    oneMoreDestinationPlayer, setOneMoreDestinationPlayer
   };
 };
 

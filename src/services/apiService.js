@@ -12,7 +12,7 @@ const createHttpService = () => {
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.detail || `Error ${response.status}`);
+      
     }
     return response.json();
   };
@@ -203,6 +203,17 @@ const createHttpService = () => {
     });
   };
 
+  const playOneMore = async (gameId, playerId, cardId, payload) => {
+    return request(`/partidas/${gameId}/evento/OneMore?id_jugador=${playerId}&id_carta=${cardId}`, {
+      method: "PUT",
+      body: JSON.stringify({
+        id_fuente: payload.id_fuente,
+        id_destino: payload.id_destino,
+        id_unico_secreto: payload.id_unico_secreto
+      }),
+    });
+  };
+
 
   return {
     createGame,
@@ -233,7 +244,8 @@ const createHttpService = () => {
     hideSecret,
     revealOwnSecret,
     robSecret,
-    playAnotherVictim
+    playAnotherVictim,
+    playOneMore
   };
 };
 

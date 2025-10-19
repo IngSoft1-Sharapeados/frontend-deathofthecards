@@ -27,6 +27,7 @@ const SecretsModal = ({
   onHideSecret,
   onRobSecret,
   hideCloseButton = false,
+  onConfirmSelection, // Callback for confirming selection in OneMore flow
 
 }) => {
   if (!isOpen) return null;
@@ -85,6 +86,16 @@ const SecretsModal = ({
           {canRobSecrets && selectedSecret && secrets.find(s => s.id === selectedSecret)?.bocaArriba && (
             <button onClick={onRobSecret} className={styles.revealButton}>Robar secreto</button>
           )}
+          {selectable && selectRevealedOnly && selectedSecret && (
+            <button
+              className="confirm-button"
+              onClick={() => {
+                onConfirmSelection(selectedSecret);
+              }}
+            >
+              Seleccionar Secreto
+            </button>
+          )}
         </div>
 
       </div>
@@ -93,3 +104,4 @@ const SecretsModal = ({
 };
 
 export default SecretsModal;
+
