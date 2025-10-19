@@ -37,6 +37,7 @@ const useGameState = () => {
   const [playerSecretsData, setPlayerSecretsData] = useState([]);
   const [isSecretsLoading, setIsSecretsLoading] = useState(false);
   const [playersSecrets, setPlayersSecrets] = useState({});
+
   const [selectedSecretCard, setSelectedSecretCard] = useState(null);
   const [canRevealSecrets, setCanRevealSecrets] = useState(true);
   const [canHideSecrets, setCanHideSecrets] = useState(false); 
@@ -47,6 +48,7 @@ const useGameState = () => {
   const [eventCardToPlay, setEventCardToPlay] = useState(null);
 
   const [eventCardInPlay, setEventCardInPlay] = useState(null);
+
 
 
   // Derived state
@@ -101,15 +103,13 @@ const useGameState = () => {
     asesinoGano, setAsesinoGano,
     secretCards, setSecretCards,
     draftCards, setDraftCards,
-    // Derived state
 
-    playedSetsByPlayer, setPlayedSetsByPlayer,
-    hasPlayedSetThisTurn, setHasPlayedSetThisTurn,
-    discardPile, setDiscardPile,
-    selectedSecretCard, setSelectedSecretCard,
+  playedSetsByPlayer, setPlayedSetsByPlayer,
+  hasPlayedSetThisTurn, setHasPlayedSetThisTurn,
+    discardPile,setDiscardPile,
     canRevealSecrets, setCanRevealSecrets,
     canHideSecrets, setCanHideSecrets,
-    canRobSecrets, setCanRobSecrets,
+
     // Derived state
     isMyTurn,
     isDiscardButtonEnabled,

@@ -11,6 +11,7 @@ import GameOverScreen from '@/components/GameOver/GameOverModal.jsx';
 import PlayerPod from '@/components/PlayerPod/PlayerPod.jsx';
 import CardDraft from '@/components/CardDraft/CardDraft.jsx'
 import SecretsModal from '@/components/SecretsModal/SecretsModal.jsx';
+import useDetectiveSecretReveal from '@/hooks/useDetectiveSecretReveal.jsx';
 import MySetsCarousel from '@/components/MySetsCarousel/MySetsCarousel.jsx';
 import SetSelectionModal from '@/components/EventModals/SetSelectionModal';
 
@@ -35,7 +36,7 @@ const GamePage = () => {
   const gameState = useGameState();
   const {
     hand, selectedCards, isLoading,
-    deckCount, currentTurn, turnOrder, players,
+  deckCount, currentTurn, /* turnOrder */ players,
     winners, asesinoGano,
     isDiscardButtonEnabled, currentPlayerId,
     roles, secretCards, displayedOpponents, draftCards, discardPile,
@@ -47,12 +48,18 @@ const GamePage = () => {
     isPlayerSelectionModalOpen, eventCardToPlay, setEventCardInPlay, setPlayerSecretsData,
     canRevealSecrets, canHideSecrets, selectedSecretCard, canRobSecrets, isSetSelectionModalOpen
   } = gameState;
+
   // Desarrollo solamente
-  if (process.env.NODE_ENV === 'development') {
+
+  if (import.meta.env.DEV) {
     window.gameState = gameState;
   }
+
   const { handleOpenSecretsModal, handleCloseSecretsModal } = useSecrets(gameId, gameState);
+  const { handleSetPlayedEvent, modals: detectiveModals } = useDetectiveSecretReveal(gameId, gameState, players);
+  // Secret actions handlers used by SecretsModal
   const { handleSecretCardClick, handleRevealSecret, handleHideSecret, handleRobSecret } = useSecretActions(gameId, gameState);
+
 
   const webSocketCallbacks = {
     onDeckUpdate: (count) => gameState.setDeckCount(count),
@@ -132,26 +139,30 @@ const GamePage = () => {
       gameState.setAsesinoGano(asesinoGano);
     },
 
+
     onSetPlayed: async (payload) => {
       try {
         const allSets = await apiService.getPlayedSets(gameId);
-        
+
         const groupedSets = {};
         (allSets || []).forEach(item => {
           const arr = groupedSets[item.jugador_id] || [];
           arr.push(item);
           groupedSets[item.jugador_id] = arr;
         });
-        
-        gameState.setPlayedSetsByPlayer(groupedSets);
 
+        gameState.setPlayedSetsByPlayer(groupedSets);
       } catch (error) {
         console.error("Error al refrescar sets tras 'onSetPlayed':", error);
+      } finally {
+        // Disparar flujo de selección (detective/lady/parker) si aplica
+        handleSetPlayedEvent?.(payload);
       }
     },
 
     onSecretUpdate: ({ playerId, secrets }) => {
-      const revealedCount = secrets.filter(s => s.revelado).length;
+      // Consider multiple possible flags for revealed state (backend may send 'bocaArriba')
+      const revealedCount = secrets.filter(s => s.bocaArriba || s.revelado || s.revelada).length;
       const hiddenCount = secrets.length - revealedCount;
       setPlayersSecrets(prev => ({
         ...prev,
@@ -337,6 +348,9 @@ const GamePage = () => {
         onHideSecret={() => handleHideSecret(viewingSecretsOfPlayer?.id_jugador)}
         onRobSecret={() => handleRobSecret(viewingSecretsOfPlayer?.id_jugador)}
       />
+
+  {detectiveModals}
+
       <PlayerSelectionModal
         isOpen={isPlayerSelectionModalOpen}
         onClose={() => gameState.setPlayerSelectionModalOpen(false)}
@@ -352,6 +366,7 @@ const GamePage = () => {
         onSetSelect={handleEventActionConfirm}
         title="Another Victim: Elige un set para robar"
       />
+
     </div>
   );
 };

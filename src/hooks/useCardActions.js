@@ -251,14 +251,16 @@ export const useSecrets = (gameId, gameState) => {
       console.log(secretsFromApi)
 
       const processedSecrets = secretsFromApi.map(secret => {
-        if (secret.bocaArriba) {
+        if (secret.bocaArriba && secret.carta_id) {
           const cardDetails = cardService.getSecretCards([{ id: secret.carta_id }])[0];
+
           console.log(cardDetails)
           return { 
             ...secret, 
             url: cardDetails.url,
             nombre: cardDetails.nombre || secret.nombre 
           };
+
         }
         return secret;
       });

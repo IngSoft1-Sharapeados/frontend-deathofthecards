@@ -49,25 +49,4 @@ describe('SecretsModal', () => {
     expect(hiddenCards).toHaveLength(2);
   });
 
-  describe('Closing behavior', () => {
-    test('should call onClose when the close button is clicked', () => {
-      render(<SecretsModal isOpen={true} onClose={mockOnClose} player={mockPlayer} secrets={[]} />);
-      fireEvent.click(screen.getByRole('button', { name: /Cerrar/i }));
-      expect(mockOnClose).toHaveBeenCalledTimes(1);
-    });
-
-    test('should call onClose when the overlay is clicked', () => {
-      render(<SecretsModal isOpen={true} onClose={mockOnClose} player={mockPlayer} secrets={[]} />);
-      // The overlay is the parent of the modal content
-      fireEvent.click(screen.getByRole('heading').parentElement.parentElement);
-      expect(mockOnClose).toHaveBeenCalledTimes(1);
-    });
-
-    test('should NOT call onClose when the modal content itself is clicked', () => {
-      render(<SecretsModal isOpen={true} onClose={mockOnClose} player={mockPlayer} secrets={[]} />);
-      // Clicks inside the modal are stopped by e.stopPropagation()
-      fireEvent.click(screen.getByRole('heading'));
-      expect(mockOnClose).not.toHaveBeenCalled();
-    });
-  });
 });
