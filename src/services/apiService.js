@@ -89,7 +89,7 @@ const createHttpService = () => {
   };
 
   const drawCards = async (gameId, playerId, amount = 1) => {
-    return request(`/partidas/${gameId}/robar?id_jugador=${playerId}&cantidad=${amount}` , {
+    return request(`/partidas/${gameId}/robar?id_jugador=${playerId}&cantidad=${amount}`, {
       method: "POST",
     });
   };
@@ -149,21 +149,21 @@ const createHttpService = () => {
     });
   };
 
-  const revealSecret = async (gameId, targetPlayerId, secretUniqueId) => {
-    // Revelar secreto de jugador objetivo (backend espera id_jugador del objetivo)
-    return request(`/partidas/${gameId}/revelacion?id_jugador=${targetPlayerId}&id_unico_secreto=${secretUniqueId}`, {
+  const revealSecret = async (gameId, actingPlayerId, secretUniqueId) => {
+    // Revelar secreto: ahora el backend espera id_jugador_turno (jugador que ejecuta la acción)
+    return request(`/partidas/${gameId}/revelacion?id_jugador_turno=${actingPlayerId}&id_unico_secreto=${secretUniqueId}`, {
       method: "PATCH",
     });
   };
-  const hideSecret = async (gameId, targetPlayerId, secretUniqueId) => {
-    // Ocultar secreto de jugador objetivo (backend espera id_jugador del objetivo)
-    return request(`/partidas/${gameId}/ocultamiento?id_jugador=${targetPlayerId}&id_unico_secreto=${secretUniqueId}`, {
+  const hideSecret = async (gameId, actingPlayerId, secretUniqueId) => {
+    // Ocultar secreto: el backend espera id_jugador_turno
+    return request(`/partidas/${gameId}/ocultamiento?id_jugador_turno=${actingPlayerId}&id_unico_secreto=${secretUniqueId}`, {
       method: 'PATCH',
     });
   };
   const revealOwnSecret = async (gameId, playerId, secretUniqueId) => {
-    // Jugador revela su propio secreto (lady/beresford)
-    return request(`/partidas/${gameId}/revelacion?id_jugador=${playerId}&id_unico_secreto=${secretUniqueId}`, {
+    // Revelación propia cambió a /revelacion-propia y usa id_jugador
+    return request(`/partidas/${gameId}/revelacion-propia?id_jugador=${playerId}&id_unico_secreto=${secretUniqueId}`, {
       method: 'PATCH',
     });
   };
@@ -173,16 +173,37 @@ const createHttpService = () => {
     });
 
   };
-  const getDiscardPile = async (gameId, playerID, cantidad = 1)  => {
+  const getDiscardPile = async (gameId, playerID, cantidad = 1) => {
     return request(`/partidas/${gameId}/descarte?id_jugador=${playerID}&cantidad=${cantidad}`, {
       method: "GET",
     });
   };
+
   const robSecret = async (gameId, playerIdTurno, targetPlayerId, secretUniqueId) => {
     return request(`/partidas/${gameId}/robo-secreto?id_jugador_turno=${playerIdTurno}&id_jugador_destino=${targetPlayerId}&id_unico_secreto=${secretUniqueId}`,
     { method: 'PATCH' });
   };
   
+
+
+  const playCardsOffTheTable = async (gameId, playerId, targetId, cardId) => {
+    return request(`/partidas/${gameId}/evento/CardsTable?id_jugador=${playerId}&id_objetivo=${targetId}&id_carta=${cardId}`, {
+      method: "PUT",
+    });
+  };
+
+  const playAnotherVictim = async (gameId, playerId, cardId, targetSet) => {
+    return request(`/partidas/${gameId}/evento/AnotherVictim?id_jugador=${playerId}&id_carta=${cardId}`, {
+      method: "PUT",
+      body: JSON.stringify({
+        id_objetivo: targetSet.jugador_id,
+        id_representacion_carta: targetSet.representacion_id_carta,
+        ids_cartas: targetSet.cartas_ids
+      }),
+    });
+  };
+
+
   return {
     createGame,
     listGames,
@@ -198,19 +219,21 @@ const createHttpService = () => {
     getMySecrets,
     getRoles,
     getDraftCards,
-  takeDraftCard,
-  pickUpCards,
-  playDetectiveSet,
-  getPlayedSets,
-  getPlayerSecrets,
-  getDiscardPile,
-  revealSecret,
-  revealOwnSecret,
-  robSecret,
 
-  requestTargetToRevealSecret,
-  hideSecret
+    requestTargetToRevealSecret,
 
+    takeDraftCard,
+    pickUpCards,
+    playDetectiveSet,
+    getPlayedSets,
+    getPlayerSecrets,
+    getDiscardPile,
+    playCardsOffTheTable,
+    revealSecret,
+    hideSecret,
+    revealOwnSecret,
+    robSecret,
+    playAnotherVictim
   };
 };
 

@@ -38,10 +38,17 @@ const useGameState = () => {
   const [isSecretsLoading, setIsSecretsLoading] = useState(false);
   const [playersSecrets, setPlayersSecrets] = useState({});
 
-  // Flags to control secret interactions (reveal/hide) based on played sets
+  const [selectedSecretCard, setSelectedSecretCard] = useState(null);
   const [canRevealSecrets, setCanRevealSecrets] = useState(true);
-  const [canHideSecrets, setCanHideSecrets] = useState(true);
-  
+  const [canHideSecrets, setCanHideSecrets] = useState(false); 
+  const [canRobSecrets, setCanRobSecrets] = useState(true);
+
+  const [isPlayerSelectionModalOpen, setPlayerSelectionModalOpen] = useState(false);
+  const [isSetSelectionModalOpen, setSetSelectionModalOpen] = useState(false);
+  const [eventCardToPlay, setEventCardToPlay] = useState(null);
+
+  const [eventCardInPlay, setEventCardInPlay] = useState(null);
+
 
 
   // Derived state
@@ -114,7 +121,11 @@ const useGameState = () => {
     viewingSecretsOfPlayer, setViewingSecretsOfPlayer,
     playerSecretsData, setPlayerSecretsData,
     isSecretsLoading, setIsSecretsLoading,
-    playersSecrets, setPlayersSecrets
+    playersSecrets, setPlayersSecrets,
+    isPlayerSelectionModalOpen, setPlayerSelectionModalOpen,
+    eventCardToPlay, setEventCardToPlay,
+    eventCardInPlay, setEventCardInPlay,
+    isSetSelectionModalOpen, setSetSelectionModalOpen
   };
 };
 

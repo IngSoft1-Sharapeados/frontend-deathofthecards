@@ -11,7 +11,7 @@ const processSecrets = (secretsFromApi) => {
       return { 
         ...secret, 
         ...cardDetails,
-         id: secret.id // ✅ Mantener el ID original del secreto
+         id: secret.id 
        };
     }
     return secret;
@@ -38,7 +38,8 @@ const useSecretActions = (gameId, gameState) => {
 
     try {
 
-  const response = await apiService.revealSecret(gameId, viewingPlayerId, selectedSecretCard);
+    // Backend ahora requiere id_jugador_turno (quien ejecuta la acción), no el objetivo
+    const response = await apiService.revealSecret(gameId, currentPlayerId, selectedSecretCard);
 
       const freshSecrets = await apiService.getPlayerSecrets(gameId, viewingPlayerId);
 
@@ -55,9 +56,10 @@ const useSecretActions = (gameId, gameState) => {
     if (!selectedSecretCard || !canHideSecrets || !viewingPlayerId) return;
 
     try {
+      // Backend ahora requiere id_jugador_turno (quien ejecuta la acción)
       const response = await apiService.hideSecret(
         gameId,
-        viewingPlayerId,
+        currentPlayerId,
         selectedSecretCard
       );
       const freshSecrets = await apiService.getPlayerSecrets(gameId, viewingPlayerId);

@@ -122,6 +122,7 @@ describe('useSecretActions', () => {
         await result.current.handleRevealSecret(99);
         });
 
+        // Ahora se envía id_jugador_turno (currentPlayerId)
         expect(apiService.revealSecret).toHaveBeenCalledWith(7, 99, 42);
     });
 
@@ -132,7 +133,8 @@ describe('useSecretActions', () => {
         await result.current.handleHideSecret(99);
         });
 
-        expect(apiService.hideSecret).toHaveBeenCalledWith(7, 99, 42);
+    // Ahora se envía id_jugador_turno (currentPlayerId)
+    expect(apiService.hideSecret).toHaveBeenCalledWith(7, 99, 42);
 
     });
 

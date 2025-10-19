@@ -132,7 +132,8 @@ export default function useDetectiveSecretReveal(gameId, gameState, players) {
     if (!targetPlayer || !selectedSecretId) return;
     try {
       // Backend expects the TARGET player's id as id_jugador
-      await apiService.revealSecret(gameId, targetPlayer.id_jugador, selectedSecretId);
+  // Backend espera id_jugador_turno (jugador que ejecuta la acción)
+  await apiService.revealSecret(gameId, currentPlayerId, selectedSecretId);
       setIsSecretsOpen(false);
       setTargetPlayer(null);
       setTargetSecrets([]);
@@ -147,7 +148,8 @@ export default function useDetectiveSecretReveal(gameId, gameState, players) {
     if (!targetPlayer || !selectedSecretId) return;
     try {
       // Backend expects the TARGET player's id as id_jugador
-      await apiService.hideSecret(gameId, targetPlayer.id_jugador, selectedSecretId);
+  // Backend espera id_jugador_turno (jugador que ejecuta la acción)
+  await apiService.hideSecret(gameId, currentPlayerId, selectedSecretId);
       setIsSecretsOpen(false);
       setTargetPlayer(null);
       setTargetSecrets([]);

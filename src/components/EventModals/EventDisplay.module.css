@@ -1,0 +1,48 @@
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+  animation: fadeIn 0.3s ease;
+}
+
+.cardContainer {
+  transform: scale(2.5); /* Hace la carta significativamente más grande */
+  animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.displayContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem; /* Espacio entre el texto y la carta */
+}
+
+.eventMessage {
+  font-size: 2rem;
+  font-weight: bold;
+  color: white;
+  text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.8);
+  padding: 0.5rem 1.5rem;
+  background-color: rgba(0, 0, 0, 0.5);
+  border-radius: 12px;
+  animation: fadeIn 0.5s ease;
+  text-align: center;
+  position: relative;
+  z-index: 10;       
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes popIn {
+  from { transform: scale(1.5); opacity: 0; }
+  to { transform: scale(2.5); opacity: 1; }
+}
