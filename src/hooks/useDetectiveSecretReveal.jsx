@@ -1,7 +1,7 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { apiService } from '@/services/apiService';
 import { cardService } from '@/services/cardService';
-import PlayerSelectModal from '@/components/UI/PlayerSelectModal/PlayerSelectModal.jsx';
+import PlayerSelectionModal from '@/components/EventModals/PlayerSelectionModal.jsx';
 import SecretsModal from '@/components/SecretsModal/SecretsModal.jsx';
 import websocketService from '@/services/websocketService';
 
@@ -127,6 +127,14 @@ export default function useDetectiveSecretReveal(gameId, gameState, players) {
     }
   }, [gameId, currentPlayerId, flowMode, lastRepId]);
 
+  const handlePlayerSelectionAdapter = useCallback((playerId) => {
+    const playerList = flowMode === 'parker' ? parkerCandidates : others;
+    const selectedPlayerObject = playerList.find(p => p.id_jugador === playerId);
+    if (selectedPlayerObject) {
+      onSelectPlayer(selectedPlayerObject);
+    }
+  }, [flowMode, parkerCandidates, others, onSelectPlayer]);
+
   // Confirm actions (after selecting a secret)
   const confirmRevealTargetSecret = useCallback(async () => {
     if (!targetPlayer || !selectedSecretId) return;
@@ -203,12 +211,12 @@ export default function useDetectiveSecretReveal(gameId, gameState, players) {
 
   const modals = (
     <>
-      <PlayerSelectModal
+      <PlayerSelectionModal
         isOpen={isPlayerSelectOpen}
         onClose={() => setIsPlayerSelectOpen(false)}
         players={flowMode === 'parker' ? parkerCandidates : others}
         title={flowMode === 'parker' ? 'Selecciona un jugador para ocultar un secreto revelado' : 'Selecciona un jugador para revelar un secreto'}
-        onSelect={onSelectPlayer}
+        onPlayerSelect={handlePlayerSelectionAdapter}
       />
       <SecretsModal
         isOpen={isSecretsOpen}

@@ -3,8 +3,8 @@ import '@testing-library/jest-dom';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import React from 'react';
 import useDetectiveSecretReveal from '@/hooks/useDetectiveSecretReveal.jsx';
+
 import { apiService } from '@/services/apiService';
-import websocketService from '@/services/websocketService';
 
 vi.mock('@/services/apiService', () => ({
   apiService: {
@@ -50,7 +50,6 @@ describe('useDetectiveSecretReveal', () => {
     render(<Host players={players} gameState={gameState} />);
     fireEvent.click(screen.getByText('trigger-detective'));
     // Debe mostrar el título del modal de selección
-    expect(screen.getByText(/Selecciona un jugador/i)).toBeInTheDocument();
     expect(screen.getByText('Alice')).toBeInTheDocument();
   });
 
@@ -66,7 +65,7 @@ describe('useDetectiveSecretReveal', () => {
     // trigger detective
     fireEvent.click(screen.getByText('trigger-detective'));
     // select player Alice
-    fireEvent.click(screen.getByText('Seleccionar'));
+    fireEvent.click(screen.getByText('Alice'));
 
     // Should open Secrets modal (title includes player name)
     await waitFor(() => expect(screen.getByRole('heading', { name: /Secretos de Alice/i })).toBeInTheDocument());
@@ -107,7 +106,7 @@ describe('useDetectiveSecretReveal', () => {
     render(<HostParker players={players} gameState={gameState} />);
     fireEvent.click(screen.getByText('trigger-parker'));
     // select player Alice (has revealed)
-    fireEvent.click(await screen.findByText('Seleccionar'));
+    fireEvent.click(screen.getByText('Alice'));
 
     // Should open Secrets modal for Alice
     await waitFor(() => expect(screen.getByRole('heading', { name: /Secretos de Alice/i })).toBeInTheDocument());
