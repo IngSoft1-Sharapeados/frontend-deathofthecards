@@ -15,6 +15,7 @@ import useDetectiveSecretReveal from '@/hooks/useDetectiveSecretReveal.jsx';
 import MySetsCarousel from '@/components/MySetsCarousel/MySetsCarousel.jsx';
 import SetSelectionModal from '@/components/EventModals/SetSelectionModal';
 import DisgraceOverlay from '@/components/UI/DisgraceOverlay';
+import MySecretCard from '@/components/MySecretCard/MySecretCard';
 
 import DiscardDeck from '@/components/DiscardDeck/DiscardDeck.jsx';
 // Hooks
@@ -25,6 +26,7 @@ import useCardActions, { useSecrets } from '@/hooks/useCardActions';
 import PlayerSelectionModal from '@/components/EventModals/PlayerSelectionModal';
 import EventDisplay from '@/components/EventModals/EventDisplay';
 import useSecretActions from '@/hooks/useSecretActions';
+
 // Styles
 import styles from './GamePage.module.css';
 
@@ -48,7 +50,7 @@ const GamePage = () => {
     playersSecrets, setPlayersSecrets,
     isPlayerSelectionModalOpen, eventCardToPlay, setEventCardInPlay, setPlayerSecretsData,
     canRevealSecrets, canHideSecrets, selectedSecretCard, canRobSecrets, isSetSelectionModalOpen,
-    disgracedPlayerIds, isLocalPlayerDisgraced
+    disgracedPlayerIds, isLocalPlayerDisgraced, mySecretCards
   } = gameState;
 
   // Desarrollo solamente
@@ -162,8 +164,10 @@ const GamePage = () => {
       }
     },
 
-    onSecretUpdate: ({ playerId, secrets }) => {
+    onSecretUpdate: async ({ playerId, secrets }) => {
       const isNowDisgraced = secrets.every(s => s.revelado);
+      const revealedCount = secrets.filter(s => s.revelado).length;
+      const hiddenCount = secrets.length - revealedCount;
 
       gameState.setDisgracedPlayerIds(prevSet => {
         const newSet = new Set(prevSet);
@@ -175,25 +179,34 @@ const GamePage = () => {
         return newSet;
       });
 
-      const revealedCount = secrets.filter(s => s.revelado).length;
-      const hiddenCount = secrets.length - revealedCount;
-
       gameState.setPlayersSecrets(prev => ({
         ...prev,
         [playerId]: { revealed: revealedCount, hidden: hiddenCount },
       }));
 
-      if (gameState.viewingSecretsOfPlayer?.id_jugador === playerId) {
-        apiService.getPlayerSecrets(gameId, playerId).then(freshSecrets => {
-          const processed = freshSecrets.map(secret => {
+      try {
+        if (playerId === gameState.currentPlayerId) {
+          const freshSecrets = await apiService.getMySecrets(gameId, gameState.currentPlayerId);
+          const processedMySecrets = freshSecrets.map(secret => {
+            const cardDetails = cardService.getSecretCards([{ id: secret.id }])[0];
+            return { ...secret, url: cardDetails?.url };
+          });
+          gameState.setMySecretCards(processedMySecrets);
+        }
+
+        if (gameState.viewingSecretsOfPlayer?.id_jugador === playerId) {
+          const freshModalSecrets = await apiService.getPlayerSecrets(gameId, playerId);
+          const processedModalSecrets = freshModalSecrets.map(secret => {
             if (secret.bocaArriba) {
               const cardDetails = cardService.getSecretCards([{ id: secret.carta_id }])[0];
               return { ...secret, ...cardDetails };
             }
             return secret;
           });
-          gameState.setPlayerSecretsData(processed);
-        });
+          gameState.setPlayerSecretsData(processedModalSecrets);
+        }
+      } catch (error) {
+        console.error("Error al refrescar secretos vía WebSocket:", error);
       }
     },
 
@@ -283,9 +296,9 @@ const GamePage = () => {
         <div className={styles.playerArea}>
           <div>
             <div className={styles.secretCardsContainer}>
-              {secretCards.map((card) => (
-                <div key={card.instanceId} className={styles.secretCardWrapper}>
-                  <Card imageName={card.url} subfolder="secret-cards" />
+              {mySecretCards.map((secret) => (
+                <div key={secret.id_instancia} className={styles.secretCardWrapper}>
+                  <MySecretCard secret={secret} />
                 </div>
               ))}
             </div>

@@ -18,7 +18,7 @@ const useGameState = () => {
   const [players, setPlayers] = useState([]);
   const [hostId, setHostId] = useState(null);
   const [roles, setRoles] = useState({ murdererId: null, accompliceId: null });
-  const [secretCards, setSecretCards] = useState([]);
+  const [mySecretCards, setMySecretCards] = useState([]);
   const [draftCards, setDraftCards] = useState([]);
   const [playedSetsByPlayer, setPlayedSetsByPlayer] = useState({});
   // Track if player has played a set in the current turn
@@ -104,7 +104,7 @@ const useGameState = () => {
     displayedOpponents,
     winners, setWinners,
     asesinoGano, setAsesinoGano,
-    secretCards, setSecretCards,
+    mySecretCards, setMySecretCards,
     draftCards, setDraftCards,
 
   playedSetsByPlayer, setPlayedSetsByPlayer,
