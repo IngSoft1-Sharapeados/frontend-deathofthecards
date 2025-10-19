@@ -104,7 +104,7 @@ describe('SetSelectionModal', () => {
         <SetSelectionModal isOpen={true} players={mockPlayers} opponentSets={mockOpponentSets} onClose={mockOnClose} onPlayerSelect={mockOnSetSelect} />
       );
       
-      const overlay = screen.getByRole('heading').parentElement.parentElement;
+      const overlay = screen.getByRole('heading', { name: /Seleccionar un Set/i }).parentElement.parentElement;
       fireEvent.click(overlay);
       
       expect(mockOnClose).toHaveBeenCalledTimes(1);
