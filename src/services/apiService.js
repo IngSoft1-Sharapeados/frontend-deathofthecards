@@ -12,7 +12,7 @@ const createHttpService = () => {
 
     if (!response.ok) {
       const errorData = await response.json();
-      
+      throw new Error(errorData.detail || 'Error en la petición');
     }
     return response.json();
   };
