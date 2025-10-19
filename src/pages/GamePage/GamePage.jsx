@@ -16,6 +16,7 @@ import MySetsCarousel from '@/components/MySetsCarousel/MySetsCarousel.jsx';
 import SetSelectionModal from '@/components/EventModals/SetSelectionModal';
 import DisgraceOverlay from '@/components/UI/DisgraceOverlay';
 import MySecretCard from '@/components/MySecretCard/MySecretCard';
+import ConfirmationModal from '@/components/EventModals/ConfirmationModal';
 
 import DiscardDeck from '@/components/DiscardDeck/DiscardDeck.jsx';
 // Hooks
@@ -50,7 +51,7 @@ const GamePage = () => {
     playersSecrets, setPlayersSecrets,
     isPlayerSelectionModalOpen, eventCardToPlay, setEventCardInPlay, setPlayerSecretsData,
     canRevealSecrets, canHideSecrets, selectedSecretCard, canRobSecrets, isSetSelectionModalOpen,
-    disgracedPlayerIds, isLocalPlayerDisgraced, mySecretCards
+    disgracedPlayerIds, isLocalPlayerDisgraced, mySecretCards, isConfirmationModalOpen
   } = gameState;
 
   // Desarrollo solamente
@@ -161,6 +162,24 @@ const GamePage = () => {
       } finally {
         // Disparar flujo de selección (detective/lady/parker) si aplica
         handleSetPlayedEvent?.(payload);
+      }
+    },
+
+    onDelayEscapePlayed: async (message) => {
+      gameState.setEventCardInPlay({
+        imageName: '23-event_delayescape.png',
+        message: `Se jugó "Delay The Murderer Escape"`
+      });
+      // Forzar a todos los clientes a refrescar los datos afectados
+      try {
+        const [deckData, discardData] = await Promise.all([
+          apiService.getDeckCount(gameId),
+          apiService.getDiscardPile(gameId, gameState.currentPlayerId, 10)
+        ]);
+        gameState.setDeckCount(deckData);
+        gameState.setDiscardPile(Array.isArray(discardData) ? discardData.map(c => ({ id: c.id })) : []);
+      } catch (error) {
+        console.error("Error al refrescar estado tras Delay Escape:", error);
       }
     },
 
@@ -394,6 +413,13 @@ const GamePage = () => {
         players={players}
         onSetSelect={handleEventActionConfirm}
         title="Another Victim: Elige un set para robar"
+      />
+      <ConfirmationModal
+        isOpen={isConfirmationModalOpen}
+        onClose={() => gameState.setConfirmationModalOpen(false)}
+        onConfirm={handleEventActionConfirm}
+        title="Delay The Murderer Escape"
+        message="Elige cuántas cartas mover del descarte al mazo (1-5)."
       />
 
     </div>

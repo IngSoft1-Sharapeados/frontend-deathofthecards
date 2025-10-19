@@ -203,6 +203,12 @@ const createHttpService = () => {
     });
   };
 
+  const playDelayTheMurdererEscape = async (gameId, playerId, cardId, amount) => {
+    return request(`/partidas/${gameId}/evento/DelayEscape?id_jugador=${playerId}&id_carta=${cardId}&cantidad=${amount}`, {
+      method: "PUT",
+    });
+  };
+
 
   return {
     createGame,
@@ -233,7 +239,8 @@ const createHttpService = () => {
     hideSecret,
     revealOwnSecret,
     robSecret,
-    playAnotherVictim
+    playAnotherVictim,
+    playDelayTheMurdererEscape
   };
 };
 

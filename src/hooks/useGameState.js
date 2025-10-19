@@ -46,6 +46,7 @@ const useGameState = () => {
   const [isPlayerSelectionModalOpen, setPlayerSelectionModalOpen] = useState(false);
   const [isSetSelectionModalOpen, setSetSelectionModalOpen] = useState(false);
   const [eventCardToPlay, setEventCardToPlay] = useState(null);
+  const [isConfirmationModalOpen, setConfirmationModalOpen] = useState(false);
 
   const [eventCardInPlay, setEventCardInPlay] = useState(null);
   const [disgracedPlayerIds, setDisgracedPlayerIds] = useState(new Set());
@@ -130,6 +131,7 @@ const useGameState = () => {
     eventCardInPlay, setEventCardInPlay,
     isSetSelectionModalOpen, setSetSelectionModalOpen,
     disgracedPlayerIds, setDisgracedPlayerIds,
+    isConfirmationModalOpen, setConfirmationModalOpen,
     isLocalPlayerDisgraced
   };
 };

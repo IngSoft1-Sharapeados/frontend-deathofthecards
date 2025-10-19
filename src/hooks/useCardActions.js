@@ -23,7 +23,7 @@ const useCardActions = (gameId, gameState) => {
     currentPlayerId,
     isMyTurn, players,
     playerTurnState, setPlayerTurnState, setSelectedDraftCards,
-    hasPlayedSetThisTurn, setHasPlayedSetThisTurn,
+    hasPlayedSetThisTurn, setHasPlayedSetThisTurn, setConfirmationModalOpen,
     setPlayerSelectionModalOpen, setEventCardToPlay, eventCardToPlay, setSetSelectionModalOpen, isLocalPlayerDisgraced
   } = gameState;
 
@@ -34,7 +34,7 @@ const useCardActions = (gameId, gameState) => {
         return prev.filter((id) => id !== instanceId);
       }
       if (isLocalPlayerDisgraced && prev.length >= 1) {
-        return prev; 
+        return prev;
       }
       return [...prev, instanceId];
     });
@@ -132,10 +132,10 @@ const useCardActions = (gameId, gameState) => {
 
       const playerName = players.find(p => p.id_jugador === currentPlayerId)?.nombre_jugador || 'Alguien';
       const eventCardData = cardService.getEventCardData(cardId);
-      
+
       gameState.setEventCardInPlay({
         imageName: eventCardData.url,
-        message: `${playerName} jugó una carta de evento!` 
+        message: `${playerName} jugó una carta de evento!`
       });
 
       switch (cardId) {
@@ -144,12 +144,19 @@ const useCardActions = (gameId, gameState) => {
           await apiService.playCardsOffTheTable(gameId, currentPlayerId, targetPlayerId, cardId);
           break;
         }
-        case CARD_IDS.ANOTHER_VICTIM: { 
+        case CARD_IDS.ANOTHER_VICTIM: {
           const targetSet = payload;
-          console.log('another victim data: ',cardId, targetSet);
+          console.log('another victim data: ', cardId, targetSet);
           await apiService.playAnotherVictim(gameId, currentPlayerId, cardId, targetSet);
           break;
-         }
+        }
+        case CARD_IDS.DELAY_ESCAPE: {
+          const amountToGet = payload;
+          console.log("toget: ", payload);
+
+          // await apiService.playDelayTheMurdererEscape(gameId, currentPlayerId, cardId, amountToGet);
+          break;
+        }
         default:
           throw new Error(`Lógica de confirmación no implementada para la carta ${cardId}`);
       }
@@ -166,6 +173,7 @@ const useCardActions = (gameId, gameState) => {
     } finally {
       // Siempre cerramos todos los modales y reseteamos el estado del evento
       setPlayerSelectionModalOpen(false);
+      setConfirmationModalOpen(false);
       setSetSelectionModalOpen(false);
       setEventCardToPlay(null);
     }
@@ -208,25 +216,31 @@ const useCardActions = (gameId, gameState) => {
       alert(`Error: ${error.message}`);
     }
   };
-  
+
   const handleEventPlay = async (cardId) => {
+    const cardInstance = hand.find(c => c.instanceId === selectedCards[0]);
+    if (!cardInstance) return; // Salir si no se encuentra la carta
+
+    setEventCardToPlay({ id: cardInstance.id, instanceId: cardInstance.instanceId });
+
     switch (cardId) {
       case CARD_IDS.CARDS_OFF_THE_TABLE: {
-        const cardInstance = hand.find(c => c.instanceId === selectedCards[0]);
-        setEventCardToPlay({ id: cardInstance.id, instanceId: cardInstance.instanceId });
         setPlayerSelectionModalOpen(true);
         break;
       }
-      case CARD_IDS.ANOTHER_VICTIM:
-        const cardInstance = hand.find(c => c.instanceId === selectedCards[0]);
-        setEventCardToPlay({ id: cardInstance.id, instanceId: cardInstance.instanceId });
-        setSetSelectionModalOpen(true); 
+      case CARD_IDS.ANOTHER_VICTIM: {
+        setSetSelectionModalOpen(true);
         break;
+      }
+      case CARD_IDS.DELAY_ESCAPE: {
+        setConfirmationModalOpen(true);
+        break;
+      }
       default:
         console.warn("Evento de carta no implementado:", cardId);
     }
   };
-
+  
   return {
     handleCardClick,
     handleDraftCardClick,
@@ -259,10 +273,10 @@ export const useSecrets = (gameId, gameState) => {
           const cardDetails = cardService.getSecretCards([{ id: secret.carta_id }])[0];
 
           console.log(cardDetails)
-          return { 
-            ...secret, 
+          return {
+            ...secret,
             url: cardDetails.url,
-            nombre: cardDetails.nombre || secret.nombre 
+            nombre: cardDetails.nombre || secret.nombre
           };
 
         }

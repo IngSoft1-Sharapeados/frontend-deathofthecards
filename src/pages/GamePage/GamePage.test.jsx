@@ -23,6 +23,7 @@ const mockUseGameState = {
   playedSetsByPlayer: {},
   displayedOpponents: [],
   getPlayerEmoji: () => null,
+  isConfirmationModalOpen: false,
   disgracedPlayerIds: new Set(),
   isLocalPlayerDisgraced: false,
   setDeckCount: vi.fn(),
@@ -32,7 +33,7 @@ const mockUseGameState = {
   setAsesinoGano: vi.fn(),
   setPlayedSetsByPlayer: vi.fn(),
   setPlayerTurnState: vi.fn(),
-  setDisgracedPlayerIds: vi.fn(),
+  setDisgracedPlayerIds: vi.fn()
 };
 
 const mockUseCardActions = {
