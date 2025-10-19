@@ -52,6 +52,11 @@ const useWebSocket = (callbacks) => {
       callbacksRef.current.onCardsOffTheTablePlayed?.(message);
     };
 
+    const onAnotherVictimPlayed = (message) => {
+      console.log('Evento "Another Victim" jugado:', message);
+      callbacksRef.current.onAnotherVictimPlayed?.(message);
+    };
+
 
     const onDiscardUpdate = (message) => {
       console.log('Carta descartada:', message);
@@ -72,6 +77,7 @@ const useWebSocket = (callbacks) => {
     websocketService.on('carta-descartada', onDiscardUpdate);
     websocketService.on('nuevo-draft', onDraftUpdate);
     websocketService.on('se-jugo-cards-off-the-table', onCardsOffTheTablePlayed);
+    websocketService.on('se-jugo-another-victim', onAnotherVictimPlayed);
     websocketService.on('jugar-set', onSetPlayed);
     websocketService.on('actualizacion-mano', onHandUpdate);
 
@@ -85,6 +91,7 @@ const useWebSocket = (callbacks) => {
       websocketService.off('fin-partida', onGameEnd);
       websocketService.off('nuevo-draft', onDraftUpdate);
       websocketService.off('se-jugo-cards-off-the-table', onCardsOffTheTablePlayed);
+      websocketService.off('se-jugo-another-victim', onAnotherVictimPlayed);
       websocketService.off('actualizacion-mano', onHandUpdate);
       websocketService.off('jugar-set', onSetPlayed);
 

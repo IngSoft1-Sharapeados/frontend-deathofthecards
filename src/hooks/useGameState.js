@@ -38,11 +38,12 @@ const useGameState = () => {
   const [isSecretsLoading, setIsSecretsLoading] = useState(false);
   const [playersSecrets, setPlayersSecrets] = useState({});
   const [selectedSecretCard, setSelectedSecretCard] = useState(null);
-  const [canRevealSecrets, setCanRevealSecrets] = useState(true); // aca logica real deberia setearlo dependiente de si jugo las cartas correspondientes
+  const [canRevealSecrets, setCanRevealSecrets] = useState(true);
   const [canHideSecrets, setCanHideSecrets] = useState(false); 
   const [canRobSecrets, setCanRobSecrets] = useState(true);
 
   const [isPlayerSelectionModalOpen, setPlayerSelectionModalOpen] = useState(false);
+  const [isSetSelectionModalOpen, setSetSelectionModalOpen] = useState(false);
   const [eventCardToPlay, setEventCardToPlay] = useState(null);
 
   const [eventCardInPlay, setEventCardInPlay] = useState(null);
@@ -123,7 +124,8 @@ const useGameState = () => {
     playersSecrets, setPlayersSecrets,
     isPlayerSelectionModalOpen, setPlayerSelectionModalOpen,
     eventCardToPlay, setEventCardToPlay,
-    eventCardInPlay, setEventCardInPlay
+    eventCardInPlay, setEventCardInPlay,
+    isSetSelectionModalOpen, setSetSelectionModalOpen
   };
 };
 

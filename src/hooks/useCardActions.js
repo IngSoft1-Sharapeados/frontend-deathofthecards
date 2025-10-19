@@ -24,7 +24,7 @@ const useCardActions = (gameId, gameState) => {
     isMyTurn, players,
     playerTurnState, setPlayerTurnState, setSelectedDraftCards,
     hasPlayedSetThisTurn, setHasPlayedSetThisTurn,
-    setPlayerSelectionModalOpen, setEventCardToPlay, eventCardToPlay
+    setPlayerSelectionModalOpen, setEventCardToPlay, eventCardToPlay, setSetSelectionModalOpen
   } = gameState;
 
   const handleCardClick = useCallback((instanceId) => {
@@ -37,7 +37,6 @@ const useCardActions = (gameId, gameState) => {
   }, [isMyTurn, playerTurnState, setSelectedCards]);
 
   const handleDraftCardClick = useCallback((instanceId) => {
-    // Allow selecting from draft while drawing OR if a set was played and hand < 6
     const canSelectFromDraft = playerTurnState === 'drawing' || (hasPlayedSetThisTurn && hand.length < 6);
     if (!isMyTurn || !canSelectFromDraft) return;
 
@@ -63,14 +62,10 @@ const useCardActions = (gameId, gameState) => {
 
       await apiService.discardCards(gameId, currentPlayerId, cardIdsToDiscard);
 
-      // Use functional update to avoid races with other state updates
       setHand(prev => prev.filter(card => !selectedCards.includes(card.instanceId)));
       setSelectedCards([]);
 
-      // If after discarding you still have 6 or more, remain discarding.
-      // Otherwise, move to drawing to fill up to 6.
       setPlayerTurnState(prev => {
-        // We don't know new hand size synchronously here due to async state, so infer using prev hand and selected
         const remaining = hand.filter(c => !selectedCards.includes(c.instanceId)).length;
         return remaining < 6 ? 'drawing' : 'discarding';
       });
@@ -82,21 +77,17 @@ const useCardActions = (gameId, gameState) => {
   }, [gameId, currentPlayerId, hand, selectedCards, isMyTurn, setHand, setSelectedCards, setPlayerTurnState]);
 
   const handlePickUp = useCallback(async () => {
-    // Allow pickup if drawing OR if a set was played this turn (and you haven't reached 6 yet)
     if (!isMyTurn || !(playerTurnState === 'drawing' || (hasPlayedSetThisTurn && hand.length < 6))) {
       return;
     }
 
     try {
-      // 1. Get the IDs of the cards selected from the draft
       const draftCardIdsToTake = selectedDraftCards
         .map(instanceId => draftCards.find(c => c.instanceId === instanceId)?.id)
         .filter(id => id !== undefined);
 
-      // 2. Call the new unified API endpoint
       const allNewCards = await apiService.pickUpCards(gameId, currentPlayerId, draftCardIdsToTake);
 
-      // 3. Update the hand with the authoritative response from the backend
       if (allNewCards && allNewCards.length > 0) {
         const newCardsWithDetails = cardService.getPlayingHand(allNewCards).map((card, index) => ({
           ...card,
@@ -105,10 +96,8 @@ const useCardActions = (gameId, gameState) => {
         setHand(prevHand => [...prevHand, ...newCardsWithDetails]);
       }
 
-      // 4. Reset local state.
       setSelectedDraftCards([]);
 
-      // 5. Ensure UI matches backend: fetch authoritative hand after pickup
       try {
         const freshHandData = await apiService.getHand(gameId, currentPlayerId);
         const playingHand = cardService.getPlayingHand(freshHandData);
@@ -118,7 +107,6 @@ const useCardActions = (gameId, gameState) => {
         }));
         setHand(handWithInstanceIds);
       } catch (e) {
-        // Non-fatal: keep optimistic hand if sync fails
         console.warn('No se pudo sincronizar la mano después de levantar:', e);
       }
 
@@ -143,7 +131,7 @@ const useCardActions = (gameId, gameState) => {
       
       gameState.setEventCardInPlay({
         imageName: eventCardData.url,
-        message: `${playerName} jugó "Cards off the Table"` 
+        message: `${playerName} jugó una carta de evento!` 
       });
 
       switch (cardId) {
@@ -152,14 +140,18 @@ const useCardActions = (gameId, gameState) => {
           await apiService.playCardsOffTheTable(gameId, currentPlayerId, targetPlayerId, cardId);
           break;
         }
-        // Futuros eventos se agregarán aquí
-        // case CARD_IDS.ANOTHER_VICTIM: { ... }
+        case CARD_IDS.ANOTHER_VICTIM: { 
+          const targetSet = payload;
+          console.log('another victim data: ',cardId, targetSet);
+          await apiService.playAnotherVictim(gameId, currentPlayerId, cardId, targetSet);
+          break;
+         }
         default:
           throw new Error(`Lógica de confirmación no implementada para la carta ${cardId}`);
       }
 
       // Lógica común de limpieza post-jugada exitosa
-      // setHand(prev => prev.filter(card => card.instanceId !== instanceId));
+      setHand(prev => prev.filter(card => card.instanceId !== instanceId));
       setSelectedCards([]);
       setHasPlayedSetThisTurn(true);
       setPlayerTurnState('discarding');
@@ -169,7 +161,8 @@ const useCardActions = (gameId, gameState) => {
       alert(`Error: ${error.message}`);
     } finally {
       // Siempre cerramos todos los modales y reseteamos el estado del evento
-      setPlayerSelectionModalOpen(false); // Y cualquier otro modal que exista
+      setPlayerSelectionModalOpen(false);
+      setSetSelectionModalOpen(false);
       setEventCardToPlay(null);
     }
   };
@@ -221,9 +214,10 @@ const useCardActions = (gameId, gameState) => {
         break;
       }
       case CARD_IDS.ANOTHER_VICTIM:
-        console.log("Jugando Another Victim (a implementar)");
+        const cardInstance = hand.find(c => c.instanceId === selectedCards[0]);
+        setEventCardToPlay({ id: cardInstance.id, instanceId: cardInstance.instanceId });
+        setSetSelectionModalOpen(true); 
         break;
-      // ... otros casos
       default:
         console.warn("Evento de carta no implementado:", cardId);
     }
