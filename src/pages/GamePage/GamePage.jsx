@@ -13,7 +13,7 @@ import CardDraft from '@/components/CardDraft/CardDraft.jsx'
 import SecretsModal from '@/components/SecretsModal/SecretsModal.jsx';
 import MySetsCarousel from '@/components/MySetsCarousel/MySetsCarousel.jsx';
 import SetSelectionModal from '@/components/EventModals/SetSelectionModal';
-
+import LookIntoAshesModal from '@/components/EventModals/LookIntoAshesModal';
 import DiscardDeck from '@/components/DiscardDeck/DiscardDeck.jsx';
 // Hooks
 import useWebSocket from '@/hooks/useGameWebSockets';
@@ -45,7 +45,10 @@ const GamePage = () => {
     isSecretsModalOpen, isSecretsLoading, playerSecretsData, viewingSecretsOfPlayer,
     playersSecrets, setPlayersSecrets,
     isPlayerSelectionModalOpen, eventCardToPlay, setEventCardInPlay, setPlayerSecretsData,
-    canRevealSecrets, canHideSecrets, selectedSecretCard, canRobSecrets, isSetSelectionModalOpen
+    canRevealSecrets, canHideSecrets, selectedSecretCard, canRobSecrets, isSetSelectionModalOpen,
+    lookIntoAshesModalOpen, setLookIntoAshesModalOpen,
+    discardPileSelection, setDiscardPileSelection,
+    selectedDiscardCard, setSelectedDiscardCard,  setEventCardToPlay
   } = gameState;
   // Desarrollo solamente
   if (process.env.NODE_ENV === 'development') {
@@ -173,7 +176,8 @@ const GamePage = () => {
 
   useWebSocket(webSocketCallbacks);
   useGameData(gameId, gameState);
-  const { handleCardClick, handleDraftCardClick, handleDiscard, handlePickUp, handlePlay, handleEventActionConfirm } = useCardActions(gameId, gameState);
+  const { handleCardClick, handleDraftCardClick, handleDiscard,
+     handlePickUp, handlePlay, handleEventActionConfirm, handleLookIntoAshesConfirm  } = useCardActions(gameId, gameState);
 
   const sortedHand = useMemo(() => {
     return [...hand].sort((a, b) => a.id - b.id);
@@ -351,6 +355,20 @@ const GamePage = () => {
         players={players}
         onSetSelect={handleEventActionConfirm}
         title="Another Victim: Elige un set para robar"
+      />
+      <LookIntoAshesModal
+        isOpen={lookIntoAshesModalOpen}
+        onClose={() => {
+          setLookIntoAshesModalOpen(false);
+          setDiscardPileSelection([]);
+          setSelectedDiscardCard(null);
+          setEventCardToPlay(null);
+          setSelectedCards([]);
+        }}
+        discardCards={discardPileSelection}
+        selectedCard={selectedDiscardCard}
+        onCardSelect={setSelectedDiscardCard}
+        onConfirm={() => handleLookIntoAshesConfirm()}
       />
     </div>
   );

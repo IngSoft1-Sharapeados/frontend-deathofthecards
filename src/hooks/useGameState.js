@@ -47,7 +47,10 @@ const useGameState = () => {
   const [eventCardToPlay, setEventCardToPlay] = useState(null);
 
   const [eventCardInPlay, setEventCardInPlay] = useState(null);
-
+  // estados de look in to the ashes
+  const [lookIntoAshesModalOpen, setLookIntoAshesModalOpen] = useState(false);
+  const [discardPileSelection, setDiscardPileSelection] = useState([]);
+  const [selectedDiscardCard, setSelectedDiscardCard] = useState(null);
 
   // Derived state
   const isMyTurn = currentTurn === currentPlayerId;
@@ -125,7 +128,10 @@ const useGameState = () => {
     isPlayerSelectionModalOpen, setPlayerSelectionModalOpen,
     eventCardToPlay, setEventCardToPlay,
     eventCardInPlay, setEventCardInPlay,
-    isSetSelectionModalOpen, setSetSelectionModalOpen
+    isSetSelectionModalOpen, setSetSelectionModalOpen,
+    lookIntoAshesModalOpen, setLookIntoAshesModalOpen,
+    discardPileSelection, setDiscardPileSelection,
+    selectedDiscardCard, setSelectedDiscardCard
   };
 };
 
