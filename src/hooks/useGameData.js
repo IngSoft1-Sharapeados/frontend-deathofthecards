@@ -8,7 +8,7 @@ const useGameData = (gameId, gameState) => {
     setHand, setIsLoading, setCurrentPlayerId,
     setDeckCount, setCurrentTurn, setTurnOrder,
     setPlayers, setHostId, setWinners, setAsesinoGano,
-    setRoles, setSecretCards,
+    setRoles, setMySecretCards,
     setDraftCards, setPlayersSecrets, setPlayedSetsByPlayer, setDiscardPile
   } = gameState;
 
@@ -89,12 +89,17 @@ const useGameData = (gameId, gameState) => {
           }));
           setDraftCards(draftWithInstanceIds);
 
-          const secretHand = cardService.getSecretCards(secretCardsData);
-          const secretsWithInstanceIds = secretHand.map((card, index) => ({
-            ...card,
-            instanceId: `${card.id}-secret-${index}`
-          }));
-          setSecretCards(secretsWithInstanceIds);
+          const processedMySecrets = secretCardsData.map(secret => {
+            const cardDetails = cardService.getSecretCards([{ id: secret.id }])[0];
+            // Normalizamos bandera de revelado para el front
+            const revelada = Boolean(secret.bocaArriba || secret.revelada || secret.revelado);
+            return {
+              ...secret,
+              revelada,
+              url: cardDetails?.url,
+            };
+          });
+          setMySecretCards(processedMySecrets);
 
           // Played sets
           const grouped = {};

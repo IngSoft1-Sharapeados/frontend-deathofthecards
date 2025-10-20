@@ -44,6 +44,10 @@
   animation: pulse-green 2s infinite;
 }
 
+.card.disabled {
+  pointer-events: none;
+  filter: grayscale(80%) brightness(0.7);
+}
 
 
 @keyframes pulse-green {

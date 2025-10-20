@@ -12,7 +12,7 @@ const LockIcon = () => <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18
 const ArrowIcon = () => <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z" /></svg>;
 
 
-const PlayerPod = ({ player, isCurrentTurn, roleEmoji, onSecretsClick, playerSecrets, sets = [] }) => {
+const PlayerPod = ({ player, isCurrentTurn, roleEmoji, onSecretsClick, playerSecrets, sets = [], isDisgraced }) => {
 
     const [allSets, setAllSets] = useState([]);
     const [currentIndex, setCurrentIndex] = useState(0);
@@ -37,6 +37,13 @@ const PlayerPod = ({ player, isCurrentTurn, roleEmoji, onSecretsClick, playerSec
     const totalSecrets = revealedCount + hiddenCount;
     const canGoPrevSecret = secretIndex > 0;
     const canGoNextSecret = secretIndex < totalSecrets - visibleSecretsCount;
+
+    let statusIcon = null;
+    if (isDisgraced) {
+        statusIcon = '🤡';
+    } else if (roleEmoji) {
+        statusIcon = roleEmoji;
+    }
 
 
     const handleNext = (e) => {
@@ -126,7 +133,7 @@ const PlayerPod = ({ player, isCurrentTurn, roleEmoji, onSecretsClick, playerSec
             )}
 
             <div className={podClasses} data-testid="player-pod">
-                {roleEmoji && <span className={styles.roleEmoji}>{roleEmoji}</span>}
+                {statusIcon && <span className={styles.statusIcon}>{statusIcon}</span>}
                 <div className={styles.topSection}>
                     <div className={styles.playerIdentifier}>
                         <div className={styles.playerIcon}><UserIcon /></div>
@@ -208,7 +215,7 @@ PlayerPod.defaultProps = {
     isCurrentTurn: false,
     roleEmoji: undefined,
     sets: [],
-    onSecretsClick: () => {},
+    onSecretsClick: () => { },
     playerSecrets: undefined,
 };
 

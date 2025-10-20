@@ -13,11 +13,11 @@ vi.mock('@/components/Card/Card', () => ({
 }));
 
 const mockSecrets = [
-  { instanceId: 's1', url: 'secret1.png' },
-  { instanceId: 's2', url: 'secret2.png' },
-  { instanceId: 's3', url: 'secret3.png' },
-  { instanceId: 's4', url: 'secret4.png' },
-  { instanceId: 's5', url: 'secret5.png' },
+  { instanceId: 's1', url: 'secret1.png', isRevealed: true },
+  { instanceId: 's2', url: 'secret2.png', isRevealed: false },
+  { instanceId: 's3', url: 'secret3.png', isRevealed: true },
+  { instanceId: 's4', url: 'secret4.png', isRevealed: false },
+  { instanceId: 's5', url: 'secret5.png', isRevealed: false },
 ];
 
 describe('MySecretsCarousel', () => {
@@ -165,5 +165,13 @@ describe('MySecretsCarousel', () => {
     expect(screen.getByTestId('card-secret1.png')).toBeInTheDocument();
     expect(screen.queryByLabelText('Anterior')).not.toBeInTheDocument();
     expect(screen.queryByLabelText('Siguiente')).not.toBeInTheDocument();
+  });
+
+  test('shows eye overlay only on revealed secrets', () => {
+    // Use 3 so all are visible
+    render(<MySecretsCarousel secretCards={mockSecrets.slice(0, 3)} />);
+
+    const overlays = screen.getAllByLabelText('Revelado');
+    expect(overlays.length).toBe(2); // first and third are revealed
   });
 });

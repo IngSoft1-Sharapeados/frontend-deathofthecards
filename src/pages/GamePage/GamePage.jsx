@@ -15,6 +15,7 @@ import useDetectiveSecretReveal from '@/hooks/useDetectiveSecretReveal.jsx';
 import MySetsCarousel from '@/components/MySetsCarousel/MySetsCarousel.jsx';
 import MySecretsCarousel from '@/components/MySecretsCarousel/MySecretsCarousel.jsx';
 import SetSelectionModal from '@/components/EventModals/SetSelectionModal';
+import DisgraceOverlay from '@/components/UI/DisgraceOverlay';
 
 import DiscardDeck from '@/components/DiscardDeck/DiscardDeck.jsx';
 // Hooks
@@ -25,6 +26,7 @@ import useCardActions, { useSecrets } from '@/hooks/useCardActions';
 import PlayerSelectionModal from '@/components/EventModals/PlayerSelectionModal';
 import EventDisplay from '@/components/EventModals/EventDisplay';
 import useSecretActions from '@/hooks/useSecretActions';
+
 // Styles
 import styles from './GamePage.module.css';
 
@@ -37,17 +39,18 @@ const GamePage = () => {
   const gameState = useGameState();
   const {
     hand, selectedCards, isLoading,
-  deckCount, currentTurn, /* turnOrder */ players,
+    deckCount, currentTurn, /* turnOrder */ players,
     winners, asesinoGano,
     isDiscardButtonEnabled, currentPlayerId,
-    roles, secretCards, displayedOpponents, draftCards, discardPile,
+    roles, displayedOpponents, draftCards, discardPile,
     playerTurnState, selectedDraftCards, isPickupButtonEnabled,
     playedSetsByPlayer,
     isPlayButtonEnabled,
     isSecretsModalOpen, isSecretsLoading, playerSecretsData, viewingSecretsOfPlayer,
-    playersSecrets, setPlayersSecrets,
-    isPlayerSelectionModalOpen, eventCardToPlay, setEventCardInPlay, setPlayerSecretsData,
-    canRevealSecrets, canHideSecrets, selectedSecretCard, canRobSecrets, isSetSelectionModalOpen
+    playersSecrets,
+    isPlayerSelectionModalOpen, setEventCardInPlay,
+    canRevealSecrets, canHideSecrets, selectedSecretCard, canRobSecrets, isSetSelectionModalOpen,
+    disgracedPlayerIds, isLocalPlayerDisgraced, mySecretCards
   } = gameState;
 
   // Desarrollo solamente
@@ -173,38 +176,50 @@ const GamePage = () => {
       }
     },
 
-    onSecretUpdate: ({ playerId, secrets }) => {
-      // Consider multiple possible flags for revealed state (backend may send 'bocaArriba')
-      const revealedCount = secrets.filter(s => s.bocaArriba || s.revelado || s.revelada).length;
+    onSecretUpdate: async ({ playerId, secrets }) => {
+      const isNowDisgraced = secrets.every(s => s.revelado);
+      const revealedCount = secrets.filter(s => s.revelado).length;
       const hiddenCount = secrets.length - revealedCount;
-      
-      setPlayersSecrets(prev => ({
+
+      gameState.setDisgracedPlayerIds(prevSet => {
+        const newSet = new Set(prevSet);
+        if (isNowDisgraced) {
+          newSet.add(playerId);
+        } else {
+          newSet.delete(playerId);
+        }
+        return newSet;
+      });
+
+      gameState.setPlayersSecrets(prev => ({
         ...prev,
         [playerId]: { revealed: revealedCount, hidden: hiddenCount },
       }));
-      
-      // If this is the current player, refresh their secret cards display
-      if (playerId === currentPlayerId) {
-        apiService.getMySecrets(gameId, currentPlayerId).then(secretCardsData => {
-          const secretHand = cardService.getSecretCards(secretCardsData);
-          const secretsWithInstanceIds = secretHand.map((card, index) => ({
-            ...card,
-            instanceId: `${card.id}-secret-${index}`
-          }));
-          gameState.setSecretCards(secretsWithInstanceIds);
-        }).catch(error => {
-          console.error('Error refreshing secret cards:', error);
-        });
-      }
-      
-      //  Si el modal está abierto y mirando a este jugador, actualiza su lista
-      if (viewingSecretsOfPlayer?.id_jugador === playerId) {
-        setPlayerSecretsData(
-          secrets.map((s, index) => ({
-            id: index,
-            bocaArriba: s.revelado,
-          }))
-        );
+
+      try {
+        if (playerId === gameState.currentPlayerId) {
+          const freshSecrets = await apiService.getMySecrets(gameId, gameState.currentPlayerId);
+          const processedMySecrets = freshSecrets.map(secret => {
+            const cardDetails = cardService.getSecretCards([{ id: secret.id }])[0];
+            const revelada = Boolean(secret.bocaArriba || secret.revelada || secret.revelado);
+            return { ...secret, revelada, url: cardDetails?.url };
+          });
+          gameState.setMySecretCards(processedMySecrets);
+        }
+
+        if (gameState.viewingSecretsOfPlayer?.id_jugador === playerId) {
+          const freshModalSecrets = await apiService.getPlayerSecrets(gameId, playerId);
+          const processedModalSecrets = freshModalSecrets.map(secret => {
+            if (secret.bocaArriba) {
+              const cardDetails = cardService.getSecretCards([{ id: secret.carta_id }])[0];
+              return { ...secret, ...cardDetails };
+            }
+            return secret;
+          });
+          gameState.setPlayerSecretsData(processedModalSecrets);
+        }
+      } catch (error) {
+        console.error("Error al refrescar secretos vía WebSocket:", error);
       }
     },
 
@@ -218,6 +233,13 @@ const GamePage = () => {
   const sortedHand = useMemo(() => {
     return [...hand].sort((a, b) => a.id - b.id);
   }, [hand]);
+  const mySecretsForCarousel = useMemo(() => {
+    return (mySecretCards || []).map((s, idx) => ({
+      instanceId: String(s.id_instancia ?? s.instanceId ?? `${s.url}-${idx}`),
+      url: s.url,
+      revelada: Boolean(s.revelada || s.bocaArriba || s.revelado),
+    }));
+  }, [mySecretCards]);
   const getPlayerEmoji = gameState.getPlayerEmoji;
   const isDrawingPhase = playerTurnState === 'drawing' && gameState.isMyTurn;
 
@@ -259,7 +281,6 @@ const GamePage = () => {
         onDisplayComplete={() => gameState.setEventCardInPlay(null)}
       />
 
-      {/* --- Opponents Area --- */}
       <div className={styles.opponentsContainer} data-player-count={players.length}>
         {displayedOpponents.map((player, index) => (
           <div key={player.id_jugador} className={`${styles.opponent} ${styles[`opponent-${index + 1}`]}`}>
@@ -267,12 +288,10 @@ const GamePage = () => {
               player={player}
               isCurrentTurn={player.id_jugador === currentTurn}
               roleEmoji={getPlayerEmoji(player.id_jugador)}
-
               sets={(playedSetsByPlayer[player.id_jugador] || []).map(item => ({ id: item.representacion_id_carta }))}
-
               onSecretsClick={handleOpenSecretsModal}
               playerSecrets={playersSecrets[player.id_jugador]}
-
+              isDisgraced={disgracedPlayerIds.has(player.id_jugador)}
             />
           </div>
         ))}
@@ -293,9 +312,10 @@ const GamePage = () => {
       </div>
 
       <div className={`${styles.bottomContainer} ${(gameState.isMyTurn && !isDrawingPhase) ? styles.myTurn : ''}`}>
+        {isLocalPlayerDisgraced && <DisgraceOverlay />}
         <div className={styles.playerArea}>
           {/* Secret cards carousel */}
-          <MySecretsCarousel secretCards={secretCards} />
+          <MySecretsCarousel secretCards={mySecretsForCarousel} />
 
           <div>
             <div data-testid="hand-container" className={styles.handContainer}>
@@ -378,7 +398,7 @@ const GamePage = () => {
         hideCloseButton={gameState.oneMoreStep === 2}
       />
 
-  {detectiveModals}
+      {detectiveModals}
 
       <PlayerSelectionModal
         isOpen={isPlayerSelectionModalOpen}

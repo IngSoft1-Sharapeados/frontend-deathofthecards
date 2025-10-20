@@ -41,14 +41,11 @@ describe('useGameData', () => {
     setWinners: vi.fn(),
     setAsesinoGano: vi.fn(),
     setRoles: vi.fn(),
-    setSecretCards: vi.fn(),
+    setMySecretCards: vi.fn(),
     setDraftCards: vi.fn(),
     setPlayersSecrets: vi.fn(),
     setDiscardPile: vi.fn(),
-    setPlayedSetsByPlayer: vi.fn(),
-    setCanRevealSecrets: vi.fn(),
-    setCanHideSecrets: vi.fn(),
-    setCanRobSecrets: vi.fn(),
+    setPlayedSetsByPlayer: vi.fn()
   };
 
   const mockGameData = {
@@ -85,7 +82,7 @@ describe('useGameData', () => {
     apiService.getRoles.mockResolvedValue(mockGameData.rolesData);
     apiService.getMySecrets.mockResolvedValue(mockGameData.secretCardsData);
     apiService.getDraftCards.mockResolvedValue([]);
-  apiService.getPlayedSets.mockResolvedValue([]);
+    apiService.getPlayedSets.mockResolvedValue([]);
 
     // Mock cardService
     cardService.getPlayingHand.mockImplementation(cards => cards.map(c => ({ ...c, url: 'card1.png' })));
@@ -147,7 +144,7 @@ describe('useGameData', () => {
       expect(mockGameState.setAsesinoGano).toHaveBeenCalledWith(true);
     });
   });
-//-------------------------------Tests de carta de descarte --------------------------------
+  //-------------------------------Tests de carta de descarte --------------------------------
   test('should handle loading errors', async () => {
     const error = new Error('Failed to load');
     apiService.getHand.mockRejectedValue(error);
@@ -188,7 +185,7 @@ describe('useGameData', () => {
     renderHook(() => useGameData('game-123', mockGameState));
 
     await waitFor(() => {
-      expect(apiService.getDiscardPile).toHaveBeenCalledWith('game-123','1', 1);
+      expect(apiService.getDiscardPile).toHaveBeenCalledWith('game-123', '1', 1);
     });
 
     await waitFor(() => {
@@ -200,12 +197,12 @@ describe('useGameData', () => {
   });
 
   test('should not process discard pile when discardData is not an array', async () => {
-  // Mock para que coincida con los argumentos reales
+    // Mock para que coincida con los argumentos reales
     apiService.getDiscardPile.mockResolvedValue(null);
     renderHook(() => useGameData('game-123', mockGameState));
     await waitFor(() => {
       // Si en el futuro se añade query parameter player_id modificar aca
-      expect(apiService.getDiscardPile).toHaveBeenCalledWith('game-123','1', 1);
+      expect(apiService.getDiscardPile).toHaveBeenCalledWith('game-123', '1', 1);
     });
     await waitFor(() => {
       expect(mockGameState.setDiscardPile).not.toHaveBeenCalled();
@@ -213,7 +210,7 @@ describe('useGameData', () => {
   });
 
   test('should handle empty discard pile array', async () => {
-    apiService.getDiscardPile.mockResolvedValue([]); 
+    apiService.getDiscardPile.mockResolvedValue([]);
     renderHook(() => useGameData('game-123', mockGameState));
 
     await waitFor(() => {

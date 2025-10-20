@@ -23,6 +23,22 @@
   transition: all 0.3s ease;
 }
 
+.statusIcon {
+  position: absolute;
+  top: 10px;
+  left: 10px; /* O 'right: 10px' si lo prefieres a la derecha */
+  font-size: 1.5rem;
+  background-color: rgba(0, 0, 0, 0.4);
+  width: 45px;
+  height: 45px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  z-index: 5;
+}
+
 @keyframes pulse-green {
   0% { box-shadow: 0 0 20px rgba(34, 197, 94, 0.7); }
   50% { box-shadow: 0 0 25px 5px rgba(34, 197, 94, 0.7); }
@@ -78,20 +94,7 @@
   margin-top: 5px;
 }
 
-.roleEmoji {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  font-size: 1.5rem;
-  background-color: rgba(0, 0, 0, 0.4);
-  width: 45px;
-  height: 45px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-}
+
 
 .secretCardImage {
   width: 70px;

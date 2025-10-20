@@ -31,17 +31,22 @@ const useCardActions = (gameId, gameState) => {
     oneMoreSelectedSecret, setOneMoreSelectedSecret,
     oneMoreDestinationPlayer, setOneMoreDestinationPlayer,
     setIsSecretsModalOpen, setViewingSecretsOfPlayer, setPlayerSecretsData, setIsSecretsLoading,
-    setSelectedSecretCard
+    setSelectedSecretCard,
+    isLocalPlayerDisgraced
   } = gameState;
 
   const handleCardClick = useCallback((instanceId) => {
     if (!isMyTurn || playerTurnState !== 'discarding') return;
-    setSelectedCards((prev) =>
-      prev.includes(instanceId)
-        ? prev.filter((id) => id !== instanceId)
-        : [...prev, instanceId]
-    );
-  }, [isMyTurn, playerTurnState, setSelectedCards]);
+    setSelectedCards((prev) => {
+      if (prev.includes(instanceId)) {
+        return prev.filter((id) => id !== instanceId);
+      }
+      if (isLocalPlayerDisgraced && prev.length >= 1) {
+        return prev; 
+      }
+      return [...prev, instanceId];
+    });
+  }, [isMyTurn, playerTurnState, isLocalPlayerDisgraced, setSelectedCards]);
 
   const handleDraftCardClick = useCallback((instanceId) => {
     const canSelectFromDraft = playerTurnState === 'drawing' || (hasPlayedSetThisTurn && hand.length < 6);

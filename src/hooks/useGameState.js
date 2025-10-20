@@ -18,7 +18,7 @@ const useGameState = () => {
   const [players, setPlayers] = useState([]);
   const [hostId, setHostId] = useState(null);
   const [roles, setRoles] = useState({ murdererId: null, accompliceId: null });
-  const [secretCards, setSecretCards] = useState([]);
+  const [mySecretCards, setMySecretCards] = useState([]);
   const [draftCards, setDraftCards] = useState([]);
   const [playedSetsByPlayer, setPlayedSetsByPlayer] = useState({});
   // Track if player has played a set in the current turn
@@ -48,6 +48,7 @@ const useGameState = () => {
   const [eventCardToPlay, setEventCardToPlay] = useState(null);
 
   const [eventCardInPlay, setEventCardInPlay] = useState(null);
+  const [disgracedPlayerIds, setDisgracedPlayerIds] = useState(new Set());
 
   // Estados para OneMore event flow
   const [oneMoreStep, setOneMoreStep] = useState(0); // 0: not active, 1: select source, 2: select secret, 3: select destination
@@ -59,12 +60,14 @@ const useGameState = () => {
 
   // Derived state
   const isMyTurn = currentTurn === currentPlayerId;
-  const isDiscardButtonEnabled = selectedCards.length > 0 && isMyTurn && playerTurnState === 'discarding';
+  const isLocalPlayerDisgraced = disgracedPlayerIds.has(currentPlayerId);
   // Pickup is enabled while drawing, or if a set was already played this turn (to allow choosing pickup without discarding again),
   // but only when it's still your turn.
   const isPickupButtonEnabled = isMyTurn && (playerTurnState === 'drawing' || (hasPlayedSetThisTurn && hand.length < 6));
-  const isPlayButtonEnabled = isMyTurn && !hasPlayedSetThisTurn && playerTurnState === 'discarding' && (isValidDetectiveSet(hand, selectedCards) || isValidEventCard(hand, selectedCards)) ;
+  const isPlayButtonEnabled = isMyTurn && !isLocalPlayerDisgraced && !hasPlayedSetThisTurn && playerTurnState === 'discarding' && (isValidDetectiveSet(hand, selectedCards) || isValidEventCard(hand, selectedCards));
 
+  const maxSelect = (isLocalPlayerDisgraced) ? 1 : 6;
+  const isDiscardButtonEnabled = selectedCards.length > 0 && selectedCards.length <= maxSelect && isMyTurn && playerTurnState === 'discarding';
 
   const getPlayerEmoji = (playerId) => {
 
@@ -107,7 +110,7 @@ const useGameState = () => {
     displayedOpponents,
     winners, setWinners,
     asesinoGano, setAsesinoGano,
-    secretCards, setSecretCards,
+    mySecretCards, setMySecretCards,
     draftCards, setDraftCards,
 
   playedSetsByPlayer, setPlayedSetsByPlayer,
@@ -132,6 +135,7 @@ const useGameState = () => {
     eventCardToPlay, setEventCardToPlay,
     eventCardInPlay, setEventCardInPlay,
     isSetSelectionModalOpen, setSetSelectionModalOpen,
+
     selectedSecretCard, setSelectedSecretCard,
     canRobSecrets, setCanRobSecrets,
     
@@ -139,7 +143,11 @@ const useGameState = () => {
     oneMoreStep, setOneMoreStep,
     oneMoreSourcePlayer, setOneMoreSourcePlayer,
     oneMoreSelectedSecret, setOneMoreSelectedSecret,
-    oneMoreDestinationPlayer, setOneMoreDestinationPlayer
+    oneMoreDestinationPlayer, setOneMoreDestinationPlayer,
+
+    disgracedPlayerIds, setDisgracedPlayerIds,
+    isLocalPlayerDisgraced
+
   };
 };
 
