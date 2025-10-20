@@ -15,24 +15,33 @@ const LookIntoAshesModal = ({
     <div className={styles.modalOverlay}>
       <div className={styles.modalContent}>
         <h2>Look Into The Ashes</h2>
-        <p>Selecciona una carta del descarte para agregar a tu mano:</p>
         
-        <div className={styles.discardGrid}>
-          {discardCards.map((card) => (
-            <div 
-              key={card.instanceId}
-              className={`${styles.cardWrapper} ${
-                selectedCard === card.instanceId ? styles.selected : ''
-              }`}
-              onClick={() => onCardSelect(card.instanceId)}
-            >
-              <Card 
-                imageName={card.url} 
-                subfolder="game-cards"
-              />
+        {discardCards.length === 0 ? (
+          <div className={styles.noCardsMessage}>
+            <p>No hay cartas en el mazo de descarte</p>
+          </div>
+        ) : (
+          <>
+            <p>Selecciona una carta del descarte para agregar a tu mano:</p>
+            
+            <div className={styles.discardGrid}>
+              {discardCards.map((card) => (
+                <div 
+                  key={card.instanceId}
+                  className={`${styles.cardWrapper} ${
+                    selectedCard === card.instanceId ? styles.selected : ''
+                  }`}
+                  onClick={() => onCardSelect(card.instanceId)}
+                >
+                  <Card 
+                    imageName={card.url} 
+                    subfolder="game-cards"
+                  />
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          </>
+        )}
         
         <div className={styles.modalActions}>
           <button 
@@ -43,7 +52,7 @@ const LookIntoAshesModal = ({
           </button>
           <button 
             onClick={onConfirm}
-            disabled={!selectedCard}
+            disabled={!selectedCard || discardCards.length === 0}
             className={styles.confirmButton}
           >
             Elegir Carta
