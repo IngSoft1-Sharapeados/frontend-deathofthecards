@@ -123,7 +123,7 @@ describe('PlayerPod', () => {
       expect(mockOnSecretsClick).toHaveBeenCalledWith(mockPlayer);
     });
 
-    // Secret carousel tests removed per request
+    
   });
 
 });
