@@ -68,16 +68,25 @@ const useCardActions = (gameId, gameState) => {
 
   const handleDiscard = useCallback(async () => {
     if (selectedCards.length === 0 || !isMyTurn) return;
-    try {
-      const cardIdsToDiscard = selectedCards
-        .map(instanceId => hand.find(c => c.instanceId === instanceId)?.id)
-        .filter(id => id !== undefined);
 
-      await apiService.discardCards(gameId, currentPlayerId, cardIdsToDiscard);
+    try {
+      const cardToDiscard = hand.find(c => c.instanceId === selectedCards[0]);
+      const isEarlyTrainDiscard = selectedCards.length === 1 && cardToDiscard?.id === CARD_IDS.EARLY_TRAIN;
+
+      if (isEarlyTrainDiscard) {
+        await apiService.playEarlyTrainToPaddington(gameId, currentPlayerId, cardToDiscard.id);
+        
+
+      } else {
+        const cardIdsToDiscard = selectedCards
+          .map(instanceId => hand.find(c => c.instanceId === instanceId)?.id)
+          .filter(id => id !== undefined);
+        await apiService.discardCards(gameId, currentPlayerId, cardIdsToDiscard);
+      }
 
       setHand(prev => prev.filter(card => !selectedCards.includes(card.instanceId)));
       setSelectedCards([]);
-
+      
       setPlayerTurnState(prev => {
         const remaining = hand.filter(c => !selectedCards.includes(c.instanceId)).length;
         return remaining < 6 ? 'drawing' : 'discarding';
@@ -133,11 +142,12 @@ const useCardActions = (gameId, gameState) => {
     hasPlayedSetThisTurn, hand.length
   ]);
 
-  const handleEventActionConfirm = async (payload) => {
-    if (!eventCardToPlay) return;
+  const handleEventActionConfirm = async (payload, directCard = null) => {
+    const cardToPlay = directCard || eventCardToPlay;
+    if (!cardToPlay) return;
 
-    const { id: cardId, instanceId } = eventCardToPlay;
-    
+    const { id: cardId, instanceId } = cardToPlay;
+
     // Special handling for OneMore event flow
     if (cardId === CARD_IDS.ONE_MORE) {
       try {
@@ -281,6 +291,10 @@ const useCardActions = (gameId, gameState) => {
           await handleLookIntoAshesConfirm();
           break; 
         }
+        case CARD_IDS.EARLY_TRAIN: {
+          await apiService.playEarlyTrainToPaddington(gameId, currentPlayerId, cardId);
+          break;
+        }
         case CARD_IDS.DELAY_ESCAPE: {
           const amountToGet = payload;
           console.log("toget: ", payload);
@@ -299,7 +313,7 @@ const useCardActions = (gameId, gameState) => {
       setPlayerTurnState('discarding');
 
     } catch (error) {
-      console.error(`Error al jugar el evento ${eventCardToPlay.id}:`, error);
+      console.error(`Error al jugar el evento ${cardToPlay.id}:`, error);
       alert(`Error: ${error.message}`);
     } finally {
       // Close modals for other events
@@ -457,6 +471,10 @@ const useCardActions = (gameId, gameState) => {
       }
       case CARD_IDS.DELAY_ESCAPE: {
         setConfirmationModalOpen(true);
+        break;
+      }
+      case CARD_IDS.EARLY_TRAIN: {
+        await handleEventActionConfirm(null, cardInstance);
         break;
       }
       case CARD_IDS.ONE_MORE: {

@@ -81,6 +81,10 @@ const useWebSocket = (callbacks) => {
       callbacksRef.current.onDelayEscapePlayed?.(message);
     };
 
+    const onEarlyTrainPlayed = (message) => {
+      console.log('Evento "Early Train" jugado:', message);
+      callbacksRef.current.onEarlyTrainPlayed?.(message);
+    };
 
     const onLookIntoTheAshesPlayed = (message) => {
       console.log('Evento "Look Into The Ashes" jugado:', message);
@@ -100,7 +104,8 @@ const useWebSocket = (callbacks) => {
     websocketService.on('jugar-set', onSetPlayed);
     websocketService.on('actualizacion-mano', onHandUpdate);
     websocketService.on('se-jugo-delay-escape', onDelayEscapePlayed);
-    websocketService.on('se-jugo-look-into-the-ashes', onLookIntoTheAshesPlayed);
+    websocketService.on('se-jugo-look-into-the-ashes', onLookIntoTheAshesPlayed);   
+    websocketService.on('se-jugo-early-train', onEarlyTrainPlayed);
     websocketService.on('actualizacion-secreto', onSecretUpdate);
 
 
@@ -117,6 +122,7 @@ const useWebSocket = (callbacks) => {
       websocketService.off('jugar-set', onSetPlayed);
       websocketService.off('se-jugo-delay-escape', onDelayEscapePlayed);
       websocketService.off('se-jugo-look-into-the-ashes', onLookIntoTheAshesPlayed);
+      websocketService.off('se-jugo-early-train', onEarlyTrainPlayed);
       websocketService.off('actualizacion-secreto', onSecretUpdate);
     };
   }, []);

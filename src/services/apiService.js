@@ -226,6 +226,12 @@ const createHttpService = () => {
     });
   };
 
+  const playEarlyTrainToPaddington = async (gameId, playerId, cardId) => {
+    return request(`/partidas/${gameId}/evento/EarlyTrain?id_jugador=${playerId}&id_carta=${cardId}`, {
+      method: "PUT",
+    });
+  };
+
   const playLookIntoTheAshes = async (gameId, playerId, cardId, targetCardId = null) => {
     let url = `/partidas/${gameId}/evento/LookIntoTheAshes?`;
     const params = new URLSearchParams({
@@ -279,7 +285,8 @@ const createHttpService = () => {
     playAnotherVictim,
     playLookIntoTheAshes,
     playOneMore,
-    playDelayTheMurdererEscape
+    playDelayTheMurdererEscape,
+    playEarlyTrainToPaddington
   };
 };
 
