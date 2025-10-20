@@ -174,7 +174,7 @@ const GamePage = () => {
       try {
         const [deckData, discardData] = await Promise.all([
           apiService.getDeckCount(gameId),
-          apiService.getDiscardPile(gameId, gameState.currentPlayerId, 10)
+          apiService.getDiscardPile(gameId, gameState.currentPlayerId, 1)
         ]);
         gameState.setDeckCount(deckData);
         gameState.setDiscardPile(Array.isArray(discardData) ? discardData.map(c => ({ id: c.id })) : []);

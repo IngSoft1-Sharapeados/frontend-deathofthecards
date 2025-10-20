@@ -154,7 +154,7 @@ const useCardActions = (gameId, gameState) => {
           const amountToGet = payload;
           console.log("toget: ", payload);
 
-          // await apiService.playDelayTheMurdererEscape(gameId, currentPlayerId, cardId, amountToGet);
+          await apiService.playDelayTheMurdererEscape(gameId, currentPlayerId, cardId, amountToGet);
           break;
         }
         default:
