@@ -17,7 +17,7 @@ import MySecretsCarousel from '@/components/MySecretsCarousel/MySecretsCarousel.
 import SetSelectionModal from '@/components/EventModals/SetSelectionModal';
 import DisgraceOverlay from '@/components/UI/DisgraceOverlay';
 import ConfirmationModal from '@/components/EventModals/ConfirmationModal';
-
+import LookIntoAshesModal from '@/components/EventModals/LookIntoAshesModal';
 import DiscardDeck from '@/components/DiscardDeck/DiscardDeck.jsx';
 // Hooks
 import useWebSocket from '@/hooks/useGameWebSockets';
@@ -51,7 +51,10 @@ const GamePage = () => {
     playersSecrets,
     isPlayerSelectionModalOpen, setEventCardInPlay,
     canRevealSecrets, canHideSecrets, selectedSecretCard, canRobSecrets, isSetSelectionModalOpen,
-    disgracedPlayerIds, isLocalPlayerDisgraced, mySecretCards, isConfirmationModalOpen
+    disgracedPlayerIds, isLocalPlayerDisgraced, mySecretCards, isConfirmationModalOpen,
+    lookIntoAshesModalOpen, setLookIntoAshesModalOpen,
+    discardPileSelection, setDiscardPileSelection,
+    selectedDiscardCard, setSelectedDiscardCard,  setEventCardToPlay
   } = gameState;
 
   // Desarrollo solamente
@@ -247,13 +250,29 @@ const GamePage = () => {
         message: `Se jugó "Early Train To Paddington"`
       });
     },
+    onLookIntoTheAshesPlayed: (message) => {
+      const { playerId } = message;
+      const playerName = players.find(p => p.id_jugador === playerId)?.nombre_jugador || 'Alguien';
+      
+      // Mostrar notificación automáticamente cuando se recibe el WebSocket
+      setEventCardInPlay({
+        imageName: cardService.getCardImageUrl(20), // URL de la carta "Look Into The Ashes"
+        message: `${playerName} jugó "Look Into The Ashes"!`
+      });
 
+      // Auto-ocultar después de 3 segundos
+      setTimeout(() => {
+        setEventCardInPlay(null);
+      }, 3000);
+    },
+    
     onDiscardUpdate: (discardPile) => gameState.setDiscardPile(discardPile),
   };
 
   useWebSocket(webSocketCallbacks);
   useGameData(gameId, gameState);
-  const { handleCardClick, handleDraftCardClick, handleDiscard, handlePickUp, handlePlay, handleEventActionConfirm, handleOneMoreSecretSelect } = useCardActions(gameId, gameState);
+  const { handleCardClick, handleDraftCardClick, handleDiscard,
+     handlePickUp, handlePlay, handleEventActionConfirm, handleLookIntoAshesConfirm , handleOneMoreSecretSelect } = useCardActions(gameId, gameState);
 
   const sortedHand = useMemo(() => {
     return [...hand].sort((a, b) => a.id - b.id);
@@ -469,6 +488,20 @@ const GamePage = () => {
         message="Elige cuántas cartas mover del descarte al mazo (1-5)."
       />
 
+      <LookIntoAshesModal
+        isOpen={lookIntoAshesModalOpen}
+        onClose={() => {
+          setLookIntoAshesModalOpen(false);
+          setDiscardPileSelection([]);
+          setSelectedDiscardCard(null);
+          setEventCardToPlay(null);
+          setSelectedCards([]);
+        }}
+        discardCards={discardPileSelection}
+        selectedCard={selectedDiscardCard}
+        onCardSelect={setSelectedDiscardCard}
+        onConfirm={() => handleLookIntoAshesConfirm()}
+      />
     </div>
   );
 };

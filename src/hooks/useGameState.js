@@ -57,7 +57,10 @@ const useGameState = () => {
   const [oneMoreSelectedSecret, setOneMoreSelectedSecret] = useState(null);
   const [oneMoreDestinationPlayer, setOneMoreDestinationPlayer] = useState(null);
 
-
+  // estados de look in to the ashes
+  const [lookIntoAshesModalOpen, setLookIntoAshesModalOpen] = useState(false);
+  const [discardPileSelection, setDiscardPileSelection] = useState([]);
+  const [selectedDiscardCard, setSelectedDiscardCard] = useState(null);
 
   // Derived state
   const isMyTurn = currentTurn === currentPlayerId;
@@ -148,8 +151,11 @@ const useGameState = () => {
 
     disgracedPlayerIds, setDisgracedPlayerIds,
     isConfirmationModalOpen, setConfirmationModalOpen,
-    isLocalPlayerDisgraced
+    isLocalPlayerDisgraced,
 
+    lookIntoAshesModalOpen, setLookIntoAshesModalOpen,
+    discardPileSelection, setDiscardPileSelection,
+    selectedDiscardCard, setSelectedDiscardCard
   };
 };
 

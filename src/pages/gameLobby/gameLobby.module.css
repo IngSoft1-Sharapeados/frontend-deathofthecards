@@ -94,3 +94,48 @@
     transform: none;
     box-shadow: none;
 }
+
+.dangerButton {
+  background-color: #ef4444; /* red-500 */
+  color: #fff;
+}
+
+.dangerButton:hover {
+  background-color: #dc2626; /* red-600 */
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: #2f2f4f;
+  color: #e5e7eb;
+  padding: 24px;
+  border-radius: 10px;
+  border: 1px solid #3a3a5e;
+  max-width: 420px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+}
+
+.returnButton {
+  margin-top: 16px;
+  padding: 10px 16px;
+  background: #6366f1; /* indigo-500 */
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.returnButton:hover {
+  background: #4f46e5; /* indigo-600 */
+}
