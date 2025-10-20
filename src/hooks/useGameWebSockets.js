@@ -81,6 +81,13 @@ const useWebSocket = (callbacks) => {
       callbacksRef.current.onDelayEscapePlayed?.(message);
     };
 
+
+    const onLookIntoTheAshesPlayed = (message) => {
+      console.log('Evento "Look Into The Ashes" jugado:', message);
+      callbacksRef.current.onLookIntoTheAshesPlayed?.({
+        playerId: message.jugador_id
+      });
+    };
     // Suscribirse a eventos
     websocketService.on('actualizacion-mazo', onDeckUpdate);
     websocketService.on('turno-actual', onTurnUpdate);
@@ -93,7 +100,7 @@ const useWebSocket = (callbacks) => {
     websocketService.on('jugar-set', onSetPlayed);
     websocketService.on('actualizacion-mano', onHandUpdate);
     websocketService.on('se-jugo-delay-escape', onDelayEscapePlayed);
-
+    websocketService.on('se-jugo-look-into-the-ashes', onLookIntoTheAshesPlayed);
     websocketService.on('actualizacion-secreto', onSecretUpdate);
 
 
@@ -109,7 +116,7 @@ const useWebSocket = (callbacks) => {
       websocketService.off('actualizacion-mano', onHandUpdate);
       websocketService.off('jugar-set', onSetPlayed);
       websocketService.off('se-jugo-delay-escape', onDelayEscapePlayed);
-
+      websocketService.off('se-jugo-look-into-the-ashes', onLookIntoTheAshesPlayed);
       websocketService.off('actualizacion-secreto', onSecretUpdate);
     };
   }, []);

@@ -25,6 +25,7 @@ const useCardActions = (gameId, gameState) => {
     playerTurnState, setPlayerTurnState, setSelectedDraftCards,
     hasPlayedSetThisTurn, setHasPlayedSetThisTurn, setConfirmationModalOpen,
     setPlayerSelectionModalOpen, setEventCardToPlay, eventCardToPlay, setSetSelectionModalOpen,
+    setLookIntoAshesModalOpen, setDiscardPileSelection, setSelectedDiscardCard,
     // OneMore states
     oneMoreStep, setOneMoreStep,
     oneMoreSourcePlayer, setOneMoreSourcePlayer,
@@ -274,6 +275,11 @@ const useCardActions = (gameId, gameState) => {
           console.log('another victim data: ', cardId, targetSet);
           await apiService.playAnotherVictim(gameId, currentPlayerId, cardId, targetSet);
           break;
+         }
+        case CARD_IDS.LOOK_ASHES: {
+          // Este caso ahora se maneja en handleLookIntoAshesConfirm
+          await handleLookIntoAshesConfirm();
+          break; 
         }
         case CARD_IDS.DELAY_ESCAPE: {
           const amountToGet = payload;
@@ -342,6 +348,98 @@ const useCardActions = (gameId, gameState) => {
     }
   };
 
+  const handleLookIntoTheAshes = async () => {
+    try {
+      const cardInstance = hand.find(c => c.instanceId === selectedCards[0]);
+      
+      // Primera llamada - jugar la carta sin objetivo
+      await apiService.playLookIntoTheAshes(gameId, currentPlayerId, cardInstance.id);
+      
+      // Obtener 5 cartas del descarte
+      const discardCards = await apiService.getDiscardPile(gameId, currentPlayerId, 5);
+      
+      // Procesar las cartas para mostrar en el modal
+      const processedDiscardCards = discardCards.map((card, index) => {
+        const cardDetails = cardService.getPlayingHand([card])[0];
+        return {
+          ...cardDetails,
+          instanceId: `discard-selection-${card.id}-${index}`,
+          originalId: card.id // Guardar el ID original para la segunda llamada
+        };
+      });
+         // Preparar estado para el modal
+      setEventCardToPlay({ 
+        id: cardInstance.id, 
+        instanceId: cardInstance.instanceId 
+      });
+      setDiscardPileSelection(processedDiscardCards);
+      setSelectedDiscardCard(null);
+      setLookIntoAshesModalOpen(true);
+      
+    } catch (error) {
+      console.error("Error al iniciar Look Into The Ashes:", error);
+      alert(`Error: ${error.message}`);
+      // Limpiar estado en caso de error
+      setEventCardToPlay(null);
+      setSelectedCards([]);
+    }
+  };
+
+  const handleLookIntoAshesConfirm = async () => {
+
+    if (!gameState.selectedDiscardCard || !eventCardToPlay) return;
+    
+    try {
+      const selectedCard = gameState.discardPileSelection.find(
+        card => card.instanceId === gameState.selectedDiscardCard
+      );
+      
+      if (!selectedCard) return;
+      
+      // Segunda llamada - con la carta objetivo seleccionada
+      await apiService.playLookIntoTheAshes(
+        gameId,
+        currentPlayerId,
+        null, // id_carta debe ser null en la segunda llamada
+        selectedCard.originalId // id_carta_objetivo
+      );
+
+          //ACTUALIZAR LA MANO 
+      try {
+        const freshHandData = await apiService.getHand(gameId, currentPlayerId);
+        const playingHand = cardService.getPlayingHand(freshHandData);
+        const handWithInstanceIds = playingHand.map((card, index) => ({
+          ...card,
+          instanceId: `${card.id}-sync-${Date.now()}-${index}`,
+        }));
+        setHand(handWithInstanceIds);
+      } catch (e) {
+        console.warn('No se pudo sincronizar la mano después de Look Into The Ashes:', e);
+        // Fallback: eliminar solo la carta de evento jugada
+        setHand(prev => prev.filter(card => card.instanceId !== eventCardToPlay.instanceId));
+      }
+
+      // Limpiar estado completamente
+      setSelectedCards([]);
+      setHasPlayedSetThisTurn(true);
+      setPlayerTurnState('discarding');
+      
+    } catch (error) {
+      console.error("Error al confirmar Look Into The Ashes:", error);
+      alert(`Error al seleccionar carta: ${error.message}`);
+    } finally {
+      // Siempre limpiar los estados del modal
+      gameState.setLookIntoAshesModalOpen(false);
+      gameState.setDiscardPileSelection([]);
+      gameState.setSelectedDiscardCard(null);
+      setEventCardToPlay(null);
+    }
+  };
+
+
+
+
+
   const handleEventPlay = async (cardId) => {
     const cardInstance = hand.find(c => c.instanceId === selectedCards[0]);
     if (!cardInstance) return; // Salir si no se encuentra la carta
@@ -376,6 +474,10 @@ const useCardActions = (gameId, gameState) => {
         setPlayerSelectionModalOpen(true);
         break;
       }
+      case CARD_IDS.LOOK_ASHES: {
+        await handleLookIntoTheAshes();
+        break;
+      }
       default:
         console.warn("Evento de carta no implementado:", cardId);
     }
@@ -388,6 +490,8 @@ const useCardActions = (gameId, gameState) => {
     handlePickUp,
     handlePlay,
     handleEventActionConfirm,
+    handleEventActionConfirm,
+    handleLookIntoAshesConfirm,
     handleOneMoreSecretSelect: (secretId) => {
       if (oneMoreStep === 2) {
         handleEventActionConfirm(secretId);

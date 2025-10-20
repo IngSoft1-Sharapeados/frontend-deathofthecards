@@ -220,6 +220,25 @@ const createHttpService = () => {
     });
   };
 
+  const playLookIntoTheAshes = async (gameId, playerId, cardId, targetCardId = null) => {
+    let url = `/partidas/${gameId}/evento/LookIntoTheAshes?`;
+    const params = new URLSearchParams({
+      id_jugador: playerId
+    });
+
+    if (cardId && !targetCardId) {
+      // Primera llamada - solo jugar la carta
+      params.append('id_carta', cardId);
+    } else if (targetCardId && !cardId) {
+      // Segunda llamada - seleccionar carta objetivo
+      params.append('id_carta_objetivo', targetCardId);
+    }
+
+    return request(`${url}${params.toString()}`, {
+        method: 'PUT'
+      });
+  };
+      
 
   return {
     createGame,
@@ -251,6 +270,7 @@ const createHttpService = () => {
     revealOwnSecret,
     robSecret,
     playAnotherVictim,
+    playLookIntoTheAshes,
     playOneMore,
     playDelayTheMurdererEscape
   };
