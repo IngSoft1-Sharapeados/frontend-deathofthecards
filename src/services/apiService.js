@@ -214,6 +214,12 @@ const createHttpService = () => {
     });
   };
 
+  const playDelayTheMurdererEscape = async (gameId, playerId, cardId, amount) => {
+    return request(`/partidas/${gameId}/evento/DelayMurderer?id_jugador=${playerId}&id_carta=${cardId}&cantidad=${amount}`, {
+      method: "PUT",
+    });
+  };
+
 
   return {
     createGame,
@@ -245,7 +251,8 @@ const createHttpService = () => {
     revealOwnSecret,
     robSecret,
     playAnotherVictim,
-    playOneMore
+    playOneMore,
+    playDelayTheMurdererEscape
   };
 };
 
