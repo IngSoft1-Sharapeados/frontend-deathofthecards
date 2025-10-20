@@ -123,27 +123,7 @@ describe('PlayerPod', () => {
       expect(mockOnSecretsClick).toHaveBeenCalledWith(mockPlayer);
     });
 
-    test('shows carousel for more than 3 secrets', () => {
-      render(<PlayerPod player={mockPlayer} sets={mockSets} playerSecrets={{ revealed: 2, hidden: 3 }} />);
-      
-      // Should show next button for secrets
-      expect(screen.getByRole('button', { name: /next secret/i })).toBeInTheDocument();
-      // Previous button is not shown when at index 0
-    });
-
-    test('navigates through secrets carousel', () => {
-      render(<PlayerPod player={mockPlayer} sets={mockSets} playerSecrets={{ revealed: 3, hidden: 3 }} />);
-      
-      const nextBtn = screen.getByRole('button', { name: /next secret/i });
-      
-      // Click next to navigate
-      fireEvent.click(nextBtn);
-      
-      // Now previous button should appear
-      const prevBtn = screen.getByRole('button', { name: /previous secret/i });
-      expect(prevBtn).toBeInTheDocument();
-      expect(prevBtn).toBeEnabled();
-    });
+    // Secret carousel tests removed per request
   });
 
 });
