@@ -57,6 +57,11 @@ const useWebSocket = (callbacks) => {
       callbacksRef.current.onAnotherVictimPlayed?.(message);
     };
 
+    const onOneMorePlayed = (message) => {
+      console.log('Evento "And Then There Was One More" jugado:', message);
+      callbacksRef.current.onOneMorePlayed?.(message);
+    };
+
 
     const onDiscardUpdate = (message) => {
       console.log('Carta descartada:', message);
@@ -70,6 +75,12 @@ const useWebSocket = (callbacks) => {
       console.log('Actualización de mano:', message);
       callbacksRef.current.onHandUpdate?.(message);
     };
+
+    const onDelayEscapePlayed = (message) => {
+      console.log('Evento "Delay Escape" jugado:', message);
+      callbacksRef.current.onDelayEscapePlayed?.(message);
+    };
+
 
     const onLookIntoTheAshesPlayed = (message) => {
       console.log('Evento "Look Into The Ashes" jugado:', message);
@@ -85,8 +96,10 @@ const useWebSocket = (callbacks) => {
     websocketService.on('nuevo-draft', onDraftUpdate);
     websocketService.on('se-jugo-cards-off-the-table', onCardsOffTheTablePlayed);
     websocketService.on('se-jugo-another-victim', onAnotherVictimPlayed);
+    websocketService.on('se-jugo-one-more', onOneMorePlayed);
     websocketService.on('jugar-set', onSetPlayed);
     websocketService.on('actualizacion-mano', onHandUpdate);
+    websocketService.on('se-jugo-delay-escape', onDelayEscapePlayed);
     websocketService.on('se-jugo-look-into-the-ashes', onLookIntoTheAshesPlayed);
     websocketService.on('actualizacion-secreto', onSecretUpdate);
 
@@ -99,8 +112,10 @@ const useWebSocket = (callbacks) => {
       websocketService.off('nuevo-draft', onDraftUpdate);
       websocketService.off('se-jugo-cards-off-the-table', onCardsOffTheTablePlayed);
       websocketService.off('se-jugo-another-victim', onAnotherVictimPlayed);
+      websocketService.off('se-jugo-one-more', onOneMorePlayed);
       websocketService.off('actualizacion-mano', onHandUpdate);
       websocketService.off('jugar-set', onSetPlayed);
+      websocketService.off('se-jugo-delay-escape', onDelayEscapePlayed);
       websocketService.off('se-jugo-look-into-the-ashes', onLookIntoTheAshesPlayed);
       websocketService.off('actualizacion-secreto', onSecretUpdate);
     };

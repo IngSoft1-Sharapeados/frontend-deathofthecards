@@ -12,11 +12,13 @@ const LockIcon = () => <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18
 const ArrowIcon = () => <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z" /></svg>;
 
 
-const PlayerPod = ({ player, isCurrentTurn, roleEmoji, onSecretsClick, playerSecrets, sets = [] }) => {
+const PlayerPod = ({ player, isCurrentTurn, roleEmoji, onSecretsClick, playerSecrets, sets = [], isDisgraced }) => {
 
     const [allSets, setAllSets] = useState([]);
     const [currentIndex, setCurrentIndex] = useState(0);
+    const [secretIndex, setSecretIndex] = useState(0);
     const visibleSetsCount = 3; // Number of cards to show at once
+    const visibleSecretsCount = 3; // Number of secrets to show at once
     const trackRef = useRef(null);
 
     useEffect(() => {
@@ -32,6 +34,16 @@ const PlayerPod = ({ player, isCurrentTurn, roleEmoji, onSecretsClick, playerSec
 
     const revealedCount = playerSecrets?.revealed ?? 0;
     const hiddenCount = playerSecrets?.hidden ?? 3;
+    const totalSecrets = revealedCount + hiddenCount;
+    const canGoPrevSecret = secretIndex > 0;
+    const canGoNextSecret = secretIndex < totalSecrets - visibleSecretsCount;
+
+    let statusIcon = null;
+    if (isDisgraced) {
+        statusIcon = '🤡';
+    } else if (roleEmoji) {
+        statusIcon = roleEmoji;
+    }
 
 
     const handleNext = (e) => {
@@ -48,8 +60,32 @@ const PlayerPod = ({ player, isCurrentTurn, roleEmoji, onSecretsClick, playerSec
         }
     };
 
+    const handleNextSecret = (e) => {
+        e.stopPropagation();
+        if (canGoNextSecret) {
+            setSecretIndex(prev => Math.min(prev + 1, totalSecrets - visibleSecretsCount));
+        }
+    };
+
+    const handlePrevSecret = (e) => {
+        e.stopPropagation();
+        if (canGoPrevSecret) {
+            setSecretIndex(prev => Math.max(prev - 1, 0));
+        }
+    };
+
     // Calculate the visible cards with some overlap
     const visibleSets = allSets.slice(currentIndex, currentIndex + visibleSetsCount);
+
+    // Generate secret cards array for carousel
+    const secretCardsArray = [];
+    for (let i = 0; i < totalSecrets; i++) {
+        secretCardsArray.push({
+            id: i,
+            type: i < revealedCount ? 'revealed' : 'hidden'
+        });
+    }
+    const visibleSecrets = secretCardsArray.slice(secretIndex, secretIndex + visibleSecretsCount);
 
     return (
         <div className={styles.podWrapper}>
@@ -97,7 +133,7 @@ const PlayerPod = ({ player, isCurrentTurn, roleEmoji, onSecretsClick, playerSec
             )}
 
             <div className={podClasses} data-testid="player-pod">
-                {roleEmoji && <span className={styles.roleEmoji}>{roleEmoji}</span>}
+                {statusIcon && <span className={styles.statusIcon}>{statusIcon}</span>}
                 <div className={styles.topSection}>
                     <div className={styles.playerIdentifier}>
                         <div className={styles.playerIcon}><UserIcon /></div>
@@ -130,7 +166,7 @@ PlayerPod.defaultProps = {
     isCurrentTurn: false,
     roleEmoji: undefined,
     sets: [],
-    onSecretsClick: () => {},
+    onSecretsClick: () => { },
     playerSecrets: undefined,
 };
 

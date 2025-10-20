@@ -85,5 +85,45 @@ describe('PlayerPod', () => {
       // At end, last visible includes id 13
       expect(screen.getByTestId('card-detective-13.png')).toBeInTheDocument();
     });
+
+    test('disables previous button at beginning of list', () => {
+      render(<PlayerPod player={mockPlayer} sets={mockSets} />);
+      const prevBtn = screen.getByRole('button', { name: /previous detective/i });
+      expect(prevBtn).toBeDisabled();
+    });
+
+    test('enables previous button after navigating forward', () => {
+      render(<PlayerPod player={mockPlayer} sets={mockSets} />);
+      const nextBtn = screen.getByRole('button', { name: /next detective/i });
+      const prevBtn = screen.getByRole('button', { name: /previous detective/i });
+      
+      expect(prevBtn).toBeDisabled();
+      fireEvent.click(nextBtn);
+      expect(prevBtn).toBeEnabled();
+    });
   });
+
+  describe('Secrets display', () => {
+    test('shows secrets info with simple display for 3 or fewer secrets', () => {
+      render(<PlayerPod player={mockPlayer} sets={mockSets} playerSecrets={{ revealed: 1, hidden: 2 }} />);
+      
+      // Should show Eye and Lock icons with counts
+      expect(screen.getByText('1')).toBeInTheDocument();
+      expect(screen.getByText('2')).toBeInTheDocument();
+    });
+
+    test('calls onSecretsClick when secrets area is clicked', () => {
+      const mockOnSecretsClick = vi.fn();
+      render(<PlayerPod player={mockPlayer} sets={mockSets} onSecretsClick={mockOnSecretsClick} playerSecrets={{ revealed: 1, hidden: 2 }} />);
+      
+      // Find the secrets info area and click it
+      const secretsArea = screen.getByAltText('Secret card back').closest('div');
+      fireEvent.click(secretsArea);
+      
+      expect(mockOnSecretsClick).toHaveBeenCalledWith(mockPlayer);
+    });
+
+    
+  });
+
 });

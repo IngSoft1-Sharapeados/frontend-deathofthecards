@@ -23,6 +23,22 @@
   transition: all 0.3s ease;
 }
 
+.statusIcon {
+  position: absolute;
+  top: 10px;
+  left: 10px; /* O 'right: 10px' si lo prefieres a la derecha */
+  font-size: 1.5rem;
+  background-color: rgba(0, 0, 0, 0.4);
+  width: 45px;
+  height: 45px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  z-index: 5;
+}
+
 @keyframes pulse-green {
   0% { box-shadow: 0 0 20px rgba(34, 197, 94, 0.7); }
   50% { box-shadow: 0 0 25px 5px rgba(34, 197, 94, 0.7); }
@@ -78,20 +94,7 @@
   margin-top: 5px;
 }
 
-.roleEmoji {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  font-size: 1.5rem;
-  background-color: rgba(0, 0, 0, 0.4);
-  width: 45px;
-  height: 45px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-}
+
 
 .secretCardImage {
   width: 70px;
@@ -445,4 +448,108 @@
   .arrowButtonContainer:last-child {
     right: -50px;
   }
+}
+
+/* --- Secrets Carousel Styles --- */
+.secretsCarousel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+}
+
+.secretsScroller {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  justify-content: center;
+}
+
+.secretsTrack {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  justify-content: center;
+}
+
+.miniSecretCard {
+  position: relative;
+  width: 30px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.miniSecretImage {
+  width: 100%;
+  height: 100%;
+  border-radius: 3px;
+  object-fit: cover;
+}
+
+.miniSecretIcon {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: 50%;
+  width: 14px;
+  height: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.miniSecretIcon svg {
+  width: 10px;
+  height: 10px;
+}
+
+.secretArrowButton {
+  background: rgba(47, 47, 79, 0.9);
+  color: white;
+  border: 1px solid #3a3a5e;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10;
+  transition: background 0.2s ease, transform 0.2s ease;
+  pointer-events: auto;
+  padding: 0;
+  min-width: 20px;
+  flex-shrink: 0;
+}
+
+.secretArrowButton:hover:not(:disabled) {
+  background: #646cff;
+  transform: scale(1.1);
+}
+
+.secretArrowButton.left {
+  transform: rotate(180deg);
+}
+
+.secretArrowButton.left:hover:not(:disabled) {
+  transform: rotate(180deg) scale(1.1);
+}
+
+.secretArrowButton:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.secretArrowButton svg {
+  width: 14px;
+  height: 14px;
 }

@@ -179,14 +179,16 @@ html, body {
 }
 
 
-.handContainer, .secretCardsContainer {
+.handContainer {
   display: flex;
   justify-content: center;
+  align-items: center;
   padding-left: 60px;
+  position: relative;
+  gap: 10px;
 }
 
-.handContainer > *,
-.secretCardsContainer > * {
+.handContainer > * {
   margin-left: -45px;
   transition: transform 0.2s ease-out, margin 0.2s ease-out;
 }
@@ -272,12 +274,11 @@ html, body {
   [data-player-count="6"] .opponent-4 { top: 40%; right: -120px; }
   [data-player-count="6"] .opponent-5 { top: 180%; right: 10px; }
   
-  .handContainer, .secretCardsContainer {
+  .handContainer {
     padding-left: 45px;
   }
   
-  .handContainer > *,
-  .secretCardsContainer > * {
+  .handContainer > * {
     margin-left: -35px;
   }
   
@@ -324,12 +325,11 @@ html, body {
     font-size: 1rem;
   }
   
-  .handContainer, .secretCardsContainer {
+  .handContainer {
     padding-left: 40px;
   }
   
-  .handContainer > *,
-  .secretCardsContainer > * {
+  .handContainer > * {
     margin-left: -30px;
   }
   

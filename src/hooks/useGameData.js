@@ -8,8 +8,8 @@ const useGameData = (gameId, gameState) => {
     setHand, setIsLoading, setCurrentPlayerId,
     setDeckCount, setCurrentTurn, setTurnOrder,
     setPlayers, setHostId, setWinners, setAsesinoGano,
-    setRoles, setSecretCards, setCanRevealSecrets, setCanHideSecrets,setCanRobSecrets,
-    setDraftCards,setPlayersSecrets, setPlayedSetsByPlayer, setDiscardPile
+    setRoles, setMySecretCards,
+    setDraftCards, setPlayersSecrets, setPlayedSetsByPlayer, setDiscardPile
   } = gameState;
 
   const hasConnectedRef = useRef(false); // evita reconexiones extras
@@ -41,10 +41,8 @@ const useGameData = (gameId, gameState) => {
             apiService.getDiscardPile(gameId, storedPlayerId, 1), 
             apiService.getPlayedSets(gameId),
           ]);
-          
-          setCanRevealSecrets(true); // F5 
-          setCanHideSecrets(true); // F5
-          setCanRobSecrets(true)
+
+
           // Actualizar estado del juego
           setDeckCount(deckData);
           setCurrentTurn(turnData);
@@ -91,12 +89,17 @@ const useGameData = (gameId, gameState) => {
           }));
           setDraftCards(draftWithInstanceIds);
 
-          const secretHand = cardService.getSecretCards(secretCardsData);
-          const secretsWithInstanceIds = secretHand.map((card, index) => ({
-            ...card,
-            instanceId: `${card.id}-secret-${index}`
-          }));
-          setSecretCards(secretsWithInstanceIds);
+          const processedMySecrets = secretCardsData.map(secret => {
+            const cardDetails = cardService.getSecretCards([{ id: secret.id }])[0];
+            // Normalizamos bandera de revelado para el front
+            const revelada = Boolean(secret.bocaArriba || secret.revelada || secret.revelado);
+            return {
+              ...secret,
+              revelada,
+              url: cardDetails?.url,
+            };
+          });
+          setMySecretCards(processedMySecrets);
 
           // Played sets
           const grouped = {};

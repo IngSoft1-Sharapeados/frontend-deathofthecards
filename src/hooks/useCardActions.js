@@ -23,19 +23,31 @@ const useCardActions = (gameId, gameState) => {
     currentPlayerId,
     isMyTurn, players,
     playerTurnState, setPlayerTurnState, setSelectedDraftCards,
-    hasPlayedSetThisTurn, setHasPlayedSetThisTurn,
+    hasPlayedSetThisTurn, setHasPlayedSetThisTurn, setConfirmationModalOpen,
     setPlayerSelectionModalOpen, setEventCardToPlay, eventCardToPlay, setSetSelectionModalOpen,
-    setLookIntoAshesModalOpen, setDiscardPileSelection, setSelectedDiscardCard
+    setLookIntoAshesModalOpen, setDiscardPileSelection, setSelectedDiscardCard,
+    // OneMore states
+    oneMoreStep, setOneMoreStep,
+    oneMoreSourcePlayer, setOneMoreSourcePlayer,
+    oneMoreSelectedSecret, setOneMoreSelectedSecret,
+    oneMoreDestinationPlayer, setOneMoreDestinationPlayer,
+    setIsSecretsModalOpen, setViewingSecretsOfPlayer, setPlayerSecretsData, setIsSecretsLoading,
+    setSelectedSecretCard,
+    isLocalPlayerDisgraced
   } = gameState;
 
   const handleCardClick = useCallback((instanceId) => {
     if (!isMyTurn || playerTurnState !== 'discarding') return;
-    setSelectedCards((prev) =>
-      prev.includes(instanceId)
-        ? prev.filter((id) => id !== instanceId)
-        : [...prev, instanceId]
-    );
-  }, [isMyTurn, playerTurnState, setSelectedCards]);
+    setSelectedCards((prev) => {
+      if (prev.includes(instanceId)) {
+        return prev.filter((id) => id !== instanceId);
+      }
+      if (isLocalPlayerDisgraced && prev.length >= 1) {
+        return prev;
+      }
+      return [...prev, instanceId];
+    });
+  }, [isMyTurn, playerTurnState, isLocalPlayerDisgraced, setSelectedCards]);
 
   const handleDraftCardClick = useCallback((instanceId) => {
     const canSelectFromDraft = playerTurnState === 'drawing' || (hasPlayedSetThisTurn && hand.length < 6);
@@ -124,15 +136,132 @@ const useCardActions = (gameId, gameState) => {
   const handleEventActionConfirm = async (payload) => {
     if (!eventCardToPlay) return;
 
-    try {
-      const { id: cardId, instanceId } = eventCardToPlay;
+    const { id: cardId, instanceId } = eventCardToPlay;
+    
+    // Special handling for OneMore event flow
+    if (cardId === CARD_IDS.ONE_MORE) {
+      try {
+        if (oneMoreStep === 1) {
+          // Step 1: Source player selected, now show secrets modal
+          const sourcePlayerId = payload;
+          setOneMoreSourcePlayer(sourcePlayerId);
+          setPlayerSelectionModalOpen(false);
+          
+          // Open secrets modal for the source player
+          const sourcePlayer = players.find(p => p.id_jugador === sourcePlayerId);
+          setViewingSecretsOfPlayer(sourcePlayer);
+          setIsSecretsModalOpen(true);
+          setIsSecretsLoading(true);
+          
+          try {
+            const secretsFromApi = await apiService.getPlayerSecrets(gameId, sourcePlayerId);
+            const processedSecrets = secretsFromApi
+              .filter(s => s.bocaArriba) // Only show revealed secrets
+              .map(secret => {
+                if (secret.carta_id) {
+                  const cardDetails = cardService.getSecretCards([{ id: secret.carta_id }])[0];
+                  return { 
+                    ...secret, 
+                    url: cardDetails.url,
+                    nombre: cardDetails.nombre || secret.nombre 
+                  };
+                }
+                return secret;
+              });
+            setPlayerSecretsData(processedSecrets);
+            setOneMoreStep(2);
+          } catch (error) {
+            console.error("Error al obtener secretos:", error);
+            setPlayerSecretsData([]);
+            throw error;
+          } finally {
+            setIsSecretsLoading(false);
+          }
+          return; // Don't finish the event yet
+        } else if (oneMoreStep === 2) {
+          // Step 2: Secret selected, now show player selection for destination
+          const secretId = payload;
+          setOneMoreSelectedSecret(secretId);
+          setIsSecretsModalOpen(false);
+          setPlayerSelectionModalOpen(true);
+          setOneMoreStep(3);
+          setSelectedSecretCard(null); // Clear selection for next modal
+          return; // Don't finish the event yet
+        } else if (oneMoreStep === 3) {
+          // Step 3: Destination player selected, execute the event
+          const destinationPlayerId = payload;
+          setOneMoreDestinationPlayer(destinationPlayerId);
+          
+          const playerName = players.find(p => p.id_jugador === currentPlayerId)?.nombre_jugador || 'Alguien';
+          const eventCardData = cardService.getEventCardData(cardId);
+          
+          gameState.setEventCardInPlay({
+            imageName: eventCardData.url,
+            message: `${playerName} jugó una carta de evento!` 
+          });
+          
+          // Get the actual selected secret value (state might not be updated yet)
+          const actualSecretId = oneMoreSelectedSecret;
+          
+          if (!actualSecretId) {
+            throw new Error('No se seleccionó un secreto válido');
+          }
+          
+          await apiService.playOneMore(gameId, currentPlayerId, cardId, {
+            id_fuente: oneMoreSourcePlayer,
+            id_destino: destinationPlayerId,
+            id_unico_secreto: actualSecretId
+          });
+          
+          // Reset OneMore state and clean up
+          setOneMoreStep(0);
+          setOneMoreSourcePlayer(null);
+          setOneMoreSelectedSecret(null);
+          setOneMoreDestinationPlayer(null);
+          setPlayerSelectionModalOpen(false);
+          setEventCardToPlay(null);
+          setSelectedSecretCard(null);
+          
+          // Remove card from hand
+          setHand(prev => prev.filter(card => card.instanceId !== instanceId));
+          setSelectedCards([]);
+          setHasPlayedSetThisTurn(true);
+          setPlayerTurnState('discarding');
+          return;
+        }
+      } catch (error) {
+        console.error(`Error en flujo OneMore:`, error);
+        // Better error message handling
+        let errorMessage = 'Error desconocido';
+        if (error.message) {
+          errorMessage = error.message;
+        } else if (typeof error === 'string') {
+          errorMessage = error;
+        } else if (error.detail) {
+          errorMessage = error.detail;
+        }
+        alert(`Error jugando OneMore: ${errorMessage}`);
+        // Reset everything on error
+        setOneMoreStep(0);
+        setOneMoreSourcePlayer(null);
+        setOneMoreSelectedSecret(null);
+        setOneMoreDestinationPlayer(null);
+        setIsSecretsModalOpen(false);
+        setPlayerSelectionModalOpen(false);
+        setEventCardToPlay(null);
+        setSelectedSecretCard(null);
+        return;
+      }
+    }
 
+    // Handle other event cards
+    try {
       const playerName = players.find(p => p.id_jugador === currentPlayerId)?.nombre_jugador || 'Alguien';
       const eventCardData = cardService.getEventCardData(cardId);
-      
+
       gameState.setEventCardInPlay({
         imageName: eventCardData.url,
-        message: `${playerName} jugó una carta de evento!` 
+        message: `${playerName} jugó una carta de evento!`
       });
 
       switch (cardId) {
@@ -141,9 +270,9 @@ const useCardActions = (gameId, gameState) => {
           await apiService.playCardsOffTheTable(gameId, currentPlayerId, targetPlayerId, cardId);
           break;
         }
-        case CARD_IDS.ANOTHER_VICTIM: { 
+        case CARD_IDS.ANOTHER_VICTIM: {
           const targetSet = payload;
-          console.log('another victim data: ',cardId, targetSet);
+          console.log('another victim data: ', cardId, targetSet);
           await apiService.playAnotherVictim(gameId, currentPlayerId, cardId, targetSet);
           break;
          }
@@ -151,6 +280,13 @@ const useCardActions = (gameId, gameState) => {
           // Este caso ahora se maneja en handleLookIntoAshesConfirm
           await handleLookIntoAshesConfirm();
           break; 
+        }
+        case CARD_IDS.DELAY_ESCAPE: {
+          const amountToGet = payload;
+          console.log("toget: ", payload);
+
+          await apiService.playDelayTheMurdererEscape(gameId, currentPlayerId, cardId, amountToGet);
+          break;
         }
         default:
           throw new Error(`Lógica de confirmación no implementada para la carta ${cardId}`);
@@ -166,8 +302,9 @@ const useCardActions = (gameId, gameState) => {
       console.error(`Error al jugar el evento ${eventCardToPlay.id}:`, error);
       alert(`Error: ${error.message}`);
     } finally {
-      // Siempre cerramos todos los modales y reseteamos el estado del evento
+      // Close modals for other events
       setPlayerSelectionModalOpen(false);
+      setConfirmationModalOpen(false);
       setSetSelectionModalOpen(false);
       setEventCardToPlay(null);
     }
@@ -210,7 +347,7 @@ const useCardActions = (gameId, gameState) => {
       alert(`Error: ${error.message}`);
     }
   };
-    // NUEVA FUNCIÓN PARA LOOK INTO THE ASHES
+
   const handleLookIntoTheAshes = async () => {
     try {
       const cardInstance = hand.find(c => c.instanceId === selectedCards[0]);
@@ -304,17 +441,37 @@ const useCardActions = (gameId, gameState) => {
 
 
   const handleEventPlay = async (cardId) => {
+    const cardInstance = hand.find(c => c.instanceId === selectedCards[0]);
+    if (!cardInstance) return; // Salir si no se encuentra la carta
+
+    setEventCardToPlay({ id: cardInstance.id, instanceId: cardInstance.instanceId });
+
     switch (cardId) {
       case CARD_IDS.CARDS_OFF_THE_TABLE: {
-        const cardInstance = hand.find(c => c.instanceId === selectedCards[0]);
-        setEventCardToPlay({ id: cardInstance.id, instanceId: cardInstance.instanceId });
         setPlayerSelectionModalOpen(true);
         break;
       }
-      case CARD_IDS.ANOTHER_VICTIM:{
+      case CARD_IDS.ANOTHER_VICTIM: {
+        setSetSelectionModalOpen(true);
+        break;
+      }
+      case CARD_IDS.DELAY_ESCAPE: {
+        setConfirmationModalOpen(true);
+        break;
+      }
+      case CARD_IDS.ONE_MORE: {
         const cardInstance = hand.find(c => c.instanceId === selectedCards[0]);
         setEventCardToPlay({ id: cardInstance.id, instanceId: cardInstance.instanceId });
-        setSetSelectionModalOpen(true); 
+        // Check eligible source players (with at least one revealed secret)
+        const eligibleSources = players.filter(p => (gameState.playersSecrets[p.id_jugador]?.revealed ?? 0) > 0);
+        if (eligibleSources.length === 0) {
+          alert('Ningún jugador tiene secretos revelados para robar.');
+          // Do not start OneMore flow; keep normal turn flow
+          setEventCardToPlay(null);
+          return;
+        }
+        setOneMoreStep(1); // Start OneMore flow
+        setPlayerSelectionModalOpen(true);
         break;
       }
       case CARD_IDS.LOOK_ASHES: {
@@ -325,7 +482,7 @@ const useCardActions = (gameId, gameState) => {
         console.warn("Evento de carta no implementado:", cardId);
     }
   };
-
+  
   return {
     handleCardClick,
     handleDraftCardClick,
@@ -335,6 +492,11 @@ const useCardActions = (gameId, gameState) => {
     handleEventActionConfirm,
     handleEventActionConfirm,
     handleLookIntoAshesConfirm,
+    handleOneMoreSecretSelect: (secretId) => {
+      if (oneMoreStep === 2) {
+        handleEventActionConfirm(secretId);
+      }
+    }
   };
 };
 
@@ -356,14 +518,16 @@ export const useSecrets = (gameId, gameState) => {
       console.log(secretsFromApi)
 
       const processedSecrets = secretsFromApi.map(secret => {
-        if (secret.bocaArriba) {
+        if (secret.bocaArriba && secret.carta_id) {
           const cardDetails = cardService.getSecretCards([{ id: secret.carta_id }])[0];
+
           console.log(cardDetails)
-          return { 
-            ...secret, 
+          return {
+            ...secret,
             url: cardDetails.url,
-            nombre: cardDetails.nombre || secret.nombre 
+            nombre: cardDetails.nombre || secret.nombre
           };
+
         }
         return secret;
       });

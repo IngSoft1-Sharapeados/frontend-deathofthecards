@@ -38,14 +38,15 @@ const useSecretActions = (gameId, gameState) => {
 
     try {
 
-      const response = await apiService.revealSecret(gameId, currentPlayerId, selectedSecretCard);
+    // Backend ahora requiere id_jugador_turno (quien ejecuta la acción), no el objetivo
+    const response = await apiService.revealSecret(gameId, currentPlayerId, selectedSecretCard);
 
       const freshSecrets = await apiService.getPlayerSecrets(gameId, viewingPlayerId);
 
       setPlayerSecretsData(processSecrets(freshSecrets));
       
       setSelectedSecretCard(null);
-      setCanRevealSecrets(true); //luego de revelar una carta de secreto ya no se puede aplicar el mismo efecto 
+  setCanRevealSecrets(true); // luego de revelar, mantener estado según reglas
     } catch (error) {
       alert(`Error: ${error.message}`);
     }
@@ -55,6 +56,7 @@ const useSecretActions = (gameId, gameState) => {
     if (!selectedSecretCard || !canHideSecrets || !viewingPlayerId) return;
 
     try {
+      // Backend ahora requiere id_jugador_turno (quien ejecuta la acción)
       const response = await apiService.hideSecret(
         gameId,
         currentPlayerId,
