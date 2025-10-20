@@ -81,6 +81,11 @@ const useWebSocket = (callbacks) => {
       callbacksRef.current.onDelayEscapePlayed?.(message);
     };
 
+    const onEarlyTrainPlayed = (message) => {
+      console.log('Evento "Early Train" jugado:', message);
+      callbacksRef.current.onEarlyTrainPlayed?.(message);
+    };
+
     // Suscribirse a eventos
     websocketService.on('actualizacion-mazo', onDeckUpdate);
     websocketService.on('turno-actual', onTurnUpdate);
@@ -93,7 +98,7 @@ const useWebSocket = (callbacks) => {
     websocketService.on('jugar-set', onSetPlayed);
     websocketService.on('actualizacion-mano', onHandUpdate);
     websocketService.on('se-jugo-delay-escape', onDelayEscapePlayed);
-
+    websocketService.on('se-jugo-early-train', onEarlyTrainPlayed);
     websocketService.on('actualizacion-secreto', onSecretUpdate);
 
 
@@ -109,7 +114,7 @@ const useWebSocket = (callbacks) => {
       websocketService.off('actualizacion-mano', onHandUpdate);
       websocketService.off('jugar-set', onSetPlayed);
       websocketService.off('se-jugo-delay-escape', onDelayEscapePlayed);
-
+      websocketService.off('se-jugo-early-train', onEarlyTrainPlayed);
       websocketService.off('actualizacion-secreto', onSecretUpdate);
     };
   }, []);

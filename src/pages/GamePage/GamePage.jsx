@@ -241,6 +241,12 @@ const GamePage = () => {
         console.error("Error al refrescar secretos vía WebSocket:", error);
       }
     },
+    onEarlyTrainPlayed: (message) => {
+      gameState.setEventCardInPlay({
+        imageName: '24-event_earlytrain.png',
+        message: `Se jugó "Early Train To Paddington"`
+      });
+    },
 
     onDiscardUpdate: (discardPile) => gameState.setDiscardPile(discardPile),
   };

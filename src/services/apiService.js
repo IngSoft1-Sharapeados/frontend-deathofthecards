@@ -220,6 +220,12 @@ const createHttpService = () => {
     });
   };
 
+  const playEarlyTrainToPaddington = async (gameId, playerId, cardId) => {
+    return request(`/partidas/${gameId}/evento/EarlyTrain?id_jugador=${playerId}&id_carta=${cardId}`, {
+      method: "PUT",
+    });
+  };
+
 
   return {
     createGame,
@@ -252,7 +258,8 @@ const createHttpService = () => {
     robSecret,
     playAnotherVictim,
     playOneMore,
-    playDelayTheMurdererEscape
+    playDelayTheMurdererEscape,
+    playEarlyTrainToPaddington
   };
 };
 
