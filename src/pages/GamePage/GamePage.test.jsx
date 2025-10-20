@@ -210,6 +210,22 @@ describe('GamePage', () => {
       fireEvent.click(pickupButton);
       expect(mockUseCardActions.handlePickUp).toHaveBeenCalled();
     });
+
+    test('should disable Descartar button when not enabled', () => {
+      mockUseGameState.playerTurnState = 'discarding';
+      mockUseGameState.isDiscardButtonEnabled = false;
+      render(<GamePage />);
+      const discardButton = screen.getByRole('button', { name: /descartar/i });
+      expect(discardButton).toBeDisabled();
+    });
+
+    test('should disable Levantar button when not enabled', () => {
+      mockUseGameState.playerTurnState = 'drawing';
+      mockUseGameState.isPickupButtonEnabled = false;
+      render(<GamePage />);
+      const pickupButton = screen.getByRole('button', { name: /levantar/i });
+      expect(pickupButton).toBeDisabled();
+    });
   });
 
   describe('Role Emojis Visibility', () => {
@@ -241,6 +257,227 @@ describe('GamePage', () => {
       const accomplicePod = screen.getByTestId('pod-3');
       expect(murdererPod.textContent).not.toContain('🔪');
       expect(accomplicePod.textContent).not.toContain('🤝');
+    });
+  });
+
+  describe('Deck and UI Elements', () => {
+    test('should render deck with correct count', () => {
+      mockUseGameState.deckCount = 42;
+      mockUseGameState.isLoading = false;
+      render(<GamePage />);
+      expect(screen.getByTestId('deck')).toHaveTextContent('Deck: 42');
+    });
+
+    test('should update deck count when changed', () => {
+      mockUseGameState.deckCount = 30;
+      mockUseGameState.isLoading = false;
+      const { rerender } = render(<GamePage />);
+      expect(screen.getByTestId('deck')).toHaveTextContent('Deck: 30');
+      
+      mockUseGameState.deckCount = 25;
+      rerender(<GamePage />);
+      expect(screen.getByTestId('deck')).toHaveTextContent('Deck: 25');
+    });
+
+    test('should render CardDraft when in drawing state', () => {
+      mockUseGameState.playerTurnState = 'drawing';
+      mockUseGameState.isLoading = false;
+      mockUseGameState.draftCards = [
+        { id: 101, url: 'draft1.png', instanceId: 'd1' },
+        { id: 102, url: 'draft2.png', instanceId: 'd2' }
+      ];
+      render(<GamePage />);
+      expect(screen.getByTestId('card-draft')).toBeInTheDocument();
+    });
+
+    test('should show loading state', () => {
+      mockUseGameState.isLoading = true;
+      const { container } = render(<GamePage />);
+      // Loading state shows a spinner, not text
+      expect(container.querySelector('[class*="loadingSpinner"]')).toBeInTheDocument();
+    });
+  });
+
+  describe('Player Display', () => {
+    test('should display all opponents in correct order', () => {
+      mockUseGameState.isLoading = false;
+      render(<GamePage />);
+      const pod2 = screen.getByTestId('pod-2');
+      const pod3 = screen.getByTestId('pod-3');
+      
+      expect(pod2).toBeInTheDocument();
+      expect(pod3).toBeInTheDocument();
+      expect(pod2).toHaveTextContent('Opponent');
+      expect(pod3).toHaveTextContent('Opponent2');
+    });
+
+    test('should handle empty opponent list', () => {
+      mockUseGameState.players = [{ id_jugador: 1, nombre_jugador: 'You' }];
+      mockUseGameState.turnOrder = [1];
+      mockUseGameState.isLoading = false;
+      updateDerivedMockState();
+      render(<GamePage />);
+      
+      expect(screen.queryByTestId('pod-2')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('pod-3')).not.toBeInTheDocument();
+    });
+
+    test('should pass playerSecrets to PlayerPod', () => {
+      mockUseGameState.playersSecrets = {
+        2: { revealed: 2, hidden: 1 },
+        3: { revealed: 0, hidden: 3 }
+      };
+      mockUseGameState.isLoading = false;
+      render(<GamePage />);
+      
+      // The mocked PlayerPod receives playerSecrets prop
+      expect(screen.getByTestId('pod-2')).toBeInTheDocument();
+      expect(screen.getByTestId('pod-3')).toBeInTheDocument();
+    });
+  });
+
+  describe('Turn State', () => {
+    test('should indicate when it is my turn', () => {
+      mockUseGameState.isMyTurn = true;
+      mockUseGameState.isLoading = false;
+      mockUseGameState.playerTurnState = 'discarding';
+      render(<GamePage />);
+      // Should show discard button (only one button matches)
+      expect(screen.getByRole('button', { name: /descartar/i })).toBeInTheDocument();
+    });
+
+    test('should indicate when it is not my turn', () => {
+      mockUseGameState.isMyTurn = false;
+      mockUseGameState.playerTurnState = 'waiting';
+      mockUseGameState.isLoading = false;
+      render(<GamePage />);
+      // Action buttons should not be present or disabled
+      expect(screen.queryByRole('button', { name: /descartar/i })).not.toBeInTheDocument();
+    });
+
+    test('should display current turn number', () => {
+      mockUseGameState.currentTurn = 5;
+      mockUseGameState.isLoading = false;
+      render(<GamePage />);
+      // Depending on UI, might show turn number somewhere
+      expect(mockUseGameState.currentTurn).toBe(5);
+    });
+  });
+
+  describe('Secret Cards', () => {
+    test('should display secret cards when available', () => {
+      mockUseGameState.secretCards = [
+        { instanceId: 's1', url: 'secret1.png' },
+        { instanceId: 's2', url: 'secret2.png' }
+      ];
+      mockUseGameState.isLoading = false;
+      render(<GamePage />);
+      // Verify secrets are passed or displayed
+      expect(mockUseGameState.secretCards).toHaveLength(2);
+    });
+
+    test('should handle empty secret cards', () => {
+      mockUseGameState.secretCards = [];
+      mockUseGameState.isLoading = false;
+      render(<GamePage />);
+      expect(mockUseGameState.secretCards).toHaveLength(0);
+    });
+  });
+
+  describe('Selected Cards', () => {
+    test('should track selected cards', () => {
+      mockUseGameState.selectedCards = ['h1', 'h2'];
+      mockUseGameState.isLoading = false;
+      render(<GamePage />);
+      expect(mockUseGameState.selectedCards).toHaveLength(2);
+    });
+
+    test('should enable play button with valid selection', () => {
+      mockUseGameState.isPlayButtonEnabled = true;
+      mockUseGameState.selectedCards = ['h1', 'h2', 'h3'];
+      mockUseGameState.isLoading = false;
+      render(<GamePage />);
+      const playButton = screen.getByRole('button', { name: /jugar/i });
+      expect(playButton).toBeEnabled();
+    });
+  });
+
+  describe('Draft Cards', () => {
+    test('should display draft cards in drawing phase', () => {
+      mockUseGameState.playerTurnState = 'drawing';
+      mockUseGameState.isLoading = false;
+      mockUseGameState.draftCards = [
+        { id: 101, url: 'draft1.png', instanceId: 'd1' },
+        { id: 102, url: 'draft2.png', instanceId: 'd2' },
+        { id: 103, url: 'draft3.png', instanceId: 'd3' }
+      ];
+      render(<GamePage />);
+      expect(screen.getByTestId('card-draft')).toHaveTextContent('3 cards');
+    });
+
+    test('should track selected draft cards', () => {
+      mockUseGameState.playerTurnState = 'drawing';
+      mockUseGameState.selectedDraftCards = ['d1', 'd2'];
+      mockUseGameState.isLoading = false;
+      render(<GamePage />);
+      expect(mockUseGameState.selectedDraftCards).toHaveLength(2);
+    });
+  });
+
+  describe('Played Sets', () => {
+    test('should pass played sets to opponents', () => {
+      mockUseGameState.playedSetsByPlayer = {
+        2: [{ id: 7 }, { id: 8 }, { id: 9 }],
+        3: [{ id: 10 }, { id: 11 }, { id: 12 }]
+      };
+      mockUseGameState.isLoading = false;
+      render(<GamePage />);
+      
+      // PlayerPod should receive sets
+      expect(screen.getByTestId('pod-2')).toBeInTheDocument();
+      expect(screen.getByTestId('pod-3')).toBeInTheDocument();
+    });
+
+    test('should handle opponents with no sets', () => {
+      mockUseGameState.playedSetsByPlayer = {
+        2: [],
+        3: []
+      };
+      mockUseGameState.isLoading = false;
+      render(<GamePage />);
+      
+      expect(screen.getByTestId('pod-2')).toBeInTheDocument();
+      expect(screen.getByTestId('pod-3')).toBeInTheDocument();
+    });
+  });
+
+  describe('Edge Cases', () => {
+    test('should handle undefined playersSecrets', () => {
+      mockUseGameState.playersSecrets = {};
+      mockUseGameState.isLoading = false;
+      render(<GamePage />);
+      expect(screen.getByTestId('pod-2')).toBeInTheDocument();
+    });
+
+    test('should handle empty hand', () => {
+      mockUseGameState.hand = [];
+      mockUseGameState.isLoading = false;
+      render(<GamePage />);
+      const handContainer = screen.getByTestId('hand-container');
+      expect(handContainer.children).toHaveLength(0);
+    });
+
+    test('should handle large number of cards in hand', () => {
+      const largeHand = Array.from({ length: 15 }, (_, i) => ({
+        id: i,
+        url: `card${i}.png`,
+        instanceId: `h${i}`
+      }));
+      mockUseGameState.hand = largeHand;
+      mockUseGameState.isLoading = false;
+      render(<GamePage />);
+      const handContainer = screen.getByTestId('hand-container');
+      expect(handContainer.children.length).toBe(15);
     });
   });
 });

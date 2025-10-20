@@ -57,6 +57,11 @@ const useWebSocket = (callbacks) => {
       callbacksRef.current.onAnotherVictimPlayed?.(message);
     };
 
+    const onOneMorePlayed = (message) => {
+      console.log('Evento "And Then There Was One More" jugado:', message);
+      callbacksRef.current.onOneMorePlayed?.(message);
+    };
+
 
     const onDiscardUpdate = (message) => {
       console.log('Carta descartada:', message);
@@ -78,6 +83,7 @@ const useWebSocket = (callbacks) => {
     websocketService.on('nuevo-draft', onDraftUpdate);
     websocketService.on('se-jugo-cards-off-the-table', onCardsOffTheTablePlayed);
     websocketService.on('se-jugo-another-victim', onAnotherVictimPlayed);
+    websocketService.on('se-jugo-one-more', onOneMorePlayed);
     websocketService.on('jugar-set', onSetPlayed);
     websocketService.on('actualizacion-mano', onHandUpdate);
 
@@ -92,6 +98,7 @@ const useWebSocket = (callbacks) => {
       websocketService.off('nuevo-draft', onDraftUpdate);
       websocketService.off('se-jugo-cards-off-the-table', onCardsOffTheTablePlayed);
       websocketService.off('se-jugo-another-victim', onAnotherVictimPlayed);
+      websocketService.off('se-jugo-one-more', onOneMorePlayed);
       websocketService.off('actualizacion-mano', onHandUpdate);
       websocketService.off('jugar-set', onSetPlayed);
 

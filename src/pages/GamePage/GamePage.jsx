@@ -13,9 +13,9 @@ import CardDraft from '@/components/CardDraft/CardDraft.jsx'
 import SecretsModal from '@/components/SecretsModal/SecretsModal.jsx';
 import useDetectiveSecretReveal from '@/hooks/useDetectiveSecretReveal.jsx';
 import MySetsCarousel from '@/components/MySetsCarousel/MySetsCarousel.jsx';
+import MySecretsCarousel from '@/components/MySecretsCarousel/MySecretsCarousel.jsx';
 import SetSelectionModal from '@/components/EventModals/SetSelectionModal';
 import DisgraceOverlay from '@/components/UI/DisgraceOverlay';
-import MySecretCard from '@/components/MySecretCard/MySecretCard';
 
 import DiscardDeck from '@/components/DiscardDeck/DiscardDeck.jsx';
 // Hooks
@@ -42,13 +42,13 @@ const GamePage = () => {
     deckCount, currentTurn, /* turnOrder */ players,
     winners, asesinoGano,
     isDiscardButtonEnabled, currentPlayerId,
-    roles, secretCards, displayedOpponents, draftCards, discardPile,
+    roles, displayedOpponents, draftCards, discardPile,
     playerTurnState, selectedDraftCards, isPickupButtonEnabled,
     playedSetsByPlayer,
     isPlayButtonEnabled,
     isSecretsModalOpen, isSecretsLoading, playerSecretsData, viewingSecretsOfPlayer,
-    playersSecrets, setPlayersSecrets,
-    isPlayerSelectionModalOpen, eventCardToPlay, setEventCardInPlay, setPlayerSecretsData,
+    playersSecrets,
+    isPlayerSelectionModalOpen, setEventCardInPlay,
     canRevealSecrets, canHideSecrets, selectedSecretCard, canRobSecrets, isSetSelectionModalOpen,
     disgracedPlayerIds, isLocalPlayerDisgraced, mySecretCards
   } = gameState;
@@ -102,6 +102,18 @@ const GamePage = () => {
       } catch (error) {
         console.error("Error al refrescar sets tras Another Victim:", error);
       }
+    },
+
+    onOneMorePlayed: async (message) => {
+      const { jugador_id: actorId, objetivo_id: sourceId, destino_id: destinationId } = message;
+      const actorName = gameState.players.find(p => p.id_jugador === actorId)?.nombre_jugador || 'Un jugador';
+      const sourceName = gameState.players.find(p => p.id_jugador === sourceId)?.nombre_jugador || 'un jugador';
+      const destName = gameState.players.find(p => p.id_jugador === destinationId)?.nombre_jugador || 'otro jugador';
+
+      gameState.setEventCardInPlay({
+        imageName: '22-event_onemore.png',
+        message: `${actorName} robó un secreto de ${sourceName} y se lo dio a ${destName}`
+      });
     },
 
 
@@ -189,7 +201,8 @@ const GamePage = () => {
           const freshSecrets = await apiService.getMySecrets(gameId, gameState.currentPlayerId);
           const processedMySecrets = freshSecrets.map(secret => {
             const cardDetails = cardService.getSecretCards([{ id: secret.id }])[0];
-            return { ...secret, url: cardDetails?.url };
+            const revelada = Boolean(secret.bocaArriba || secret.revelada || secret.revelado);
+            return { ...secret, revelada, url: cardDetails?.url };
           });
           gameState.setMySecretCards(processedMySecrets);
         }
@@ -215,11 +228,18 @@ const GamePage = () => {
 
   useWebSocket(webSocketCallbacks);
   useGameData(gameId, gameState);
-  const { handleCardClick, handleDraftCardClick, handleDiscard, handlePickUp, handlePlay, handleEventActionConfirm } = useCardActions(gameId, gameState);
+  const { handleCardClick, handleDraftCardClick, handleDiscard, handlePickUp, handlePlay, handleEventActionConfirm, handleOneMoreSecretSelect } = useCardActions(gameId, gameState);
 
   const sortedHand = useMemo(() => {
     return [...hand].sort((a, b) => a.id - b.id);
   }, [hand]);
+  const mySecretsForCarousel = useMemo(() => {
+    return (mySecretCards || []).map((s, idx) => ({
+      instanceId: String(s.id_instancia ?? s.instanceId ?? `${s.url}-${idx}`),
+      url: s.url,
+      revelada: Boolean(s.revelada || s.bocaArriba || s.revelado),
+    }));
+  }, [mySecretCards]);
   const getPlayerEmoji = gameState.getPlayerEmoji;
   const isDrawingPhase = playerTurnState === 'drawing' && gameState.isMyTurn;
 
@@ -294,15 +314,8 @@ const GamePage = () => {
       <div className={`${styles.bottomContainer} ${(gameState.isMyTurn && !isDrawingPhase) ? styles.myTurn : ''}`}>
         {isLocalPlayerDisgraced && <DisgraceOverlay />}
         <div className={styles.playerArea}>
-          <div>
-            <div className={styles.secretCardsContainer}>
-              {mySecretCards.map((secret) => (
-                <div key={secret.id_instancia} className={styles.secretCardWrapper}>
-                  <MySecretCard secret={secret} />
-                </div>
-              ))}
-            </div>
-          </div>
+          {/* Secret cards carousel */}
+          <MySecretsCarousel secretCards={mySecretsForCarousel} />
 
           <div>
             <div data-testid="hand-container" className={styles.handContainer}>
@@ -368,24 +381,52 @@ const GamePage = () => {
         player={viewingSecretsOfPlayer}
         secrets={playerSecretsData}
         isLoading={isSecretsLoading}
-        canHideSecrets={canHideSecrets}
-        canRevealSecrets={canRevealSecrets}
-        canRobSecrets={canRobSecrets}
+        canHideSecrets={canHideSecrets && gameState.oneMoreStep !== 2}
+        canRevealSecrets={canRevealSecrets && gameState.oneMoreStep !== 2}
+        canRobSecrets={canRobSecrets && gameState.oneMoreStep !== 2}
         selectedSecret={selectedSecretCard}
-        onSecretSelect={handleSecretCardClick}
+        onSecretSelect={gameState.oneMoreStep === 2 ? (secretId) => {
+          // In OneMore flow, update selected secret state
+          gameState.setSelectedSecretCard(secretId);
+        } : handleSecretCardClick}
+        onConfirmSelection={gameState.oneMoreStep === 2 ? handleOneMoreSecretSelect : undefined}
         onRevealSecret={() => handleRevealSecret(viewingSecretsOfPlayer?.id_jugador)}
         onHideSecret={() => handleHideSecret(viewingSecretsOfPlayer?.id_jugador)}
         onRobSecret={() => handleRobSecret(viewingSecretsOfPlayer?.id_jugador)}
+        selectable={gameState.oneMoreStep === 2}
+        selectRevealedOnly={gameState.oneMoreStep === 2}
+        hideCloseButton={gameState.oneMoreStep === 2}
       />
 
       {detectiveModals}
 
       <PlayerSelectionModal
         isOpen={isPlayerSelectionModalOpen}
-        onClose={() => gameState.setPlayerSelectionModalOpen(false)}
-        players={opponentPlayers}
+        onClose={() => {
+          gameState.setPlayerSelectionModalOpen(false);
+          if (gameState.oneMoreStep > 0) {
+            // Reset OneMore flow if cancelled
+            gameState.setOneMoreStep(0);
+            gameState.setOneMoreSourcePlayer(null);
+            gameState.setOneMoreSelectedSecret(null);
+            gameState.setEventCardToPlay(null);
+          }
+        }}
+        players={
+          gameState.oneMoreStep === 1 
+            ? players.filter(p => (playersSecrets[p.id_jugador]?.revealed ?? 0) > 0) // Step 1: Only players with revealed secrets
+            : gameState.oneMoreStep === 3
+            ? players // Step 3: Allow choosing any player, including source
+            : opponentPlayers // Other events: only opponents
+        }
         onPlayerSelect={handleEventActionConfirm}
-        title="Cards off the Table: Elige un jugador"
+        title={
+          gameState.oneMoreStep === 1 
+            ? "And Then There Was One More: Elige un jugador con secretos revelados" 
+            : gameState.oneMoreStep === 3
+            ? "And Then There Was One More: Elige el jugador destino"
+            : "Cards off the Table: Elige un jugador"
+        }
       />
       <SetSelectionModal
         isOpen={isSetSelectionModalOpen}
