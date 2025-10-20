@@ -13,83 +13,83 @@ const resolveWinners = (rolesObj, playersList) => {
   const names = [];
   if (murderer?.nombre_jugador) names.push(murderer.nombre_jugador);
   if (accomplice?.nombre_jugador) names.push(accomplice.nombre_jugador);
-  return names.length ? names : null;
+  // Devolvemos null si no encontramos nombres, para diferenciar de "nadie ganó"
+  return names.length ? names : null; 
 };
 
 const GameOverModal = ({
-  winners,
-  asesinoGano,
+  winners, // Lista de nombres del WebSocket (puede estar vacía)
+  asesinoGano, // Booleano del WebSocket
   onReturnToMenu,
-  // Nuevos props para resolver ganadores dentro del modal
-  players = [],
-  roles = { murdererId: null, accompliceId: null },
-  setRoles, // opcional: para propagar roles obtenidos al padre
+  players = [], // Lista completa de jugadores con IDs y nombres
+  roles = { murdererId: null, accompliceId: null }, // Roles locales (pueden estar desactualizados)
+  setRoles,
   gameId,
 }) => {
-  const [computedWinners, setComputedWinners] = useState([]);
+  const [resolvedWinnerNames, setResolvedWinnerNames] = useState(null); // Estado para guardar nombres resueltos
 
-  // Calcular o re-calcular ganadores si la lista recibida está vacía
+  // Efecto para intentar resolver los nombres si no vienen del WebSocket
   useEffect(() => {
     let cancelled = false;
-
     const compute = async () => {
-      // Si vienen ganadores no vacíos desde props, úsalos directamente
+      // Si el WebSocket ya nos dio nombres, usamos esos.
       if (Array.isArray(winners) && winners.length > 0) {
-        if (!cancelled) setComputedWinners(winners);
+        if (!cancelled) setResolvedWinnerNames(winners);
         return;
       }
-
-      // Primero intentar con roles ya presentes en memoria
-      let names = resolveWinners(roles, players) || [];
-
-      // Fallback: obtener roles desde backend si no se pudieron resolver
-      if (names.length === 0 && gameId) {
-        try {
-          const rolesData = await apiService.getRoles(gameId);
-          const fetchedRoles = {
-            murdererId: rolesData?.['asesino-id'] ?? null,
-            accompliceId: rolesData?.['complice-id'] ?? null,
-          };
-          const recalculated = resolveWinners(fetchedRoles, players) || [];
-          if (!cancelled) setComputedWinners(recalculated);
-          // Propagar roles hacia el padre si se provee setter y no estaban establecidos
-          if (typeof setRoles === 'function' && !roles?.murdererId && fetchedRoles.murdererId) {
-            setRoles(fetchedRoles);
+      
+      // Si no hay nombres del WS Y el asesino ganó (o no sabemos), intentamos resolverlos.
+      if (asesinoGano || !Array.isArray(winners) || winners.length === 0) {
+        let names = resolveWinners(roles, players);
+        
+        // Si no pudimos resolver con roles locales, pedimos al backend
+        if (!names && gameId) {
+          try {
+            const rolesData = await apiService.getRoles(gameId);
+            const fetchedRoles = {
+              murdererId: rolesData?.['asesino-id'] ?? null,
+              accompliceId: rolesData?.['complice-id'] ?? null,
+            };
+            names = resolveWinners(fetchedRoles, players);
+            if (typeof setRoles === 'function' && !roles?.murdererId && fetchedRoles.murdererId) {
+              setRoles(fetchedRoles);
+            }
+          } catch (e) {
+            console.error('No se pudieron obtener roles al finalizar partida:', e);
           }
-          return;
-        } catch (e) {
-          console.error('No se pudieron obtener roles al finalizar partida:', e);
         }
+        if (!cancelled) setResolvedWinnerNames(names || []); // Guardamos [] si no se resuelve
+      } else {
+         // Si el asesino NO ganó y no hay winners, los ganadores son implícitamente los detectives
+         if (!cancelled) setResolvedWinnerNames([]); 
       }
-
-      if (!cancelled) setComputedWinners(names);
     };
-
     compute();
     return () => { cancelled = true; };
-  }, [winners, roles, players, gameId, setRoles]);
+  }, [winners, asesinoGano, roles, players, gameId, setRoles]);
 
-  const winnersToShow = useMemo(() => {
-    return (Array.isArray(computedWinners) && computedWinners.length > 0)
-      ? computedWinners
-      : (Array.isArray(winners) ? winners : []);
-  }, [computedWinners, winners]);
+  let mensaje = 'Calculando resultado...';
+  if (resolvedWinnerNames !== null) {
+    if (asesinoGano) {
+      if (resolvedWinnerNames.length === 0) {
+        mensaje = "¡El Asesino se escapó!"; // Asesino ganó, pero no pudimos obtener el nombre
+      } else if (resolvedWinnerNames.length === 1) {
+        mensaje = `¡El asesino ${resolvedWinnerNames[0]} ganó la partida!`; // Gana solo el asesino
+      } else {
+        mensaje = `¡El asesino y su cómplice (${resolvedWinnerNames.join(', ')}) ganaron la partida!`; // Ganan ambos
+      }
+    } else {
+      // Si asesinoGano es false
+      mensaje = "¡Ganan los detectives!"; 
+    }
+  }
 
-  let mensaje = '';
-  if (asesinoGano && winnersToShow.length === 1) {
-    mensaje = `El asesino ${winnersToShow[0]} ganó la partida`;
-  }
-  else if (asesinoGano && winnersToShow.length > 1) {
-    mensaje = `El asesino y su cómplice (${winnersToShow.join(', ')}) ganaron la partida`;
-  }
-  else {
-    mensaje = `${winnersToShow.join(', ')} ${winnersToShow.length > 1 ? 'ganaron' : 'ganó'} la partida`;
-  }
   return (
     <div className={styles.overlay}>
       <div className={styles.modal}>
         <h2 className={styles.title}>¡Fin de partida!</h2>
-        <p className={styles.winnerText}>{mensaje}</p>
+        {resolvedWinnerNames !== null && <p className={styles.winnerText}>{mensaje}</p>}
+        {resolvedWinnerNames === null && <p className={styles.winnerText}>Cargando resultado...</p>} 
         <button onClick={onReturnToMenu} className={styles.returnButton}>
           Volver al menú principal
         </button>
@@ -97,12 +97,10 @@ const GameOverModal = ({
     </div>
   );
 };
-
 GameOverModal.propTypes = {
   winners: PropTypes.arrayOf(PropTypes.string).isRequired,
   asesinoGano: PropTypes.bool.isRequired,
   onReturnToMenu: PropTypes.func.isRequired,
-  // Nuevos props opcionales
   players: PropTypes.array,
   roles: PropTypes.shape({
     murdererId: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),

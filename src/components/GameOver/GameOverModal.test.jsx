@@ -58,7 +58,7 @@ describe('GameOverModal', () => {
     it('debe mostrar mensaje correcto cuando un jugador gana (no asesino)', () => {
       render(<GameOverModal {...defaultProps} />);
 
-      expect(screen.getByText('Jugador1 ganó la partida')).toBeInTheDocument();
+      expect(screen.getByText('¡Ganan los detectives!')).toBeInTheDocument();
     });
 
     it('debe mostrar mensaje correcto cuando múltiples jugadores ganan (no asesino)', () => {
@@ -68,7 +68,7 @@ describe('GameOverModal', () => {
       };
       render(<GameOverModal {...props} />);
 
-      expect(screen.getByText('Jugador1, Jugador2 ganaron la partida')).toBeInTheDocument();
+      expect(screen.getByText('¡Ganan los detectives!')).toBeInTheDocument();
     });
 
     it('debe mostrar mensaje correcto cuando el asesino gana solo', () => {
@@ -79,7 +79,7 @@ describe('GameOverModal', () => {
       };
       render(<GameOverModal {...props} />);
 
-      expect(screen.getByText('El asesino Asesino ganó la partida')).toBeInTheDocument();
+      expect(screen.getByText('¡El asesino Asesino ganó la partida!')).toBeInTheDocument();
     });
 
     it('debe mostrar mensaje correcto cuando el asesino y cómplice ganan', () => {
@@ -90,7 +90,7 @@ describe('GameOverModal', () => {
       };
       render(<GameOverModal {...props} />);
 
-      expect(screen.getByText('El asesino y su cómplice (Asesino, Cómplice) ganaron la partida')).toBeInTheDocument();
+      expect(screen.getByText('¡El asesino y su cómplice (Asesino, Cómplice) ganaron la partida!')).toBeInTheDocument();
     });
   });
 
