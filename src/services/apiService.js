@@ -94,6 +94,12 @@ const createHttpService = () => {
     });
   };
 
+  const abandonGame = async (gameId, playerId) => {
+    return request(`/partidas/${gameId}/abandonar?id_jugador=${playerId}`, {
+      method: "POST",
+    });
+  };
+
   const getMySecrets = async (gameId, playerId) => {
     return request(`/partidas/${gameId}/secretos?id_jugador=${playerId}`, {
       method: "GET",
@@ -246,6 +252,7 @@ const createHttpService = () => {
     joinGame,
     getGameDetails,
     startGame,
+    abandonGame,
     discardCards,
     getHand,
     getTurn,

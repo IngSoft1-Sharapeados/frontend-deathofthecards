@@ -14,6 +14,7 @@ const GameLobbyPage = () => {
   const [currentPlayerId, setCurrentPlayerId] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isCancelledModalOpen, setIsCancelledModalOpen] = useState(false);
 
   useEffect(() => {
     const storedPlayerId = sessionStorage.getItem('playerId');
@@ -55,12 +56,26 @@ const GameLobbyPage = () => {
       navigate(`/partidas/${gameId}/juego`);
     };
 
+    const handleGameCancelled = () => {
+      // Host abandoned; show modal and on confirm navigate home
+      setIsCancelledModalOpen(true);
+    };
+
+    const handlePlayerLeft = (message) => {
+      const leftId = message['id-jugador'];
+      setPlayers(prev => prev.filter(p => p.id_jugador !== leftId));
+    };
+
     websocketService.on('union-jugador', handlePlayerJoined);
     websocketService.on('iniciar-partida', handleGameStarted);
+    websocketService.on('partida-cancelada', handleGameCancelled);
+    websocketService.on('abandono-jugador', handlePlayerLeft);
 
     return () => {
       websocketService.off('union-jugador', handlePlayerJoined);
       websocketService.off('iniciar-partida', handleGameStarted);
+      websocketService.off('partida-cancelada', handleGameCancelled);
+      websocketService.off('abandono-jugador', handlePlayerLeft);
       websocketService.disconnect();
     };
   }, [gameId, navigate]);
@@ -72,6 +87,24 @@ const GameLobbyPage = () => {
       await apiService.startGame(gameId, currentPlayerId);
     } catch (err) {
       alert(`Error al iniciar la partida: ${err.message}`);
+    }
+  };
+
+  const handleAbandonGame = async () => {
+    if (!currentPlayerId) return;
+    const confirmMsg = isHost
+      ? 'Sos el anfitrión: abandonar eliminará la partida para todos. ¿Deseás continuar?'
+      : '¿Seguro que querés abandonar la sala?';
+    const confirmed = window.confirm(confirmMsg);
+    if (!confirmed) return;
+
+    try {
+      await apiService.abandonGame(gameId, currentPlayerId);
+      // Si es host, el backend emitirá 'partida-cancelada' y mostraremos modal.
+      // En cualquier caso, llevamos al usuario al Home.
+      navigate('/');
+    } catch (err) {
+      alert(`No se pudo abandonar la partida: ${err.message}`);
     }
   };
 
@@ -102,6 +135,12 @@ const GameLobbyPage = () => {
             >
               Iniciar Partida ({players.length}/{gameDetails.minJugadores})
             </button>
+            <button
+              className={`${styles.startButton} ${styles.dangerButton}`}
+              onClick={handleAbandonGame}
+            >
+              Cancelar partida
+            </button>
             {!canStart && (
               <p className={styles.waitingMessage}>
                 Faltan {gameDetails.minJugadores - players.length} jugadores para comenzar.
@@ -109,11 +148,29 @@ const GameLobbyPage = () => {
             )}
           </div>
         ) : (
-          <p className={styles.waitingMessage}>
-            Esperando que el anfitrión inicie la partida... ({players.length}/{gameDetails.minJugadores} jugadores)
-          </p>
+          <div>
+            <p className={styles.waitingMessage}>
+              Esperando que el anfitrión inicie la partida... ({players.length}/{gameDetails.minJugadores} jugadores)
+            </p>
+            <button
+              className={`${styles.startButton} ${styles.dangerButton}`}
+              onClick={handleAbandonGame}
+            >
+              Abandonar sala
+            </button>
+          </div>
         )}
       </main>
+
+      {isCancelledModalOpen && (
+        <div className={styles.overlay}>
+          <div className={styles.modal}>
+            <h2>La partida fue cancelada</h2>
+            <p>El anfitrión abandonó la sala. Serás redirigido al inicio.</p>
+            <button className={styles.returnButton} onClick={() => navigate('/')}>Volver al inicio</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

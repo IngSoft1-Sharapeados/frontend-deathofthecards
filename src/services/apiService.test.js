@@ -72,6 +72,20 @@ describe('apiService', () => {
       await apiService.startGame('123', 2);
       expect(fetch).toHaveBeenCalledWith(expect.stringContaining('/partidas/123'), expect.anything());
     });
+
+    it('abandonGame hace POST al endpoint correcto', async () => {
+      const mockResponse = { success: true };
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(mockResponse)
+      }));
+      const result = await apiService.abandonGame(1, 2);
+      expect(fetch).toHaveBeenCalledWith(
+        expect.stringContaining('/partidas/1/abandonar?id_jugador=2'),
+        expect.objectContaining({ method: 'POST' })
+      );
+      expect(result).toEqual(mockResponse);
+    });
   });
 
   describe('Card Operations', () => {
