@@ -248,9 +248,8 @@ const useCardActions = (gameId, gameState) => {
     }
   };
 
-    // NUEVA FUNCIÓN PARA CONFIRMAR LA SELECCIÓN DEL DESCARTE
   const handleLookIntoAshesConfirm = async () => {
-    // Asegúrate de que estas variables estén disponibles
+
     if (!gameState.selectedDiscardCard || !eventCardToPlay) return;
     
     try {
@@ -268,7 +267,6 @@ const useCardActions = (gameId, gameState) => {
         selectedCard.originalId // id_carta_objetivo
       );
 
-      // Éxito - mostrar notificación
       const playerName = players.find(p => p.id_jugador === currentPlayerId)?.nombre_jugador || 'Alguien';
       const eventCardData = cardService.getEventCardData(eventCardToPlay.id);
       
@@ -277,8 +275,22 @@ const useCardActions = (gameId, gameState) => {
         message: `${playerName} jugó "Look Into The Ashes" y recuperó una carta del descarte!`
       });
 
+          //ACTUALIZAR LA MANO 
+      try {
+        const freshHandData = await apiService.getHand(gameId, currentPlayerId);
+        const playingHand = cardService.getPlayingHand(freshHandData);
+        const handWithInstanceIds = playingHand.map((card, index) => ({
+          ...card,
+          instanceId: `${card.id}-sync-${Date.now()}-${index}`,
+        }));
+        setHand(handWithInstanceIds);
+      } catch (e) {
+        console.warn('No se pudo sincronizar la mano después de Look Into The Ashes:', e);
+        // Fallback: eliminar solo la carta de evento jugada
+        setHand(prev => prev.filter(card => card.instanceId !== eventCardToPlay.instanceId));
+      }
+
       // Limpiar estado completamente
-      setHand(prev => prev.filter(card => card.instanceId !== eventCardToPlay.instanceId));
       setSelectedCards([]);
       setHasPlayedSetThisTurn(true);
       setPlayerTurnState('discarding');
