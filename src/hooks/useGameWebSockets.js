@@ -21,9 +21,12 @@ const useWebSocket = (callbacks) => {
 
     const onGameEnd = (message) => {
       console.log('Fin de partida:', message);
+
+      const data = message.payload || message;
+
       callbacksRef.current.onGameEnd?.({
-        winners: message.ganadores || [],
-        asesinoGano: message.asesino_gano || false
+        winners: data.ganadores || [],
+        asesinoGano: data.asesinoGano ?? data.asesino_gano ?? false
       });
     };
 
@@ -31,6 +34,7 @@ const useWebSocket = (callbacks) => {
       console.log('Actualización de draft:', message);
       callbacksRef.current.onDraftUpdate?.(message['mazo-draft']);
     };
+
 
 
     const onSetPlayed = (message) => {
@@ -104,7 +108,7 @@ const useWebSocket = (callbacks) => {
     websocketService.on('jugar-set', onSetPlayed);
     websocketService.on('actualizacion-mano', onHandUpdate);
     websocketService.on('se-jugo-delay-escape', onDelayEscapePlayed);
-    websocketService.on('se-jugo-look-into-the-ashes', onLookIntoTheAshesPlayed);   
+    websocketService.on('se-jugo-look-into-the-ashes', onLookIntoTheAshesPlayed);
     websocketService.on('se-jugo-early-train', onEarlyTrainPlayed);
     websocketService.on('actualizacion-secreto', onSecretUpdate);
 
