@@ -24,7 +24,15 @@ const useCardActions = (gameId, gameState) => {
     isMyTurn, players,
     playerTurnState, setPlayerTurnState, setSelectedDraftCards,
     hasPlayedSetThisTurn, setHasPlayedSetThisTurn, setConfirmationModalOpen,
-    setPlayerSelectionModalOpen, setEventCardToPlay, eventCardToPlay, setSetSelectionModalOpen, isLocalPlayerDisgraced
+    setPlayerSelectionModalOpen, setEventCardToPlay, eventCardToPlay, setSetSelectionModalOpen,
+    // OneMore states
+    oneMoreStep, setOneMoreStep,
+    oneMoreSourcePlayer, setOneMoreSourcePlayer,
+    oneMoreSelectedSecret, setOneMoreSelectedSecret,
+    oneMoreDestinationPlayer, setOneMoreDestinationPlayer,
+    setIsSecretsModalOpen, setViewingSecretsOfPlayer, setPlayerSecretsData, setIsSecretsLoading,
+    setSelectedSecretCard,
+    isLocalPlayerDisgraced
   } = gameState;
 
   const handleCardClick = useCallback((instanceId) => {
@@ -127,9 +135,126 @@ const useCardActions = (gameId, gameState) => {
   const handleEventActionConfirm = async (payload) => {
     if (!eventCardToPlay) return;
 
-    try {
-      const { id: cardId, instanceId } = eventCardToPlay;
+    const { id: cardId, instanceId } = eventCardToPlay;
+    
+    // Special handling for OneMore event flow
+    if (cardId === CARD_IDS.ONE_MORE) {
+      try {
+        if (oneMoreStep === 1) {
+          // Step 1: Source player selected, now show secrets modal
+          const sourcePlayerId = payload;
+          setOneMoreSourcePlayer(sourcePlayerId);
+          setPlayerSelectionModalOpen(false);
+          
+          // Open secrets modal for the source player
+          const sourcePlayer = players.find(p => p.id_jugador === sourcePlayerId);
+          setViewingSecretsOfPlayer(sourcePlayer);
+          setIsSecretsModalOpen(true);
+          setIsSecretsLoading(true);
+          
+          try {
+            const secretsFromApi = await apiService.getPlayerSecrets(gameId, sourcePlayerId);
+            const processedSecrets = secretsFromApi
+              .filter(s => s.bocaArriba) // Only show revealed secrets
+              .map(secret => {
+                if (secret.carta_id) {
+                  const cardDetails = cardService.getSecretCards([{ id: secret.carta_id }])[0];
+                  return { 
+                    ...secret, 
+                    url: cardDetails.url,
+                    nombre: cardDetails.nombre || secret.nombre 
+                  };
+                }
+                return secret;
+              });
+            setPlayerSecretsData(processedSecrets);
+            setOneMoreStep(2);
+          } catch (error) {
+            console.error("Error al obtener secretos:", error);
+            setPlayerSecretsData([]);
+            throw error;
+          } finally {
+            setIsSecretsLoading(false);
+          }
+          return; // Don't finish the event yet
+        } else if (oneMoreStep === 2) {
+          // Step 2: Secret selected, now show player selection for destination
+          const secretId = payload;
+          setOneMoreSelectedSecret(secretId);
+          setIsSecretsModalOpen(false);
+          setPlayerSelectionModalOpen(true);
+          setOneMoreStep(3);
+          setSelectedSecretCard(null); // Clear selection for next modal
+          return; // Don't finish the event yet
+        } else if (oneMoreStep === 3) {
+          // Step 3: Destination player selected, execute the event
+          const destinationPlayerId = payload;
+          setOneMoreDestinationPlayer(destinationPlayerId);
+          
+          const playerName = players.find(p => p.id_jugador === currentPlayerId)?.nombre_jugador || 'Alguien';
+          const eventCardData = cardService.getEventCardData(cardId);
+          
+          gameState.setEventCardInPlay({
+            imageName: eventCardData.url,
+            message: `${playerName} jugó una carta de evento!` 
+          });
+          
+          // Get the actual selected secret value (state might not be updated yet)
+          const actualSecretId = oneMoreSelectedSecret;
+          
+          if (!actualSecretId) {
+            throw new Error('No se seleccionó un secreto válido');
+          }
+          
+          await apiService.playOneMore(gameId, currentPlayerId, cardId, {
+            id_fuente: oneMoreSourcePlayer,
+            id_destino: destinationPlayerId,
+            id_unico_secreto: actualSecretId
+          });
+          
+          // Reset OneMore state and clean up
+          setOneMoreStep(0);
+          setOneMoreSourcePlayer(null);
+          setOneMoreSelectedSecret(null);
+          setOneMoreDestinationPlayer(null);
+          setPlayerSelectionModalOpen(false);
+          setEventCardToPlay(null);
+          setSelectedSecretCard(null);
+          
+          // Remove card from hand
+          setHand(prev => prev.filter(card => card.instanceId !== instanceId));
+          setSelectedCards([]);
+          setHasPlayedSetThisTurn(true);
+          setPlayerTurnState('discarding');
+          return;
+        }
+      } catch (error) {
+        console.error(`Error en flujo OneMore:`, error);
+        // Better error message handling
+        let errorMessage = 'Error desconocido';
+        if (error.message) {
+          errorMessage = error.message;
+        } else if (typeof error === 'string') {
+          errorMessage = error;
+        } else if (error.detail) {
+          errorMessage = error.detail;
+        }
+        alert(`Error jugando OneMore: ${errorMessage}`);
+        // Reset everything on error
+        setOneMoreStep(0);
+        setOneMoreSourcePlayer(null);
+        setOneMoreSelectedSecret(null);
+        setOneMoreDestinationPlayer(null);
+        setIsSecretsModalOpen(false);
+        setPlayerSelectionModalOpen(false);
+        setEventCardToPlay(null);
+        setSelectedSecretCard(null);
+        return;
+      }
+    }
 
+    // Handle other event cards
+    try {
       const playerName = players.find(p => p.id_jugador === currentPlayerId)?.nombre_jugador || 'Alguien';
       const eventCardData = cardService.getEventCardData(cardId);
 
@@ -171,7 +296,7 @@ const useCardActions = (gameId, gameState) => {
       console.error(`Error al jugar el evento ${eventCardToPlay.id}:`, error);
       alert(`Error: ${error.message}`);
     } finally {
-      // Siempre cerramos todos los modales y reseteamos el estado del evento
+      // Close modals for other events
       setPlayerSelectionModalOpen(false);
       setConfirmationModalOpen(false);
       setSetSelectionModalOpen(false);
@@ -236,6 +361,21 @@ const useCardActions = (gameId, gameState) => {
         setConfirmationModalOpen(true);
         break;
       }
+      case CARD_IDS.ONE_MORE: {
+        const cardInstance = hand.find(c => c.instanceId === selectedCards[0]);
+        setEventCardToPlay({ id: cardInstance.id, instanceId: cardInstance.instanceId });
+        // Check eligible source players (with at least one revealed secret)
+        const eligibleSources = players.filter(p => (gameState.playersSecrets[p.id_jugador]?.revealed ?? 0) > 0);
+        if (eligibleSources.length === 0) {
+          alert('Ningún jugador tiene secretos revelados para robar.');
+          // Do not start OneMore flow; keep normal turn flow
+          setEventCardToPlay(null);
+          return;
+        }
+        setOneMoreStep(1); // Start OneMore flow
+        setPlayerSelectionModalOpen(true);
+        break;
+      }
       default:
         console.warn("Evento de carta no implementado:", cardId);
     }
@@ -248,6 +388,11 @@ const useCardActions = (gameId, gameState) => {
     handlePickUp,
     handlePlay,
     handleEventActionConfirm,
+    handleOneMoreSecretSelect: (secretId) => {
+      if (oneMoreStep === 2) {
+        handleEventActionConfirm(secretId);
+      }
+    }
   };
 };
 

@@ -12,7 +12,7 @@ const createHttpService = () => {
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.detail || `Error ${response.status}`);
+      throw new Error(errorData.detail || 'Error en la petición');
     }
     return response.json();
   };
@@ -203,6 +203,17 @@ const createHttpService = () => {
     });
   };
 
+  const playOneMore = async (gameId, playerId, cardId, payload) => {
+    return request(`/partidas/${gameId}/evento/OneMore?id_jugador=${playerId}&id_carta=${cardId}`, {
+      method: "PUT",
+      body: JSON.stringify({
+        id_fuente: payload.id_fuente,
+        id_destino: payload.id_destino,
+        id_unico_secreto: payload.id_unico_secreto
+      }),
+    });
+  };
+
   const playDelayTheMurdererEscape = async (gameId, playerId, cardId, amount) => {
     return request(`/partidas/${gameId}/evento/DelayMurderer?id_jugador=${playerId}&id_carta=${cardId}&cantidad=${amount}`, {
       method: "PUT",
@@ -240,6 +251,7 @@ const createHttpService = () => {
     revealOwnSecret,
     robSecret,
     playAnotherVictim,
+    playOneMore,
     playDelayTheMurdererEscape
   };
 };

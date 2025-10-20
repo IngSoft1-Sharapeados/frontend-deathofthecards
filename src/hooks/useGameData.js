@@ -43,11 +43,6 @@ const useGameData = (gameId, gameState) => {
           ]);
 
 
-          // Habilitar interacciones de secretos (se ajustará según sets jugados)
-          if (gameState.setCanRevealSecrets) gameState.setCanRevealSecrets(true); // F5
-          if (gameState.setCanHideSecrets) gameState.setCanHideSecrets(true);
-
-
           // Actualizar estado del juego
           setDeckCount(deckData);
           setCurrentTurn(turnData);
@@ -96,8 +91,11 @@ const useGameData = (gameId, gameState) => {
 
           const processedMySecrets = secretCardsData.map(secret => {
             const cardDetails = cardService.getSecretCards([{ id: secret.id }])[0];
+            // Normalizamos bandera de revelado para el front
+            const revelada = Boolean(secret.bocaArriba || secret.revelada || secret.revelado);
             return {
-              ...secret, 
+              ...secret,
+              revelada,
               url: cardDetails?.url,
             };
           });
