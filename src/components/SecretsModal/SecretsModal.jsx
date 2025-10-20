@@ -88,7 +88,7 @@ const SecretsModal = ({
           )}
           {selectable && selectRevealedOnly && selectedSecret && (
             <button
-              className="confirm-button"
+              className={styles.revealButton}
               onClick={() => {
                 onConfirmSelection(selectedSecret);
               }}

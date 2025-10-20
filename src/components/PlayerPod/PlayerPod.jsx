@@ -140,60 +140,11 @@ const PlayerPod = ({ player, isCurrentTurn, roleEmoji, onSecretsClick, playerSec
                         <span className={styles.playerName}>{player.nombre_jugador}</span>
                     </div>
                     <div className={styles.secretsInfo} onClick={() => onSecretsClick(player)}>
-                        {totalSecrets <= 3 ? (
-                            // Original display for 3 or fewer secrets
-                            <>
-                                <img src={secretCardBack} alt="Secret card back" className={styles.secretCardImage} />
-                                <div className={styles.secretStats}>
-                                    <span><EyeIcon /> {revealedCount}</span>
-                                    <span><LockIcon /> {hiddenCount}</span>
-                                </div>
-                            </>
-                        ) : (
-                            // Carousel display for more than 3 secrets
-                            <div className={styles.secretsCarousel}>
-                                <div className={styles.secretsScroller}>
-                                    {canGoPrevSecret && (
-                                        <button
-                                            aria-label="Previous secret"
-                                            className={`${styles.secretArrowButton} ${styles.left}`}
-                                            onClick={handlePrevSecret}
-                                        >
-                                            <ArrowIcon />
-                                        </button>
-                                    )}
-                                    
-                                    <div className={styles.secretsTrack}>
-                                        {visibleSecrets.map((secret, index) => (
-                                            <div key={`secret-${secret.id}`} className={styles.miniSecretCard}>
-                                                <img 
-                                                    src={secretCardBack} 
-                                                    alt={secret.type === 'revealed' ? 'Secreto revelado' : 'Secreto oculto'} 
-                                                    className={styles.miniSecretImage}
-                                                />
-                                                <div className={styles.miniSecretIcon}>
-                                                    {secret.type === 'revealed' ? <EyeIcon /> : <LockIcon />}
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                    
-                                    {canGoNextSecret && (
-                                        <button
-                                            aria-label="Next secret"
-                                            className={`${styles.secretArrowButton} ${styles.right}`}
-                                            onClick={handleNextSecret}
-                                        >
-                                            <ArrowIcon />
-                                        </button>
-                                    )}
-                                </div>
-                                <div className={styles.secretStats}>
-                                    <span><EyeIcon /> {revealedCount}</span>
-                                    <span><LockIcon /> {hiddenCount}</span>
-                                </div>
-                            </div>
-                        )}
+                        <img src={secretCardBack} alt="Secret card back" className={styles.secretCardImage} />
+                        <div className={styles.secretStats}>
+                            <span><EyeIcon /> {revealedCount}</span>
+                            <span><LockIcon /> {hiddenCount}</span>
+                        </div>
                     </div>
                 </div>
             </div>

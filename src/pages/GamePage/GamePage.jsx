@@ -414,9 +414,9 @@ const GamePage = () => {
         }}
         players={
           gameState.oneMoreStep === 1 
-            ? players // Step 1: Show all players (including current player)
+            ? players.filter(p => (playersSecrets[p.id_jugador]?.revealed ?? 0) > 0) // Step 1: Only players with revealed secrets
             : gameState.oneMoreStep === 3
-            ? players.filter(p => p.id_jugador !== gameState.oneMoreSourcePlayer) // Step 3: All players except source
+            ? players // Step 3: Allow choosing any player, including source
             : opponentPlayers // Other events: only opponents
         }
         onPlayerSelect={handleEventActionConfirm}

@@ -351,6 +351,14 @@ const useCardActions = (gameId, gameState) => {
       case CARD_IDS.ONE_MORE: {
         const cardInstance = hand.find(c => c.instanceId === selectedCards[0]);
         setEventCardToPlay({ id: cardInstance.id, instanceId: cardInstance.instanceId });
+        // Check eligible source players (with at least one revealed secret)
+        const eligibleSources = players.filter(p => (gameState.playersSecrets[p.id_jugador]?.revealed ?? 0) > 0);
+        if (eligibleSources.length === 0) {
+          alert('Ningún jugador tiene secretos revelados para robar.');
+          // Do not start OneMore flow; keep normal turn flow
+          setEventCardToPlay(null);
+          return;
+        }
         setOneMoreStep(1); // Start OneMore flow
         setPlayerSelectionModalOpen(true);
         break;
