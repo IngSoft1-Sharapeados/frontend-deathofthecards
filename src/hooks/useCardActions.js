@@ -267,14 +267,6 @@ const useCardActions = (gameId, gameState) => {
         selectedCard.originalId // id_carta_objetivo
       );
 
-      const playerName = players.find(p => p.id_jugador === currentPlayerId)?.nombre_jugador || 'Alguien';
-      const eventCardData = cardService.getEventCardData(eventCardToPlay.id);
-      
-      gameState.setEventCardInPlay({
-        imageName: eventCardData.url,
-        message: `${playerName} jugó "Look Into The Ashes" y recuperó una carta del descarte!`
-      });
-
           //ACTUALIZAR LA MANO 
       try {
         const freshHandData = await apiService.getHand(gameId, currentPlayerId);

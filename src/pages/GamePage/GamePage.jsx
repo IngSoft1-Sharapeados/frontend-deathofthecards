@@ -170,7 +170,22 @@ const GamePage = () => {
         );
       }
     },
+    onLookIntoTheAshesPlayed: (message) => {
+      const { playerId } = message;
+      const playerName = players.find(p => p.id_jugador === playerId)?.nombre_jugador || 'Alguien';
+      
+      // Mostrar notificación automáticamente cuando se recibe el WebSocket
+      setEventCardInPlay({
+        imageName: cardService.getCardImageUrl(20), // URL de la carta "Look Into The Ashes"
+        message: `${playerName} jugó "Look Into The Ashes"!`
+      });
 
+      // Auto-ocultar después de 3 segundos
+      setTimeout(() => {
+        setEventCardInPlay(null);
+      }, 3000);
+    },
+    
     onDiscardUpdate: (discardPile) => gameState.setDiscardPile(discardPile),
   };
 
