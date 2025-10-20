@@ -3,7 +3,6 @@ import '@testing-library/jest-dom';
 import { describe, test, expect, beforeEach, vi } from 'vitest';
 import GamePage from './GamePage';
 
-// --- MOCK DEFINITIONS ---
 const mockUseGameState = {
   hand: [],
   selectedCards: [],
@@ -12,33 +11,28 @@ const mockUseGameState = {
   turnOrder: [],
   isMyTurn: true,
   isDiscardButtonEnabled: false,
+  isPlayButtonEnabled: false,
+  isPickupButtonEnabled: false,
   currentPlayerId: 1,
   deckCount: 52,
   currentTurn: 1,
   roles: { murdererId: null, accompliceId: null },
-  secretCards: [],
-  playerTurnState: 'discarding',
+  mySecretCards: [],
   draftCards: [],
   selectedDraftCards: [],
-  isPickupButtonEnabled: false,
-  isPlayButtonEnabled: false,
   playedSetsByPlayer: {},
   displayedOpponents: [],
   getPlayerEmoji: () => null,
+  disgracedPlayerIds: new Set(),
+  isLocalPlayerDisgraced: false,
   setDeckCount: vi.fn(),
   setCurrentTurn: vi.fn(),
   setDraftCards: vi.fn(),
   setWinners: vi.fn(),
   setAsesinoGano: vi.fn(),
-
   setPlayedSetsByPlayer: vi.fn(),
-
   setPlayerTurnState: vi.fn(),
-  setIsSecretsModalOpen: vi.fn(),
-  setViewingSecretsOfPlayer: vi.fn(),
-  setPlayerSecretsData: vi.fn(),
-  setIsSecretsLoading: vi.fn(),
-
+  setDisgracedPlayerIds: vi.fn(),
 };
 
 const mockUseCardActions = {
