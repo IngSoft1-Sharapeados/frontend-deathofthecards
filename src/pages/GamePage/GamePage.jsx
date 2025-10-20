@@ -272,7 +272,7 @@ const GamePage = () => {
   useWebSocket(webSocketCallbacks);
   useGameData(gameId, gameState);
   const { handleCardClick, handleDraftCardClick, handleDiscard,
-     handlePickUp, handlePlay, handleEventActionConfirm, handleLookIntoAshesConfirm , handleOneMoreSecretSelect } = useCardActions(gameId, gameState);
+     handlePickUp, handlePlay, handleEventActionConfirm, handleLookIntoAshesConfirm , handleOneMoreSecretSelect } = useCardActions(gameId, gameState, handleSetPlayedEvent);
 
   const sortedHand = useMemo(() => {
     return [...hand].sort((a, b) => a.id - b.id);

@@ -16,7 +16,7 @@ const CARD_IDS = {
   POINT_SUSPICIONS: 25,
 };
 
-const useCardActions = (gameId, gameState) => {
+const useCardActions = (gameId, gameState, onSetEffectTrigger) => {
   const {
     hand, setHand, selectedDraftCards, draftCards,
     selectedCards, setSelectedCards,
@@ -75,7 +75,7 @@ const useCardActions = (gameId, gameState) => {
 
       if (isEarlyTrainDiscard) {
         await apiService.playEarlyTrainToPaddington(gameId, currentPlayerId, cardToDiscard.id);
-        
+
 
       } else {
         const cardIdsToDiscard = selectedCards
@@ -86,7 +86,7 @@ const useCardActions = (gameId, gameState) => {
 
       setHand(prev => prev.filter(card => !selectedCards.includes(card.instanceId)));
       setSelectedCards([]);
-      
+
       setPlayerTurnState(prev => {
         const remaining = hand.filter(c => !selectedCards.includes(c.instanceId)).length;
         return remaining < 6 ? 'drawing' : 'discarding';
@@ -156,13 +156,13 @@ const useCardActions = (gameId, gameState) => {
           const sourcePlayerId = payload;
           setOneMoreSourcePlayer(sourcePlayerId);
           setPlayerSelectionModalOpen(false);
-          
+
           // Open secrets modal for the source player
           const sourcePlayer = players.find(p => p.id_jugador === sourcePlayerId);
           setViewingSecretsOfPlayer(sourcePlayer);
           setIsSecretsModalOpen(true);
           setIsSecretsLoading(true);
-          
+
           try {
             const secretsFromApi = await apiService.getPlayerSecrets(gameId, sourcePlayerId);
             const processedSecrets = secretsFromApi
@@ -170,10 +170,10 @@ const useCardActions = (gameId, gameState) => {
               .map(secret => {
                 if (secret.carta_id) {
                   const cardDetails = cardService.getSecretCards([{ id: secret.carta_id }])[0];
-                  return { 
-                    ...secret, 
+                  return {
+                    ...secret,
                     url: cardDetails.url,
-                    nombre: cardDetails.nombre || secret.nombre 
+                    nombre: cardDetails.nombre || secret.nombre
                   };
                 }
                 return secret;
@@ -201,28 +201,28 @@ const useCardActions = (gameId, gameState) => {
           // Step 3: Destination player selected, execute the event
           const destinationPlayerId = payload;
           setOneMoreDestinationPlayer(destinationPlayerId);
-          
+
           const playerName = players.find(p => p.id_jugador === currentPlayerId)?.nombre_jugador || 'Alguien';
           const eventCardData = cardService.getEventCardData(cardId);
-          
+
           gameState.setEventCardInPlay({
             imageName: eventCardData.url,
-            message: `${playerName} jugó una carta de evento!` 
+            message: `${playerName} jugó una carta de evento!`
           });
-          
+
           // Get the actual selected secret value (state might not be updated yet)
           const actualSecretId = oneMoreSelectedSecret;
-          
+
           if (!actualSecretId) {
             throw new Error('No se seleccionó un secreto válido');
           }
-          
+
           await apiService.playOneMore(gameId, currentPlayerId, cardId, {
             id_fuente: oneMoreSourcePlayer,
             id_destino: destinationPlayerId,
             id_unico_secreto: actualSecretId
           });
-          
+
           // Reset OneMore state and clean up
           setOneMoreStep(0);
           setOneMoreSourcePlayer(null);
@@ -231,7 +231,7 @@ const useCardActions = (gameId, gameState) => {
           setPlayerSelectionModalOpen(false);
           setEventCardToPlay(null);
           setSelectedSecretCard(null);
-          
+
           // Remove card from hand
           setHand(prev => prev.filter(card => card.instanceId !== instanceId));
           setSelectedCards([]);
@@ -282,14 +282,22 @@ const useCardActions = (gameId, gameState) => {
         }
         case CARD_IDS.ANOTHER_VICTIM: {
           const targetSet = payload;
-          console.log('another victim data: ', cardId, targetSet);
           await apiService.playAnotherVictim(gameId, currentPlayerId, cardId, targetSet);
+
+          if (onSetEffectTrigger) {
+            console.log("Disparando efecto del set robado:", targetSet);
+            const effectPayload = {
+              jugador_id: currentPlayerId, 
+              representacion_id: targetSet.representacion_id_carta
+            };
+            onSetEffectTrigger(effectPayload);
+          }
           break;
-         }
+        }
         case CARD_IDS.LOOK_ASHES: {
           // Este caso ahora se maneja en handleLookIntoAshesConfirm
           await handleLookIntoAshesConfirm();
-          break; 
+          break;
         }
         case CARD_IDS.EARLY_TRAIN: {
           await apiService.playEarlyTrainToPaddington(gameId, currentPlayerId, cardId);
@@ -365,13 +373,13 @@ const useCardActions = (gameId, gameState) => {
   const handleLookIntoTheAshes = async () => {
     try {
       const cardInstance = hand.find(c => c.instanceId === selectedCards[0]);
-      
+
       // Primera llamada - jugar la carta sin objetivo
       await apiService.playLookIntoTheAshes(gameId, currentPlayerId, cardInstance.id);
-      
+
       // Obtener 5 cartas del descarte
       const discardCards = await apiService.getDiscardPile(gameId, currentPlayerId, 5);
-      
+
       // Procesar las cartas para mostrar en el modal
       const processedDiscardCards = discardCards.map((card, index) => {
         const cardDetails = cardService.getPlayingHand([card])[0];
@@ -381,15 +389,15 @@ const useCardActions = (gameId, gameState) => {
           originalId: card.id // Guardar el ID original para la segunda llamada
         };
       });
-         // Preparar estado para el modal
-      setEventCardToPlay({ 
-        id: cardInstance.id, 
-        instanceId: cardInstance.instanceId 
+      // Preparar estado para el modal
+      setEventCardToPlay({
+        id: cardInstance.id,
+        instanceId: cardInstance.instanceId
       });
       setDiscardPileSelection(processedDiscardCards);
       setSelectedDiscardCard(null);
       setLookIntoAshesModalOpen(true);
-      
+
     } catch (error) {
       console.error("Error al iniciar Look Into The Ashes:", error);
       alert(`Error: ${error.message}`);
@@ -402,14 +410,14 @@ const useCardActions = (gameId, gameState) => {
   const handleLookIntoAshesConfirm = async () => {
 
     if (!gameState.selectedDiscardCard || !eventCardToPlay) return;
-    
+
     try {
       const selectedCard = gameState.discardPileSelection.find(
         card => card.instanceId === gameState.selectedDiscardCard
       );
-      
+
       if (!selectedCard) return;
-      
+
       // Segunda llamada - con la carta objetivo seleccionada
       await apiService.playLookIntoTheAshes(
         gameId,
@@ -418,7 +426,7 @@ const useCardActions = (gameId, gameState) => {
         selectedCard.originalId // id_carta_objetivo
       );
 
-          //ACTUALIZAR LA MANO 
+      //ACTUALIZAR LA MANO 
       try {
         const freshHandData = await apiService.getHand(gameId, currentPlayerId);
         const playingHand = cardService.getPlayingHand(freshHandData);
@@ -437,7 +445,7 @@ const useCardActions = (gameId, gameState) => {
       setSelectedCards([]);
       setHasPlayedSetThisTurn(true);
       setPlayerTurnState('discarding');
-      
+
     } catch (error) {
       console.error("Error al confirmar Look Into The Ashes:", error);
       alert(`Error al seleccionar carta: ${error.message}`);
@@ -500,7 +508,7 @@ const useCardActions = (gameId, gameState) => {
         console.warn("Evento de carta no implementado:", cardId);
     }
   };
-  
+
   return {
     handleCardClick,
     handleDraftCardClick,
