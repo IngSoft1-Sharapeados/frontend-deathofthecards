@@ -80,7 +80,7 @@ describe('websocketService', () => {
   it('handles invalid JSON in onmessage', () => {
     websocketService.connect(gameId, playerId);
     const ws = MockWebSocket.instances[0];
-    const spy = vi.spyOn(console, 'error');
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
     ws.onmessage({ data: 'not-json' });
     expect(spy).toHaveBeenCalled();
     spy.mockRestore();

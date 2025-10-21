@@ -12,7 +12,7 @@ const createHttpService = () => {
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.detail || `Error ${response.status}`);
+      throw new Error(errorData.detail || 'Error en la petición');
     }
     return response.json();
   };
@@ -25,7 +25,7 @@ const createHttpService = () => {
     });
   };
 
-  const listGames = async (playerData) => {
+  const listGames = async () => {
     return request("/partidas", {
       method: "GET",
     });
@@ -46,7 +46,6 @@ const createHttpService = () => {
 
   const startGame = async (gameId, playerId) => {
     const gameIdInt = parseInt(gameId, 10);
-    console.log("startGame llamado con:", gameIdInt, playerId);
 
     return request(`/partidas/${gameIdInt}`, {
       method: "PUT",
@@ -59,7 +58,7 @@ const createHttpService = () => {
 
 
   const discardCards = async (gameId, playerId, cardIds) => {
-    return request(`/partidas/descarte/${gameId}?id_jugador=${playerId}`, {
+    return request(`/partidas/${gameId}/descarte/?id_jugador=${playerId}`, {
       method: "PUT",
       body: JSON.stringify(cardIds),
     });
@@ -90,11 +89,168 @@ const createHttpService = () => {
   };
 
   const drawCards = async (gameId, playerId, amount = 1) => {
-    return request(`/partidas/${gameId}/robar?id_jugador=${playerId}&cantidad=${amount}` , {
+    return request(`/partidas/${gameId}/robar?id_jugador=${playerId}&cantidad=${amount}`, {
       method: "POST",
     });
   };
 
+  const abandonGame = async (gameId, playerId) => {
+    return request(`/partidas/${gameId}/abandonar?id_jugador=${playerId}`, {
+      method: "POST",
+    });
+  };
+
+  const getMySecrets = async (gameId, playerId) => {
+    return request(`/partidas/${gameId}/secretos?id_jugador=${playerId}`, {
+      method: "GET",
+    });
+  }
+
+  const getRoles = async (gameId) => {
+    return request(`/partidas/${gameId}/roles`, {
+      method: "GET",
+    });
+  }
+
+  const getDraftCards = async (gameId) => {
+    return request(`/partidas/${gameId}/draft`, {
+      method: "GET",
+    });
+  }
+
+  const getPlayedSets = async (gameId) => {
+    return request(`/partidas/${gameId}/sets`, {
+      method: "GET",
+    });
+  }
+
+  const takeDraftCard = async (gameId, playerId, cardIds) => {
+    return request(`/partidas/${gameId}/draft?id_jugador=${playerId}`, {
+      method: "PUT",
+      body: JSON.stringify(cardIds), // The backend expects a list of integers
+    });
+  };
+
+  const pickUpCards = async (gameId, playerId, draftCardIds) => {
+    const payload = {
+      cartas_draft: draftCardIds
+    };
+    return request(`/partidas/${gameId}/jugador/${playerId}/recoger`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    });
+  };
+
+  const playDetectiveSet = async (gameId, playerId, cardIds) => {
+    // Backend expects: POST /partidas/{id_partida}/Jugar-set?id_jugador=... body: [int, int, int]
+    return request(`/partidas/${gameId}/Jugar-set?id_jugador=${playerId}`, {
+      method: "POST",
+      body: JSON.stringify(cardIds),
+    });
+  };
+
+  const getPlayerSecrets = async (gameId, playerId) => {
+    return request(`/partidas/${gameId}/secretosjugador?id_jugador=${playerId}`, {
+      method: "GET",
+    });
+  };
+
+  const revealSecret = async (gameId, actingPlayerId, secretUniqueId) => {
+    // Revelar secreto: ahora el backend espera id_jugador_turno (jugador que ejecuta la acción)
+    return request(`/partidas/${gameId}/revelacion?id_jugador_turno=${actingPlayerId}&id_unico_secreto=${secretUniqueId}`, {
+      method: "PATCH",
+    });
+  };
+  const hideSecret = async (gameId, actingPlayerId, secretUniqueId) => {
+    // Ocultar secreto: el backend espera id_jugador_turno
+    return request(`/partidas/${gameId}/ocultamiento?id_jugador_turno=${actingPlayerId}&id_unico_secreto=${secretUniqueId}`, {
+      method: 'PATCH',
+    });
+  };
+  const revealOwnSecret = async (gameId, playerId, secretUniqueId) => {
+    // Revelación propia cambió a /revelacion-propia y usa id_jugador
+    return request(`/partidas/${gameId}/revelacion-propia?id_jugador=${playerId}&id_unico_secreto=${secretUniqueId}`, {
+      method: 'PATCH',
+    });
+  };
+  const requestTargetToRevealSecret = async (gameId, requesterId, targetPlayerId, motivo = 'lady-brent') => {
+    return request(`/partidas/${gameId}/solicitar-revelacion?id_jugador_solicitante=${requesterId}&id_jugador_objetivo=${targetPlayerId}&motivo=${encodeURIComponent(motivo)}`, {
+      method: 'POST',
+    });
+
+  };
+  const getDiscardPile = async (gameId, playerID, cantidad = 1) => {
+    return request(`/partidas/${gameId}/descarte?id_jugador=${playerID}&cantidad=${cantidad}`, {
+      method: "GET",
+    });
+  };
+
+  const robSecret = async (gameId, playerIdTurno, targetPlayerId, secretUniqueId) => {
+    return request(`/partidas/${gameId}/robo-secreto?id_jugador_turno=${playerIdTurno}&id_jugador_destino=${targetPlayerId}&id_unico_secreto=${secretUniqueId}`,
+    { method: 'PATCH' });
+  };
+  
+
+
+  const playCardsOffTheTable = async (gameId, playerId, targetId, cardId) => {
+    return request(`/partidas/${gameId}/evento/CardsTable?id_jugador=${playerId}&id_objetivo=${targetId}&id_carta=${cardId}`, {
+      method: "PUT",
+    });
+  };
+
+  const playAnotherVictim = async (gameId, playerId, cardId, targetSet) => {
+    return request(`/partidas/${gameId}/evento/AnotherVictim?id_jugador=${playerId}&id_carta=${cardId}`, {
+      method: "PUT",
+      body: JSON.stringify({
+        id_objetivo: targetSet.jugador_id,
+        id_representacion_carta: targetSet.representacion_id_carta,
+        ids_cartas: targetSet.cartas_ids
+      }),
+    });
+  };
+
+  const playOneMore = async (gameId, playerId, cardId, payload) => {
+    return request(`/partidas/${gameId}/evento/OneMore?id_jugador=${playerId}&id_carta=${cardId}`, {
+      method: "PUT",
+      body: JSON.stringify({
+        id_fuente: payload.id_fuente,
+        id_destino: payload.id_destino,
+        id_unico_secreto: payload.id_unico_secreto
+      }),
+    });
+  };
+
+  const playDelayTheMurdererEscape = async (gameId, playerId, cardId, amount) => {
+    return request(`/partidas/${gameId}/evento/DelayMurderer?id_jugador=${playerId}&id_carta=${cardId}&cantidad=${amount}`, {
+      method: "PUT",
+    });
+  };
+
+  const playEarlyTrainToPaddington = async (gameId, playerId, cardId) => {
+    return request(`/partidas/${gameId}/evento/EarlyTrain?id_jugador=${playerId}&id_carta=${cardId}`, {
+      method: "PUT",
+    });
+  };
+
+  const playLookIntoTheAshes = async (gameId, playerId, cardId, targetCardId = null) => {
+    let url = `/partidas/${gameId}/evento/LookIntoTheAshes?`;
+    const params = new URLSearchParams({
+      id_jugador: playerId
+    });
+
+    if (cardId && !targetCardId) {
+      // Primera llamada - solo jugar la carta
+      params.append('id_carta', cardId);
+    } else if (targetCardId && !cardId) {
+      // Segunda llamada - seleccionar carta objetivo
+      params.append('id_carta_objetivo', targetCardId);
+    }
+
+    return request(`${url}${params.toString()}`, {
+        method: 'PUT'
+      });
+  };
+      
 
   return {
     createGame,
@@ -102,12 +258,35 @@ const createHttpService = () => {
     joinGame,
     getGameDetails,
     startGame,
+    abandonGame,
     discardCards,
     getHand,
     getTurn,
     getDeckCount,
     getTurnOrder,
     drawCards,
+    getMySecrets,
+    getRoles,
+    getDraftCards,
+
+    requestTargetToRevealSecret,
+
+    takeDraftCard,
+    pickUpCards,
+    playDetectiveSet,
+    getPlayedSets,
+    getPlayerSecrets,
+    getDiscardPile,
+    playCardsOffTheTable,
+    revealSecret,
+    hideSecret,
+    revealOwnSecret,
+    robSecret,
+    playAnotherVictim,
+    playLookIntoTheAshes,
+    playOneMore,
+    playDelayTheMurdererEscape,
+    playEarlyTrainToPaddington
   };
 };
 

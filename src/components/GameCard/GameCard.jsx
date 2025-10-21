@@ -3,7 +3,6 @@ import PropTypes from 'prop-types';
 import styles from '@/components/GameCard/GameCard.module.css';
 
 const GameCard = ({ game, index, onJoinClick }) => { 
-  console.log("Renderizando GameCard para:", game);
   const {name, minPlayers, maxPlayers, currentPlayers } = game;
 
   

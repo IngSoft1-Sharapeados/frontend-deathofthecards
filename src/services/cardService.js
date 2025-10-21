@@ -1,17 +1,17 @@
 const HELP_CARDS = [
   {id:0, url:'00-help.png'},
+  {id:2,url:'02-murder_escapes.png'},
 ];
 
 const BACK_CARDS = [
   {id:1, url:'01-card_back.png'},
-  {id:5, url:'05-secret_front.png'},
-  '06-secret_back.png',
+  {id:5, url:'05-secret_back.png'},
 ];
 
-const MURDER_SECRET_CARDS = [
-  '02-murder_escapes.png',
-  '03-secret_murderer.png',
-  '04-secret_accomplice.png',
+const SECRET_CARDS = [
+  {id:6, url:'06-secret_front.png'},
+  {id:3,url:'03-secret_murderer.png'},
+  {id:4,url:'04-secret_accomplice.png'},
 ];
 
 const DETECTIVE_CARDS = [
@@ -56,20 +56,58 @@ const GAME_CARDS = [
 ];
 
 // Esta función simula "robar" una mano de 6 cartas.
-const getRandomHand = () => {
+const getRandomCards = (count) => {
   const shuffled = [...GAME_CARDS].sort(() => 0.5 - Math.random());
-  return shuffled.slice(0, 6);
+  return shuffled.slice(0, count);
 };
 
-const  getPlayingHand = (handData) => {
-  // Filtra las cartas de handdata en función de los IDs en GAME_CARDS
-  const playingHand = handData.map(card => 
-    GAME_CARDS.find(gameCard => gameCard.id === card.id)
-  );
-  return playingHand;
+const getPlayingHand = (handData) => {
+  // Mapea IDs a assets; si no existe, usa un fallback para no perder el conteo
+  return handData.map((card) => {
+    const found = GAME_CARDS.find((gameCard) => gameCard.id === card.id);
+    if (found) return found;
+    // Fallback seguro: mantener el id para la lógica y usar dorso de carta
+    return { id: card.id, url: '01-card_back.png' };
+  });
 }
 
+const getDraftCards = (draftData) => {
+  return draftData.map((card) => {
+    const found = GAME_CARDS.find((gameCard) => gameCard.id === card.id);
+    return found || { id: card.id, url: '01-card_back.png' };
+  });
+}
+
+const getSecretCards = (secretData) => {
+  return secretData.map((card) => {
+    const found = SECRET_CARDS.find((secretCard) => secretCard.id === card.id);
+    return found || { id: card.id, url: '05-secret_back.png' };
+  });
+};
+
+const getRandomDetectives = (count) => {
+  const shuffled = [...DETECTIVE_CARDS].sort(() => 0.5 - Math.random());
+  return shuffled.slice(0, count);
+};
+
+const getEventCardData = (cardId) => {
+  const card = EVENT_CARDS.find((gameCard) => gameCard.id == cardId);
+  return card
+}
+
+const getCardImageUrl = (cardId) => {
+  const card = GAME_CARDS.find(c => c.id === cardId);
+  return card ? card.url : '01-card_back.png';
+}
+
+
+
 export const cardService = {
-  getRandomHand,
-  getPlayingHand
+  getRandomCards,
+  getPlayingHand,
+  getSecretCards,
+  getRandomDetectives,
+  getDraftCards,
+  getEventCardData,
+  getCardImageUrl
 };
