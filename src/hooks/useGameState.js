@@ -62,6 +62,12 @@ const useGameState = () => {
   const [discardPileSelection, setDiscardPileSelection] = useState([]);
   const [selectedDiscardCard, setSelectedDiscardCard] = useState(null);
 
+  const [accionEnProgreso, setAccionEnProgreso] = useState(null);
+  // para saber qué endpoint original llamar si la acción se ejecuta.
+  const [accionPendiente, setAccionPendiente] = useState(null);
+  // actionResultMessage: El mensaje del toast (ej. "Acción cancelada")
+  const [actionResultMessage, setActionResultMessage] = useState(null);
+
   // Derived state
   const isMyTurn = currentTurn === currentPlayerId;
   const isLocalPlayerDisgraced = disgracedPlayerIds.has(currentPlayerId);
@@ -155,7 +161,10 @@ const useGameState = () => {
 
     lookIntoAshesModalOpen, setLookIntoAshesModalOpen,
     discardPileSelection, setDiscardPileSelection,
-    selectedDiscardCard, setSelectedDiscardCard
+    selectedDiscardCard, setSelectedDiscardCard,
+    accionEnProgreso, setAccionEnProgreso,
+    accionPendiente, setAccionPendiente,
+    actionResultMessage, setActionResultMessage
   };
 };
 

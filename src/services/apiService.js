@@ -187,9 +187,9 @@ const createHttpService = () => {
 
   const robSecret = async (gameId, playerIdTurno, targetPlayerId, secretUniqueId) => {
     return request(`/partidas/${gameId}/robo-secreto?id_jugador_turno=${playerIdTurno}&id_jugador_destino=${targetPlayerId}&id_unico_secreto=${secretUniqueId}`,
-    { method: 'PATCH' });
+      { method: 'PATCH' });
   };
-  
+
 
 
   const playCardsOffTheTable = async (gameId, playerId, targetId, cardId) => {
@@ -247,10 +247,41 @@ const createHttpService = () => {
     }
 
     return request(`${url}${params.toString()}`, {
-        method: 'PUT'
-      });
+      method: 'PUT'
+    });
   };
-      
+
+  const iniciarAccion = async (gameId, playerId, accionData) => {
+    return request(`/partidas/${gameId}/iniciar-accion?id_jugador=${playerId}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(accionData),
+    });
+  };
+
+  const playNotSoFast = async (gameId, playerId, cardId) => {
+    // cardId es el ID de tipo (ej: 16)
+    return request(`/partidas/${gameId}/respuesta/not_so_fast?id_jugador=${playerId}&id_carta=${cardId}`, {
+      method: "PUT",
+    });
+  };
+
+  const resolverAccion = async (gameId) => {
+    return request(`/partidas/${gameId}/resolver-accion`, {
+      method: "POST",
+    });
+  };
+
+  const cancelarAccion = async (gameId) => {
+    // (Este es el endpoint que faltaba en el backend: Fase 3 - Opción A)
+    // Lo llamamos si el resolver nos dice "cancelar"
+    return request(`/partidas/${gameId}/cancelar-accion`, {
+      method: "POST",
+    });
+  };
+
 
   return {
     createGame,
@@ -286,7 +317,11 @@ const createHttpService = () => {
     playLookIntoTheAshes,
     playOneMore,
     playDelayTheMurdererEscape,
-    playEarlyTrainToPaddington
+    playEarlyTrainToPaddington,
+    iniciarAccion,
+    playNotSoFast,
+    resolverAccion,
+    cancelarAccion,
   };
 };
 

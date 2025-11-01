@@ -5,6 +5,7 @@ import { isValidDetectiveSet } from '@/utils/detectiveSetValidation';
 import { isValidEventCard } from '@/utils/eventCardValidation';
 
 const CARD_IDS = {
+  NOT_SO_FAST: 16,
   CARDS_OFF_THE_TABLE: 17,
   ANOTHER_VICTIM: 18,
   DEAD_CARD_FOLLY: 19,
@@ -33,10 +34,33 @@ const useCardActions = (gameId, gameState, onSetEffectTrigger) => {
     oneMoreDestinationPlayer, setOneMoreDestinationPlayer,
     setIsSecretsModalOpen, setViewingSecretsOfPlayer, setPlayerSecretsData, setIsSecretsLoading,
     setSelectedSecretCard,
-    isLocalPlayerDisgraced
+    isLocalPlayerDisgraced,
+    accionEnProgreso,
+    setAccionPendiente
   } = gameState;
 
+  const handlePlayNotSoFast = useCallback(async (card) => {
+    try {
+      await apiService.playNotSoFast(gameId, currentPlayerId, card.id);
+    } catch (error) {
+      console.error("Error al jugar Not So Fast:", error);
+      alert(`Error: ${error.message}`);
+    }
+  }, [gameId, currentPlayerId]);
+
+
   const handleCardClick = useCallback((instanceId) => {
+    const card = hand.find(c => c.instanceId === instanceId);
+    if (!card) return;
+
+    const isNSF = card.id === CARD_IDS.NOT_SO_FAST;
+
+    if (accionEnProgreso && isNSF) {
+      handlePlayNotSoFast(card);
+      return; // Fin de la acción
+    }
+
+    // Lógica original de selección de cartas
     if (!isMyTurn || playerTurnState !== 'discarding') return;
     setSelectedCards((prev) => {
       if (prev.includes(instanceId)) {
@@ -47,7 +71,11 @@ const useCardActions = (gameId, gameState, onSetEffectTrigger) => {
       }
       return [...prev, instanceId];
     });
-  }, [isMyTurn, playerTurnState, isLocalPlayerDisgraced, setSelectedCards]);
+  }, [
+    isMyTurn, playerTurnState, isLocalPlayerDisgraced,
+    setSelectedCards, accionEnProgreso, hand, handlePlayNotSoFast
+  ]);
+
 
   const handleDraftCardClick = useCallback((instanceId) => {
     const canSelectFromDraft = playerTurnState === 'drawing' || (hasPlayedSetThisTurn && hand.length < 6);
@@ -148,16 +176,39 @@ const useCardActions = (gameId, gameState, onSetEffectTrigger) => {
 
     const { id: cardId, instanceId } = cardToPlay;
 
-    // Special handling for OneMore event flow
+    // --- 1. FLUJO NO-CANCELABLE (Cards off the table) ---
+    // Esta carta se juega directamente y no usa la pila de acciones.
+    if (cardId === CARD_IDS.CARDS_OFF_THE_TABLE) {
+      try {
+        const targetPlayerId = payload; // El payload es solo el ID del jugador
+        await apiService.playCardsOffTheTable(gameId, currentPlayerId, targetPlayerId, cardId);
+
+        // Limpieza de UI estándar
+        setHand(prev => prev.filter(card => card.instanceId !== instanceId));
+        setSelectedCards([]);
+        setHasPlayedSetThisTurn(true);
+        setPlayerTurnState('discarding');
+      } catch (error) {
+        console.error(`Error al jugar Cards off the table:`, error);
+        alert(`Error: ${error.message}`);
+      } finally {
+        // Limpieza de Modales
+        setPlayerSelectionModalOpen(false);
+        setEventCardToPlay(null);
+      }
+      return; // Termina la función
+    }
+
+    // --- 2. FLUJO MULTI-PASO (One More) ---
+    // Este flujo debe completarse ANTES de iniciar la acción en la pila.
     if (cardId === CARD_IDS.ONE_MORE) {
       try {
-        if (oneMoreStep === 1) {
-          // Step 1: Source player selected, now show secrets modal
+        if (oneMoreStep === 1) { // 
+          // Step 1: Se seleccionó el jugador fuente, abrir modal de secretos
           const sourcePlayerId = payload;
           setOneMoreSourcePlayer(sourcePlayerId);
           setPlayerSelectionModalOpen(false);
 
-          // Open secrets modal for the source player
           const sourcePlayer = players.find(p => p.id_jugador === sourcePlayerId);
           setViewingSecretsOfPlayer(sourcePlayer);
           setIsSecretsModalOpen(true);
@@ -166,20 +217,16 @@ const useCardActions = (gameId, gameState, onSetEffectTrigger) => {
           try {
             const secretsFromApi = await apiService.getPlayerSecrets(gameId, sourcePlayerId);
             const processedSecrets = secretsFromApi
-              .filter(s => s.bocaArriba) // Only show revealed secrets
+              .filter(s => s.bocaArriba) // Solo mostrar revelados
               .map(secret => {
                 if (secret.carta_id) {
                   const cardDetails = cardService.getSecretCards([{ id: secret.carta_id }])[0];
-                  return {
-                    ...secret,
-                    url: cardDetails.url,
-                    nombre: cardDetails.nombre || secret.nombre
-                  };
+                  return { ...secret, url: cardDetails.url, nombre: cardDetails.nombre || secret.nombre };
                 }
                 return secret;
               });
             setPlayerSecretsData(processedSecrets);
-            setOneMoreStep(2);
+            setOneMoreStep(2); // Avanzar al siguiente paso
           } catch (error) {
             console.error("Error al obtener secretos:", error);
             setPlayerSecretsData([]);
@@ -187,43 +234,51 @@ const useCardActions = (gameId, gameState, onSetEffectTrigger) => {
           } finally {
             setIsSecretsLoading(false);
           }
-          return; // Don't finish the event yet
+          return; // Esperar al siguiente paso
+
         } else if (oneMoreStep === 2) {
-          // Step 2: Secret selected, now show player selection for destination
+          // Step 2: Se seleccionó el secreto, abrir modal de jugador destino
           const secretId = payload;
           setOneMoreSelectedSecret(secretId);
           setIsSecretsModalOpen(false);
           setPlayerSelectionModalOpen(true);
-          setOneMoreStep(3);
-          setSelectedSecretCard(null); // Clear selection for next modal
-          return; // Don't finish the event yet
+          setOneMoreStep(3); // Avanzar al siguiente paso
+          setSelectedSecretCard(null);
+          return; // Esperar al siguiente paso
+
         } else if (oneMoreStep === 3) {
-          // Step 3: Destination player selected, execute the event
+          // Step 3: Se seleccionó el destino. ¡Payload completo!
           const destinationPlayerId = payload;
           setOneMoreDestinationPlayer(destinationPlayerId);
 
-          const playerName = players.find(p => p.id_jugador === currentPlayerId)?.nombre_jugador || 'Alguien';
-          const eventCardData = cardService.getEventCardData(cardId);
-
-          gameState.setEventCardInPlay({
-            imageName: eventCardData.url,
-            message: `${playerName} jugó una carta de evento!`
-          });
-
-          // Get the actual selected secret value (state might not be updated yet)
           const actualSecretId = oneMoreSelectedSecret;
-
           if (!actualSecretId) {
             throw new Error('No se seleccionó un secreto válido');
           }
 
-          await apiService.playOneMore(gameId, currentPlayerId, cardId, {
+          // ¡AQUÍ ESTÁ LA INTERCEPCIÓN!
+          // En lugar de llamar a apiService.playOneMore, llamamos a iniciarAccion.
+          const fullOneMorePayload = {
             id_fuente: oneMoreSourcePlayer,
             id_destino: destinationPlayerId,
             id_unico_secreto: actualSecretId
+          };
+
+          // 1. Guardar acción localmente para ejecutarla después
+          setAccionPendiente({
+            tipo_accion: "evento_one_more",
+            payload_original: fullOneMorePayload,
+            id_carta_jugada: cardId
           });
 
-          // Reset OneMore state and clean up
+          // 2. Llamar al NUEVO endpoint /iniciar-accion
+          await apiService.iniciarAccion(gameId, currentPlayerId, {
+            tipo_accion: "evento_one_more",
+            id_carta_jugada: cardId,
+            payload_original: fullOneMorePayload
+          });
+
+          // 3. Limpieza de UI (copiada del original)
           setOneMoreStep(0);
           setOneMoreSourcePlayer(null);
           setOneMoreSelectedSecret(null);
@@ -231,27 +286,14 @@ const useCardActions = (gameId, gameState, onSetEffectTrigger) => {
           setPlayerSelectionModalOpen(false);
           setEventCardToPlay(null);
           setSelectedSecretCard(null);
-
-          // Remove card from hand
-          setHand(prev => prev.filter(card => card.instanceId !== instanceId));
-          setSelectedCards([]);
-          setHasPlayedSetThisTurn(true);
-          setPlayerTurnState('discarding');
-          return;
+          // (No quitamos la carta de la mano, eso lo decide el resolver)
+          return; // Fin del flujo One More
         }
       } catch (error) {
+        // ... (Tu manejo de error de One More)
         console.error(`Error en flujo OneMore:`, error);
-        // Better error message handling
-        let errorMessage = 'Error desconocido';
-        if (error.message) {
-          errorMessage = error.message;
-        } else if (typeof error === 'string') {
-          errorMessage = error;
-        } else if (error.detail) {
-          errorMessage = error.detail;
-        }
-        alert(`Error jugando OneMore: ${errorMessage}`);
-        // Reset everything on error
+        alert(`Error jugando OneMore: ${error.message || 'Error desconocido'}`);
+        // Resetear todo en caso de error
         setOneMoreStep(0);
         setOneMoreSourcePlayer(null);
         setOneMoreSelectedSecret(null);
@@ -262,69 +304,80 @@ const useCardActions = (gameId, gameState, onSetEffectTrigger) => {
         setSelectedSecretCard(null);
         return;
       }
-    }
+    } // --- FIN DEL FLUJO 'ONE MORE' ---
 
-    // Handle other event cards
+
+    // --- 3. FLUJO CANCELABLE (Eventos Simples) ---
+    // Todas las demás cartas de evento que llegan aquí son cancelables
+    // y usan el flujo genérico de /iniciar-accion.
+
     try {
-      const playerName = players.find(p => p.id_jugador === currentPlayerId)?.nombre_jugador || 'Alguien';
-      const eventCardData = cardService.getEventCardData(cardId);
-
-      gameState.setEventCardInPlay({
-        imageName: eventCardData.url,
-        message: `${playerName} jugó una carta de evento!`
-      });
+      let tipo_accion = "";
+      let payload_original = {};
 
       switch (cardId) {
-        case CARD_IDS.CARDS_OFF_THE_TABLE: {
-          const targetPlayerId = payload;
-          await apiService.playCardsOffTheTable(gameId, currentPlayerId, targetPlayerId, cardId);
-          break;
-        }
         case CARD_IDS.ANOTHER_VICTIM: {
           const targetSet = payload;
-          await apiService.playAnotherVictim(gameId, currentPlayerId, cardId, targetSet);
+          tipo_accion = "evento_another_victim";
+          payload_original = {
+            id_objetivo: targetSet.jugador_id,
+            id_representacion_carta: targetSet.representacion_id_carta,
+            ids_cartas: targetSet.cartas_ids
+          };
+          break;
+        }
 
-          if (onSetEffectTrigger) {
-            console.log("Disparando efecto del set robado:", targetSet);
-            const effectPayload = {
-              jugador_id: currentPlayerId, 
-              representacion_id: targetSet.representacion_id_carta
-            };
-            onSetEffectTrigger(effectPayload);
-          }
-          break;
-        }
-        case CARD_IDS.LOOK_ASHES: {
-          // Este caso ahora se maneja en handleLookIntoAshesConfirm
-          await handleLookIntoAshesConfirm();
-          break;
-        }
         case CARD_IDS.EARLY_TRAIN: {
-          await apiService.playEarlyTrainToPaddington(gameId, currentPlayerId, cardId);
+          tipo_accion = "evento_early_train";
+          payload_original = null; // No necesita payload
           break;
         }
-        case CARD_IDS.DELAY_ESCAPE: {
-          const amountToGet = payload;
-          console.log("toget: ", payload);
 
-          await apiService.playDelayTheMurdererEscape(gameId, currentPlayerId, cardId, amountToGet);
+        case CARD_IDS.DELAY_ESCAPE: {
+          tipo_accion = "evento_delay_escape";
+          payload_original = { cantidad: payload }; // payload es solo un número
           break;
         }
+
+        case CARD_IDS.LOOK_ASHES: {
+          // Como se discutió, este flujo es de 2 pasos y no es
+          // manejado por esta función. Se maneja en handleLookIntoAshesConfirm.
+          // Para evitar un error, lo jugamos directo (no cancelable).
+          console.warn("Look Into The Ashes no es cancelable en este flujo.");
+          await handleLookIntoAshesConfirm(); // Llama a la lógica original
+          return; // Salir de la función
+        }
+
         default:
-          throw new Error(`Lógica de confirmación no implementada para la carta ${cardId}`);
+          throw new Error(`Lógica de "iniciar-accion" no implementada para la carta ${cardId}`);
       }
 
-      // Lógica común de limpieza post-jugada exitosa
-      setHand(prev => prev.filter(card => card.instanceId !== instanceId));
+      // --- Lógica Común para Eventos Simples ---
+
+      // 1. Guardar acción localmente
+      setAccionPendiente({
+        tipo_accion,
+        payload_original,
+        id_carta_jugada: cardId
+      });
+
+      // 2. Llamar al NUEVO endpoint /iniciar-accion
+      await apiService.iniciarAccion(gameId, currentPlayerId, {
+        tipo_accion: tipo_accion,
+        id_carta_jugada: cardId,
+        payload_original: payload_original
+      });
+
+      // 3. Limpieza de UI
+      // (NO quitamos la carta de la mano, eso lo decide el resolver)
       setSelectedCards([]);
-      setHasPlayedSetThisTurn(true);
-      setPlayerTurnState('discarding');
 
     } catch (error) {
-      console.error(`Error al jugar el evento ${cardToPlay.id}:`, error);
+      console.error(`Error al iniciar el evento ${cardToPlay.id}:`, error);
       alert(`Error: ${error.message}`);
+      setAccionPendiente(null); // Limpiar si la iniciación falla
     } finally {
-      // Close modals for other events
+      // Cerrar todos los modales
       setPlayerSelectionModalOpen(false);
       setConfirmationModalOpen(false);
       setSetSelectionModalOpen(false);
@@ -355,20 +408,36 @@ const useCardActions = (gameId, gameState, onSetEffectTrigger) => {
     }
   }, [isMyTurn, playerTurnState, hand, selectedCards, gameId, currentPlayerId]);
 
+
   const handleSetPlay = async (cardIdsToPlay) => {
     try {
-      if (apiService.playDetectiveSet) {
-        await apiService.playDetectiveSet(gameId, currentPlayerId, cardIdsToPlay);
-      }
-      setHand(prev => prev.filter(card => !selectedCards.includes(card.instanceId)));
+      const payload_original = { set_cartas: cardIdsToPlay };
+      const tipo_accion = "jugar_set_detective";
+
+      // 1. Guardar localmente
+      setAccionPendiente({
+        tipo_accion,
+        payload_original,
+        id_carta_jugada: cardIdsToPlay[0]
+      });
+
+      // 2. Llamar al NUEVO endpoint /iniciar-accion
+      await apiService.iniciarAccion(gameId, currentPlayerId, {
+        tipo_accion: tipo_accion,
+        cartas_db_ids: cardIdsToPlay,
+        nombre_accion: "Set de Detectives",
+        payload_original: payload_original
+      });
+
       setSelectedCards([]);
-      setHasPlayedSetThisTurn(true);
-      setPlayerTurnState('discarding');
+
     } catch (error) {
-      console.error('Error al jugar set de detectives:', error);
+      console.error('Error al iniciar "Jugar Set":', error);
       alert(`Error: ${error.message}`);
+      setAccionPendiente(null); // Limpiar si falla
     }
   };
+
 
   const handleLookIntoTheAshes = async () => {
     try {

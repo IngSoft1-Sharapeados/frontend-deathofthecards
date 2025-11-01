@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { cardService } from '@/services/cardService';
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 import { apiService } from '@/services/apiService';
 
 
@@ -27,9 +27,14 @@ import useCardActions, { useSecrets } from '@/hooks/useCardActions';
 import PlayerSelectionModal from '@/components/EventModals/PlayerSelectionModal';
 import EventDisplay from '@/components/EventModals/EventDisplay';
 import useSecretActions from '@/hooks/useSecretActions';
+import ActionStackModal from '@/components/EventModals/ActionStackModal';
+import ActionResultToast from '@/components/EventModals/ActionResultToast';
 
 // Styles
 import styles from './GamePage.module.css';
+
+const NOT_SO_FAST_WINDOW_MS = 5000;
+const NOT_SO_FAST_ID = 16;
 
 const GamePage = () => {
 
@@ -54,7 +59,10 @@ const GamePage = () => {
     disgracedPlayerIds, isLocalPlayerDisgraced, mySecretCards, isConfirmationModalOpen,
     lookIntoAshesModalOpen, setLookIntoAshesModalOpen,
     discardPileSelection, setDiscardPileSelection,
-    selectedDiscardCard, setSelectedDiscardCard,  setEventCardToPlay
+    selectedDiscardCard, setSelectedDiscardCard, setEventCardToPlay,
+    accionEnProgreso, setAccionEnProgreso,
+    accionPendiente, setAccionPendiente,
+    actionResultMessage, setActionResultMessage
   } = gameState;
 
   // Desarrollo solamente
@@ -250,10 +258,51 @@ const GamePage = () => {
         message: `Se jugó "Early Train To Paddington"`
       });
     },
+
+    onAccionEnProgreso: (data) => {
+      console.log("WS: accion-en-progreso", data);
+      setAccionEnProgreso(data);
+    },
+
+    onPilaActualizada: (data) => {
+      console.log("WS: pila-actualizada", data);
+      const accionCorregida = {
+        ...data, 
+        carta_original: {
+          id_jugador: data.id_jugador_original,
+          nombre: data.nombre_accion,
+          id_carta_tipo: data.cartas_originales_db_ids[0]
+        }
+      };
+      setAccionEnProgreso(data);
+    },
+
+    onAccionResuelta: (message) => {
+      console.log("WS: accion-resuelta", message);
+      setAccionEnProgreso(null);
+      setActionResultMessage(message.detail || 'Acción resuelta.');
+
+      if (message.evento === 'accion-resuelta-exitosa' &&
+        message.tipo_accion === 'evento_another_victim') {
+
+        apiService.getPlayedSets(gameId).then(allSets => {
+          const groupedSets = {};
+          (allSets || []).forEach(item => {
+            const arr = groupedSets[item.jugador_id] || [];
+            arr.push(item);
+            groupedSets[item.jugador_id] = arr;
+          });
+          gameState.setPlayedSetsByPlayer(groupedSets);
+        }).catch(error => {
+          console.error("Error al refrescar sets tras resolución:", error);
+        });
+      }
+    },
+
     onLookIntoTheAshesPlayed: (message) => {
       const { playerId } = message;
       const playerName = players.find(p => p.id_jugador === playerId)?.nombre_jugador || 'Alguien';
-      
+
       // Mostrar notificación automáticamente cuando se recibe el WebSocket
       setEventCardInPlay({
         imageName: cardService.getCardImageUrl(20), // URL de la carta "Look Into The Ashes"
@@ -265,14 +314,84 @@ const GamePage = () => {
         setEventCardInPlay(null);
       }, 3000);
     },
-    
+
+
+
     onDiscardUpdate: (discardPile) => gameState.setDiscardPile(discardPile),
   };
 
   useWebSocket(webSocketCallbacks);
   useGameData(gameId, gameState);
   const { handleCardClick, handleDraftCardClick, handleDiscard,
-     handlePickUp, handlePlay, handleEventActionConfirm, handleLookIntoAshesConfirm , handleOneMoreSecretSelect } = useCardActions(gameId, gameState, handleSetPlayedEvent);
+    handlePickUp, handlePlay, handleEventActionConfirm, handleLookIntoAshesConfirm, handleOneMoreSecretSelect } = useCardActions(gameId, gameState, handleSetPlayedEvent);
+
+  useEffect(() => {
+    // Solo el jugador que inició la acción debe resolverla
+    if (accionEnProgreso && accionPendiente && accionEnProgreso.id_jugador_original === currentPlayerId) {
+      const timerId = setTimeout(() => {
+        console.log("Timer finalizado. Llamando a /resolver-accion");
+
+        apiService.resolverAccion(gameId)
+          .then(respuesta => {
+
+            if (respuesta.decision === "ejecutar") {
+              // --- ¡LUZ VERDE! EJECUTAR LA ACCIÓN ORIGINAL ---
+              console.log("Decisión: EJECUTAR. Llamando al endpoint original...");
+              const { tipo_accion, payload_original, id_carta_jugada } = accionPendiente;
+
+              // "Router" de frontend para llamar al endpoint original
+              if (tipo_accion === "evento_another_victim") {
+                apiService.playAnotherVictim(gameId, currentPlayerId, id_carta_jugada, payload_original);
+              }
+              else if (tipo_accion === "evento_cards_table") {
+                apiService.playCardsOffTheTable(gameId, currentPlayerId, payload_original.id_objetivo, id_carta_jugada);
+              }
+              else if (tipo_accion === "evento_one_more") {
+                apiService.playOneMore(gameId, currentPlayerId, id_carta_jugada, payload_original);
+              }
+              else if (tipo_accion === "evento_early_train") {
+                apiService.playEarlyTrainToPaddington(gameId, currentPlayerId, id_carta_jugada);
+              }
+              else if (tipo_accion === "evento_delay_escape") {
+                apiService.playDelayTheMurdererEscape(gameId, currentPlayerId, id_carta_jugada, payload_original.cantidad);
+              }
+              else if (tipo_accion === "jugar_set_detective") {
+                apiService.playDetectiveSet(gameId, currentPlayerId, payload_original.set_cartas);
+              }
+
+            } else if (respuesta.decision === "cancelar") {
+              // --- LUZ ROJA: ACCIÓN CANCELADA ---
+              console.log("Decisión: CANCELAR.");
+              // El backend ya descartó la carta, solo refrescamos la mano
+              apiService.getHand(gameId, currentPlayerId).then(handData => {
+                const playingHand = cardService.getPlayingHand(handData);
+                const handWithInstanceIds = playingHand.map((card, index) => ({
+                  ...card,
+                  instanceId: `${card.id}-sync-${Date.now()}-${index}`,
+                }));
+                gameState.setHand(handWithInstanceIds);
+              });
+            }
+
+            // Limpiar la acción pendiente local
+            setAccionPendiente(null);
+
+          })
+          .catch(err => {
+            console.error("Error al resolver la acción:", err);
+            alert("Error al resolver la acción: " + err.message);
+            setAccionPendiente(null); // Limpiar en error
+          });
+
+      }, NOT_SO_FAST_WINDOW_MS); // 5 segundos
+
+      // Limpieza: si la pila cambia (alguien juega NSF), se cancela este timer
+      return () => {
+        clearTimeout(timerId);
+      };
+    }
+  }, [accionEnProgreso, accionPendiente, gameId, currentPlayerId]);
+
 
   const sortedHand = useMemo(() => {
     return [...hand].sort((a, b) => a.id - b.id);
@@ -284,6 +403,7 @@ const GamePage = () => {
       revelada: Boolean(s.revelada || s.bocaArriba || s.revelado),
     }));
   }, [mySecretCards]);
+
   const getPlayerEmoji = gameState.getPlayerEmoji;
   const isDrawingPhase = playerTurnState === 'drawing' && gameState.isMyTurn;
 
@@ -307,6 +427,8 @@ const GamePage = () => {
     return <div className={styles.loadingSpinner}></div>;
   }
 
+  const isResponseWindowOpen = !!accionEnProgreso;
+
   return (
     <div className={styles.gameContainer}>
       {winners && (
@@ -323,6 +445,14 @@ const GamePage = () => {
       <EventDisplay
         card={gameState.eventCardInPlay}
         onDisplayComplete={() => gameState.setEventCardInPlay(null)}
+      />
+      <ActionStackModal
+        accion={accionEnProgreso}
+        durationSeconds={NOT_SO_FAST_WINDOW_MS / 1000}
+      />
+      <ActionResultToast
+        message={actionResultMessage}
+        onClose={() => setActionResultMessage(null)}
       />
 
       <div className={styles.opponentsContainer} data-player-count={players.length}>
@@ -355,7 +485,7 @@ const GamePage = () => {
         />
       </div>
 
-      <div className={`${styles.bottomContainer} ${(gameState.isMyTurn && !isDrawingPhase) ? styles.myTurn : ''}`}>
+      <div className={`${styles.bottomContainer} ${(gameState.isMyTurn && !isDrawingPhase) ? styles.myTurn : ''} ${isResponseWindowOpen ? styles.handOnTop : ''}`}>
         {isLocalPlayerDisgraced && <DisgraceOverlay />}
         <div className={styles.playerArea}>
           {/* Secret cards carousel */}
@@ -363,15 +493,40 @@ const GamePage = () => {
 
           <div>
             <div data-testid="hand-container" className={styles.handContainer}>
-              {sortedHand.map((card) => (
-                <Card
-                  key={card.instanceId}
-                  imageName={card.url}
-                  isSelected={selectedCards.includes(card.instanceId)}
-                  onCardClick={() => handleCardClick(card.instanceId)}
-                  subfolder="game-cards"
-                />
-              ))}
+              {sortedHand.map((card) => {
+                const isNSF = card.id === NOT_SO_FAST_ID;
+                const isSelectableInTurn = gameState.isMyTurn && playerTurnState === 'discarding';
+
+                let isDisabled = true;
+                let isGlowing = false;
+
+                if (isResponseWindowOpen) {
+                  // Ventana ABIERTA
+                  if (isNSF) {
+                    isDisabled = false; // Se puede jugar NSF
+                    isGlowing = true;
+                  }
+
+                } else if (accionPendiente && card.instanceId === accionPendiente.carta_original?.instanceId) {
+                  isDisabled = true;
+                  isGlowing = true; // Brilla la carta que estoy intentando jugar
+
+                } else if (isSelectableInTurn) {
+                  isDisabled = false;
+                }
+
+                return (
+                  <Card
+                    key={card.instanceId}
+                    imageName={card.url}
+                    isSelected={selectedCards.includes(card.instanceId)}
+                    onCardClick={() => handleCardClick(card.instanceId)}
+                    subfolder="game-cards"
+                    isGlowing={isGlowing}
+                    isDisabled={isDisabled}
+                  />
+                );
+              })}
             </div>
           </div>
 
@@ -457,19 +612,19 @@ const GamePage = () => {
           }
         }}
         players={
-          gameState.oneMoreStep === 1 
+          gameState.oneMoreStep === 1
             ? players.filter(p => (playersSecrets[p.id_jugador]?.revealed ?? 0) > 0) // Step 1: Only players with revealed secrets
             : gameState.oneMoreStep === 3
-            ? players // Step 3: Allow choosing any player, including source
-            : opponentPlayers // Other events: only opponents
+              ? players // Step 3: Allow choosing any player, including source
+              : opponentPlayers // Other events: only opponents
         }
         onPlayerSelect={handleEventActionConfirm}
         title={
-          gameState.oneMoreStep === 1 
-            ? "And Then There Was One More: Elige un jugador con secretos revelados" 
+          gameState.oneMoreStep === 1
+            ? "And Then There Was One More: Elige un jugador con secretos revelados"
             : gameState.oneMoreStep === 3
-            ? "And Then There Was One More: Elige el jugador destino"
-            : "Cards off the Table: Elige un jugador"
+              ? "And Then There Was One More: Elige el jugador destino"
+              : "Cards off the Table: Elige un jugador"
         }
       />
       <SetSelectionModal
