@@ -266,6 +266,87 @@ describe('useCardActions', () => {
       expect(mockGameState.setSelectedDraftCards).toHaveBeenCalledWith([]);
     });
   });
+
+  describe('Ariadne Oliver flow', () => {
+    test('handlePlay with single Ariadne (id=15) opens SetSelectionModal', async () => {
+      const state = {
+        ...mockGameState,
+        hand: [
+          { id: 15, url: 'ariadne.png', instanceId: 'a-1' },
+          { id: 7, url: 'det.png', instanceId: 'd-1' },
+        ],
+        selectedCards: ['a-1'],
+        setSetSelectionModalOpen: vi.fn(),
+        setEventCardToPlay: vi.fn(),
+      };
+
+      const { result } = renderHook(() => useCardActions('game-123', state));
+      await act(async () => {
+        await result.current.handlePlay();
+      });
+
+      expect(state.setEventCardToPlay).toHaveBeenCalledWith({ id: 15, instanceId: 'a-1' });
+      expect(state.setSetSelectionModalOpen).toHaveBeenCalledWith(true);
+      // No immediate API call should be made until a set is selected
+      expect(apiService.playAriadneOliver).not.toHaveBeenCalled();
+    });
+
+    test('handleEventActionConfirm for Ariadne calls API and cleans up', async () => {
+      apiService.playAriadneOliver.mockResolvedValue({});
+      apiService.requestTargetToRevealSecret.mockResolvedValue({});
+      apiService.getPlayedSets.mockResolvedValue([]);
+
+      const state = {
+        ...mockGameState,
+        hand: [
+          { id: 15, url: 'ariadne.png', instanceId: 'a-1' },
+          { id: 9, url: 'other.png', instanceId: 'o-1' },
+        ],
+        selectedCards: ['a-1'],
+        eventCardToPlay: { id: 15, instanceId: 'a-1' },
+        players: [
+          { id_jugador: 1, nombre_jugador: 'You' },
+          { id_jugador: 3, nombre_jugador: 'Opp' },
+        ],
+        setEventCardToPlay: vi.fn(),
+        setSetSelectionModalOpen: vi.fn(),
+        setPlayerSelectionModalOpen: vi.fn(),
+        setConfirmationModalOpen: vi.fn(),
+        setPlayedSetsByPlayer: vi.fn(),
+      };
+
+      const { result } = renderHook(() => useCardActions('game-123', state));
+
+      const targetSet = { jugador_id: 3, representacion_id_carta: 999, cartas_ids: [7, 8, 9] };
+
+      await act(async () => {
+        await result.current.handleEventActionConfirm(targetSet);
+      });
+
+      // API calls
+      expect(apiService.playAriadneOliver).toHaveBeenCalledWith('game-123', 1, 999);
+      expect(apiService.requestTargetToRevealSecret).toHaveBeenCalledWith('game-123', 1, 3, 'ariadne-oliver');
+      expect(apiService.getPlayedSets).toHaveBeenCalledWith('game-123');
+
+      // Hand cleanup removed Ariadne
+      expect(state.setHand).toHaveBeenCalled();
+      const updater = state.setHand.mock.calls[0][0];
+      const prev = state.hand;
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      expect(next).toEqual([{ id: 9, url: 'other.png', instanceId: 'o-1' }]);
+
+      // Selection and turn state updates
+      expect(state.setSelectedCards).toHaveBeenCalledWith([]);
+      expect(state.setHasPlayedSetThisTurn).toHaveBeenCalledWith(true);
+      expect(state.setPlayerTurnState).toHaveBeenCalledWith('discarding');
+
+      // Modal cleanup and event reset
+      expect(state.setPlayerSelectionModalOpen).toHaveBeenCalledWith(false);
+      expect(state.setConfirmationModalOpen).toHaveBeenCalledWith(false);
+      expect(state.setSetSelectionModalOpen).toHaveBeenCalledWith(false);
+      expect(state.setEventCardToPlay).toHaveBeenCalledWith(null);
+    });
+  });
 });
 
 

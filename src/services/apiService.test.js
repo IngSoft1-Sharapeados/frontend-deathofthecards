@@ -361,7 +361,7 @@ describe('apiService', () => {
       expect(result).toEqual(mockResponse);
     });
 
-    it('playDetectiveSet juega un set de detectives', async () => {
+    it('playDetectiveSet juega un set de detectives (set_destino_id=0)', async () => {
       const mockResponse = { success: true };
       vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
         ok: true,
@@ -369,8 +369,25 @@ describe('apiService', () => {
       }));
       const result = await apiService.playDetectiveSet(1, 2, [7, 8, 9]);
       expect(fetch).toHaveBeenCalledWith(
-        expect.stringContaining('/partidas/1/Jugar-set?id_jugador=2'),
+        expect.stringContaining('/partidas/1/Jugar-set?id_jugador=2&set_destino_id=0'),
         expect.objectContaining({ method: 'POST' })
+      );
+      expect(result).toEqual(mockResponse);
+    });
+
+    it('playAriadneOliver envía POST a Jugar-set con set_destino_id del set objetivo y cuerpo [15]', async () => {
+      const mockResponse = { success: true };
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(mockResponse)
+      }));
+      const result = await apiService.playAriadneOliver(1, 2, 999);
+      expect(fetch).toHaveBeenCalledWith(
+        expect.stringContaining('/partidas/1/Jugar-set?id_jugador=2&set_destino_id=999'),
+        expect.objectContaining({ 
+          method: 'POST',
+          body: JSON.stringify([15])
+        })
       );
       expect(result).toEqual(mockResponse);
     });

@@ -302,6 +302,11 @@ const GamePage = () => {
     return sets;
   }, [playedSetsByPlayer, currentPlayerId]);
 
+  // Para Ariadne (id 15), se pueden elegir sets de cualquier jugador (incluyéndome)
+  const setsForSelection = useMemo(() => {
+    return gameState.eventCardToPlay?.id === 15 ? playedSetsByPlayer : opponentSets;
+  }, [playedSetsByPlayer, opponentSets, gameState.eventCardToPlay]);
+
 
   if (isLoading) {
     return <div className={styles.loadingSpinner}></div>;
@@ -475,10 +480,10 @@ const GamePage = () => {
       <SetSelectionModal
         isOpen={isSetSelectionModalOpen}
         onClose={() => gameState.setSetSelectionModalOpen(false)}
-        opponentSets={opponentSets}
+        opponentSets={setsForSelection}
         players={players}
         onSetSelect={handleEventActionConfirm}
-        title="Another Victim: Elige un set para robar"
+        title={gameState.eventCardToPlay?.id === 15 ? 'Ariadne Oliver: Elige un set donde agregarla' : 'Another Victim: Elige un set para robar'}
       />
       <ConfirmationModal
         isOpen={isConfirmationModalOpen}

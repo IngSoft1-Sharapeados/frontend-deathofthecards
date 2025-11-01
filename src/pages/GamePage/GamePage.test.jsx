@@ -86,6 +86,12 @@ vi.mock('@/components/Card/Card', () => ({
     </div>
   ),
 }));
+
+vi.mock('@/components/EventModals/SetSelectionModal', () => ({ default: ({ title }) => (
+  <div data-testid="set-modal">
+    <div data-testid="modal-title">{title}</div>
+  </div>
+) }));
 vi.mock('@/components/CardDraft/CardDraft.jsx', () => ({ default: ({ cards }) => <div data-testid="card-draft">{cards.length} cards</div> }));
 vi.mock('@/components/Deck/Deck.jsx', () => ({ default: ({ count }) => <div data-testid="deck">Deck: {count}</div> }));
 vi.mock('@/components/SecretsModal/SecretsModal.jsx', () => ({ default: () => <div data-testid="secrets-modal">Secrets Modal</div> }));
@@ -449,6 +455,34 @@ describe('GamePage', () => {
       
       expect(screen.getByTestId('pod-2')).toBeInTheDocument();
       expect(screen.getByTestId('pod-3')).toBeInTheDocument();
+    });
+  });
+
+  describe('Ariadne Set Selection', () => {
+  test('when eventCardToPlay.id === 15, shows set selection modal with Ariadne title', () => {
+      mockUseGameState.playedSetsByPlayer = {
+        1: [{ jugador_id: 1, representacion_id_carta: 100, cartas_ids: [1,2,3] }],
+        2: [{ jugador_id: 2, representacion_id_carta: 200, cartas_ids: [4,5,6] }],
+      };
+      mockUseGameState.eventCardToPlay = { id: 15, instanceId: 'a-1' };
+      mockUseGameState.isSetSelectionModalOpen = true;
+      mockUseGameState.isLoading = false;
+      render(<GamePage />);
+      expect(screen.getByTestId('set-modal')).toBeInTheDocument();
+      expect(screen.getByTestId('modal-title').textContent).toMatch(/Ariadne Oliver/i);
+    });
+
+    test('when eventCardToPlay.id !== 15, shows set selection modal with Another Victim title', () => {
+      mockUseGameState.playedSetsByPlayer = {
+        1: [{ jugador_id: 1, representacion_id_carta: 100, cartas_ids: [1,2,3] }],
+        2: [{ jugador_id: 2, representacion_id_carta: 200, cartas_ids: [4,5,6] }],
+      };
+      mockUseGameState.eventCardToPlay = { id: 18, instanceId: 'ev-1' };
+      mockUseGameState.isSetSelectionModalOpen = true;
+      mockUseGameState.isLoading = false;
+      render(<GamePage />);
+      expect(screen.getByTestId('set-modal')).toBeInTheDocument();
+      expect(screen.getByTestId('modal-title').textContent).toMatch(/Another Victim/i);
     });
   });
 

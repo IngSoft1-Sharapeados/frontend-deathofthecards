@@ -267,14 +267,40 @@ const useCardActions = (gameId, gameState, onSetEffectTrigger) => {
     // Handle other event cards
     try {
       const playerName = players.find(p => p.id_jugador === currentPlayerId)?.nombre_jugador || 'Alguien';
-      const eventCardData = cardService.getEventCardData(cardId);
-
-      gameState.setEventCardInPlay({
-        imageName: eventCardData.url,
-        message: `${playerName} jugó una carta de evento!`
-      });
+      // Solo mostrar display de evento para cartas de evento reales (no para Ariadne)
+      if (cardId !== 15) {
+        const eventCardData = cardService.getEventCardData(cardId);
+        gameState.setEventCardInPlay({
+          imageName: eventCardData.url,
+          message: `${playerName} jugó una carta de evento!`
+        });
+      }
 
       switch (cardId) {
+        case 15: { // Ariadne Oliver
+          const targetSet = payload; // estructura: { jugador_id, representacion_id_carta, cartas_ids }
+          await apiService.playAriadneOliver(gameId, currentPlayerId, targetSet.representacion_id_carta);
+          // Pedir al dueño del set que revele un secreto de su elección
+          try {
+            await apiService.requestTargetToRevealSecret(gameId, currentPlayerId, targetSet.jugador_id, 'ariadne-oliver');
+          } catch (e) {
+            console.error('No se pudo solicitar revelación (Ariadne):', e);
+          }
+          // Refrescar los sets jugados
+          try {
+            const allSets = await apiService.getPlayedSets(gameId);
+            const groupedSets = {};
+            (allSets || []).forEach(item => {
+              const arr = groupedSets[item.jugador_id] || [];
+              arr.push(item);
+              groupedSets[item.jugador_id] = arr;
+            });
+            gameState.setPlayedSetsByPlayer(groupedSets);
+          } catch (e) {
+            console.warn('No se pudieron refrescar los sets tras Ariadne:', e);
+          }
+          break;
+        }
         case CARD_IDS.CARDS_OFF_THE_TABLE: {
           const targetPlayerId = payload;
           await apiService.playCardsOffTheTable(gameId, currentPlayerId, targetPlayerId, cardId);
@@ -337,8 +363,13 @@ const useCardActions = (gameId, gameState, onSetEffectTrigger) => {
 
     const isEvent = isValidEventCard(hand, selectedCards);
     const isSet = isValidDetectiveSet(hand, selectedCards);
+    const isAriadne = (() => {
+      if (selectedCards.length !== 1) return false;
+      const card = hand.find(c => c.instanceId === selectedCards[0]);
+      return card?.id === 15;
+    })();
 
-    if (!isEvent && !isSet) return;
+    if (!isEvent && !isSet && !isAriadne) return;
 
     const cardIdsToPlay = selectedCards
       .map((instanceId) => hand.find((c) => c.instanceId === instanceId)?.id)
@@ -347,6 +378,12 @@ const useCardActions = (gameId, gameState, onSetEffectTrigger) => {
     try {
       if (isEvent) {
         await handleEventPlay(cardIdsToPlay[0]);
+      } else if (isAriadne) {
+        // Reutilizar SetSelectionModal como con Another Victim
+        const cardInstance = hand.find(c => c.instanceId === selectedCards[0]);
+        if (!cardInstance) return;
+        setEventCardToPlay({ id: cardInstance.id, instanceId: cardInstance.instanceId });
+        setSetSelectionModalOpen(true);
       } else {
         await handleSetPlay(cardIdsToPlay);
       }
