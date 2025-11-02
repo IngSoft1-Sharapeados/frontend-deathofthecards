@@ -101,7 +101,7 @@ const getDraftCards = (draftData) => {
   if (!Array.isArray(draftData)) return [];
   return draftData.map((cardData) => {
     const staticData = ALL_CARDS_DATA[cardData.id];
-    return staticData ? { ...cardData, ...staticData } : { ...cardData, ...FALLBACK_GAME_CARD };
+    return staticData ? { ...staticData, ...cardData } : { ...FALLBACK_GAME_CARD, ...cardData };
   });
 }
 

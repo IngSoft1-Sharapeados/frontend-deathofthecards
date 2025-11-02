@@ -135,42 +135,47 @@ describe('useCardActions', () => {
     const stateForPlay = {
       ...mockGameState,
       hand: [
-        { id: 7, url: 'poirot1.png', instanceId: 'i-1' },
-        { id: 7, url: 'poirot2.png', instanceId: 'i-2' },
-        { id: 9, url: 'satterthwaite.png', instanceId: 'i-3' },
+        { id: 7, url: 'poirot1.png', instanceId: 'i-1', id_instancia: 101 },
+        { id: 7, url: 'poirot2.png', instanceId: 'i-2', id_instancia: 102 },
+        { id: 9, url: 'satterthwaite.png', instanceId: 'i-3', id_instancia: 103 },
       ],
       selectedCards: ['i-1', 'i-2'],
       isMyTurn: true,
-      // estamos en fase de descarte
       playerTurnState: 'discarding',
     };
 
-    // Forzar que el set sea válido
     isValidDetectiveSet.mockReturnValue(true);
+    const mockIniciarAccion = vi.fn().mockResolvedValue({});
 
-    const { result } = renderHook(() => useCardActions('game-123', stateForPlay));
+    const { result } = renderHook(() => useCardActions(
+        'game-123', 
+        stateForPlay, 
+        vi.fn(),
+        mockIniciarAccion 
+    ));
 
     await act(async () => {
       await result.current.handlePlay();
     });
 
-    // setHand debe eliminar las cartas seleccionadas
+    expect(mockIniciarAccion).toHaveBeenCalledWith(expect.objectContaining({
+      cartas_db_ids: [101, 102]
+    }));
+
     expect(stateForPlay.setHand).toHaveBeenCalled();
     const arg = stateForPlay.setHand.mock.calls[0][0];
     const prev = [
-      { id: 7, url: 'poirot1.png', instanceId: 'i-1' },
-      { id: 7, url: 'poirot2.png', instanceId: 'i-2' },
-      { id: 9, url: 'satterthwaite.png', instanceId: 'i-3' },
+      { id: 7, url: 'poirot1.png', instanceId: 'i-1', id_instancia: 101 }, 
+      { id: 7, url: 'poirot2.png', instanceId: 'i-2', id_instancia: 102 }, 
+      { id: 9, url: 'satterthwaite.png', instanceId: 'i-3', id_instancia: 103 }, 
     ];
     const next = typeof arg === 'function' ? arg(prev) : arg;
     expect(next).toEqual([
-      { id: 9, url: 'satterthwaite.png', instanceId: 'i-3' },
+      { id: 9, url: 'satterthwaite.png', instanceId: 'i-3', id_instancia: 103 },
     ]);
 
-    // selección limpiada
     expect(stateForPlay.setSelectedCards).toHaveBeenCalledWith([]);
 
-  // marca el flag de set jugado y vuelve a descarte
   expect(stateForPlay.setHasPlayedSetThisTurn).toHaveBeenCalledWith(true);
   expect(stateForPlay.setPlayerTurnState).toHaveBeenCalledWith('discarding');
   });

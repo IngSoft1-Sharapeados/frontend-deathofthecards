@@ -383,6 +383,8 @@ const useCardActions = (gameId, gameState, onSetEffectTrigger, iniciarAccionCanc
 
       const idParaMostrar = cardIdsToPlay.find(id => id !== CARD_IDS.COMODIN_ID);
 
+      const cardsToRemoveFromHand = [...selectedCards];
+
       await iniciarAccionCancelable({
         tipo_accion,
         cartas_db_ids,
@@ -392,7 +394,7 @@ const useCardActions = (gameId, gameState, onSetEffectTrigger, iniciarAccionCanc
       });
       setSelectedCards([]);
       setHand(prevHand =>
-        prevHand.filter(card => !selectedCards.includes(card.instanceId))
+        prevHand.filter(card => !cardsToRemoveFromHand.includes(card.instanceId))
       );
 
       setHasPlayedSetThisTurn(true);
@@ -431,9 +433,9 @@ const useCardActions = (gameId, gameState, onSetEffectTrigger, iniciarAccionCanc
         const playingHand = cardService.getPlayingHand(freshHandData);
 
         const handWithInstanceIds = playingHand.map((card) => ({
-          ...card,
-          instanceId: `card-inst-${card.id_instancia}`,
-       }));
+          ...card,
+           instanceId: `card-inst-${card.id_instancia}`,
+          }));
         setHand(handWithInstanceIds);
       } catch (e) {
         console.warn('No se pudo sincronizar la mano después de LITA (Paso 2):', e);
