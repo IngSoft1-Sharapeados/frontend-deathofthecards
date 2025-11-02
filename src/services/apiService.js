@@ -201,11 +201,7 @@ const createHttpService = () => {
   const playAnotherVictim = async (gameId, playerId, cardId, targetSet) => {
     return request(`/partidas/${gameId}/evento/AnotherVictim?id_jugador=${playerId}&id_carta=${cardId}`, {
       method: "PUT",
-      body: JSON.stringify({
-        id_objetivo: targetSet.jugador_id,
-        id_representacion_carta: targetSet.representacion_id_carta,
-        ids_cartas: targetSet.cartas_ids
-      }),
+      body: JSON.stringify(targetSet),
     });
   };
 

@@ -98,10 +98,10 @@ const useWebSocket = (callbacks) => {
     };
 
     const onAccionEnProgreso = (message) => {
-      callbacksRef.current.onAccionEnProgreso?.(message.data);
+      callbacksRef.current.onAccionEnProgreso?.(message);
     };
     const onPilaActualizada = (message) => {
-      callbacksRef.current.onPilaActualizada?.(message.data);
+      callbacksRef.current.onPilaActualizada?.(message);
     };
     const onAccionResuelta = (message) => {
       callbacksRef.current.onAccionResuelta?.(message);

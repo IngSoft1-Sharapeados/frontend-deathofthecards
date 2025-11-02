@@ -29,12 +29,14 @@ import EventDisplay from '@/components/EventModals/EventDisplay';
 import useSecretActions from '@/hooks/useSecretActions';
 import ActionStackModal from '@/components/EventModals/ActionStackModal';
 import ActionResultToast from '@/components/EventModals/ActionResultToast';
+import useActionStack from '@/hooks/useActionStack';
+
 
 // Styles
 import styles from './GamePage.module.css';
 
-const NOT_SO_FAST_WINDOW_MS = 5000;
 const NOT_SO_FAST_ID = 16;
+const NOT_SO_FAST_WINDOW_MS = 5000;
 
 const GamePage = () => {
 
@@ -60,10 +62,18 @@ const GamePage = () => {
     lookIntoAshesModalOpen, setLookIntoAshesModalOpen,
     discardPileSelection, setDiscardPileSelection,
     selectedDiscardCard, setSelectedDiscardCard, setEventCardToPlay,
-    accionEnProgreso, setAccionEnProgreso,
-    accionPendiente, setAccionPendiente,
-    actionResultMessage, setActionResultMessage
   } = gameState;
+
+  const {
+    accionEnProgreso,
+    actionResultMessage,
+    setActionResultMessage,
+    iniciarAccionCancelable,
+    wsCallbacks: actionStackCallbacks,
+  } = useActionStack(gameId, gameState.currentPlayerId);
+
+  gameState.accionEnProgreso = accionEnProgreso;
+
 
   // Desarrollo solamente
 
@@ -77,7 +87,7 @@ const GamePage = () => {
   const { handleSecretCardClick, handleRevealSecret, handleHideSecret, handleRobSecret } = useSecretActions(gameId, gameState);
 
 
-  const webSocketCallbacks = {
+  const baseWebSocketCallbacks = useMemo(() => ({
     onDeckUpdate: (count) => gameState.setDeckCount(count),
 
     onCardsOffTheTablePlayed: (message) => {
@@ -92,7 +102,12 @@ const GamePage = () => {
     },
 
     onAnotherVictimPlayed: async (message) => {
-      const { jugador_id: actorId, objetivo_id: targetId } = message;
+
+      const {
+        jugador_id: actorId,
+        objetivo_id: targetId,
+        representacion_id: repId
+      } = message;
       const actorName = gameState.players.find(p => p.id_jugador === actorId)?.nombre_jugador || 'Un jugador';
       const targetName = gameState.players.find(p => p.id_jugador === targetId)?.nombre_jugador || 'otro jugador';
 
@@ -101,7 +116,6 @@ const GamePage = () => {
         message: `${actorName} robó un set de ${targetName}`
       });
 
-      // Refrescar los sets para todos los jugadores
       try {
         const allSets = await apiService.getPlayedSets(gameId);
         const groupedSets = {};
@@ -113,6 +127,15 @@ const GamePage = () => {
         gameState.setPlayedSetsByPlayer(groupedSets);
       } catch (error) {
         console.error("Error al refrescar sets tras Another Victim:", error);
+      }
+
+      if (actorId === gameState.currentPlayerId) {
+        console.log("[GamePage] ¡Robamos un set! Disparando efecto del set...", message);
+
+        handleSetPlayedEvent?.({
+          jugador_id: actorId,
+          representacion_id: repId
+        });
       }
     },
 
@@ -132,14 +155,15 @@ const GamePage = () => {
 
     onHandUpdate: (message) => {
       console.log("Mensaje completo de WS:", message);
-      const nuevaMano = message.data;
+      const nuevaManoRaw = message.data;
 
-      const handWithInstanceIds = nuevaMano.map((card, index) => {
-        console.log("Procesando carta:", card);
+      const nuevaManoProcesada = cardService.getPlayingHand(nuevaManoRaw);
+
+      const handWithInstanceIds = nuevaManoProcesada.map((card, index) => {
         return {
           ...card,
-          instanceId: `${card.id}-update-${Date.now()}-${index}`,
-          url: cardService.getCardImageUrl(card.id) // <--- agregar URL
+          instanceId: `card-inst-${card.id_instancia}`,
+          id_instancia: card.id_instancia
         };
       });
 
@@ -170,6 +194,16 @@ const GamePage = () => {
 
     onSetPlayed: async (payload) => {
       try {
+        const { jugador_id: actorId, representacion_id: repId } = payload;
+        const actorName = gameState.players.find(p => p.id_jugador === actorId)?.nombre_jugador || 'Un jugador';
+        const setImageUrl = cardService.getCardImageUrl(repId);
+
+        gameState.setEventCardInPlay({
+          imageName: setImageUrl,
+          message: `${actorName} jugó un Set de Detectives`
+        });
+        
+        // --- FIN DE LA MODIFICACIÓN ---
         const allSets = await apiService.getPlayedSets(gameId);
 
         const groupedSets = {};
@@ -259,46 +293,6 @@ const GamePage = () => {
       });
     },
 
-    onAccionEnProgreso: (data) => {
-      console.log("WS: accion-en-progreso", data);
-      setAccionEnProgreso(data);
-    },
-
-    onPilaActualizada: (data) => {
-      console.log("WS: pila-actualizada", data);
-      const accionCorregida = {
-        ...data, 
-        carta_original: {
-          id_jugador: data.id_jugador_original,
-          nombre: data.nombre_accion,
-          id_carta_tipo: data.cartas_originales_db_ids[0]
-        }
-      };
-      setAccionEnProgreso(data);
-    },
-
-    onAccionResuelta: (message) => {
-      console.log("WS: accion-resuelta", message);
-      setAccionEnProgreso(null);
-      setActionResultMessage(message.detail || 'Acción resuelta.');
-
-      if (message.evento === 'accion-resuelta-exitosa' &&
-        message.tipo_accion === 'evento_another_victim') {
-
-        apiService.getPlayedSets(gameId).then(allSets => {
-          const groupedSets = {};
-          (allSets || []).forEach(item => {
-            const arr = groupedSets[item.jugador_id] || [];
-            arr.push(item);
-            groupedSets[item.jugador_id] = arr;
-          });
-          gameState.setPlayedSetsByPlayer(groupedSets);
-        }).catch(error => {
-          console.error("Error al refrescar sets tras resolución:", error);
-        });
-      }
-    },
-
     onLookIntoTheAshesPlayed: (message) => {
       const { playerId } = message;
       const playerName = players.find(p => p.id_jugador === playerId)?.nombre_jugador || 'Alguien';
@@ -318,79 +312,31 @@ const GamePage = () => {
 
 
     onDiscardUpdate: (discardPile) => gameState.setDiscardPile(discardPile),
-  };
+  }), [gameState]);
+
+  const webSocketCallbacks = useMemo(() => ({
+    ...baseWebSocketCallbacks,
+    ...actionStackCallbacks,
+  }), [baseWebSocketCallbacks, actionStackCallbacks]);
 
   useWebSocket(webSocketCallbacks);
   useGameData(gameId, gameState);
-  const { handleCardClick, handleDraftCardClick, handleDiscard,
-    handlePickUp, handlePlay, handleEventActionConfirm, handleLookIntoAshesConfirm, handleOneMoreSecretSelect } = useCardActions(gameId, gameState, handleSetPlayedEvent);
 
-  useEffect(() => {
-    // Solo el jugador que inició la acción debe resolverla
-    if (accionEnProgreso && accionPendiente && accionEnProgreso.id_jugador_original === currentPlayerId) {
-      const timerId = setTimeout(() => {
-        console.log("Timer finalizado. Llamando a /resolver-accion");
-
-        apiService.resolverAccion(gameId)
-          .then(respuesta => {
-
-            if (respuesta.decision === "ejecutar") {
-              // --- ¡LUZ VERDE! EJECUTAR LA ACCIÓN ORIGINAL ---
-              console.log("Decisión: EJECUTAR. Llamando al endpoint original...");
-              const { tipo_accion, payload_original, id_carta_jugada } = accionPendiente;
-
-              // "Router" de frontend para llamar al endpoint original
-              if (tipo_accion === "evento_another_victim") {
-                apiService.playAnotherVictim(gameId, currentPlayerId, id_carta_jugada, payload_original);
-              }
-              else if (tipo_accion === "evento_cards_table") {
-                apiService.playCardsOffTheTable(gameId, currentPlayerId, payload_original.id_objetivo, id_carta_jugada);
-              }
-              else if (tipo_accion === "evento_one_more") {
-                apiService.playOneMore(gameId, currentPlayerId, id_carta_jugada, payload_original);
-              }
-              else if (tipo_accion === "evento_early_train") {
-                apiService.playEarlyTrainToPaddington(gameId, currentPlayerId, id_carta_jugada);
-              }
-              else if (tipo_accion === "evento_delay_escape") {
-                apiService.playDelayTheMurdererEscape(gameId, currentPlayerId, id_carta_jugada, payload_original.cantidad);
-              }
-              else if (tipo_accion === "jugar_set_detective") {
-                apiService.playDetectiveSet(gameId, currentPlayerId, payload_original.set_cartas);
-              }
-
-            } else if (respuesta.decision === "cancelar") {
-              // --- LUZ ROJA: ACCIÓN CANCELADA ---
-              console.log("Decisión: CANCELAR.");
-              // El backend ya descartó la carta, solo refrescamos la mano
-              apiService.getHand(gameId, currentPlayerId).then(handData => {
-                const playingHand = cardService.getPlayingHand(handData);
-                const handWithInstanceIds = playingHand.map((card, index) => ({
-                  ...card,
-                  instanceId: `${card.id}-sync-${Date.now()}-${index}`,
-                }));
-                gameState.setHand(handWithInstanceIds);
-              });
-            }
-
-            // Limpiar la acción pendiente local
-            setAccionPendiente(null);
-
-          })
-          .catch(err => {
-            console.error("Error al resolver la acción:", err);
-            alert("Error al resolver la acción: " + err.message);
-            setAccionPendiente(null); // Limpiar en error
-          });
-
-      }, NOT_SO_FAST_WINDOW_MS); // 5 segundos
-
-      // Limpieza: si la pila cambia (alguien juega NSF), se cancela este timer
-      return () => {
-        clearTimeout(timerId);
-      };
-    }
-  }, [accionEnProgreso, accionPendiente, gameId, currentPlayerId]);
+  const {
+    handleCardClick,
+    handleDraftCardClick,
+    handleDiscard,
+    handlePickUp,
+    handlePlay,
+    handleEventActionConfirm,
+    handleLookIntoTheAshesConfirm,
+    handleOneMoreSecretSelect
+  } = useCardActions(
+    gameId,
+    gameState,
+    () => { },
+    iniciarAccionCancelable
+  );
 
 
   const sortedHand = useMemo(() => {
@@ -501,16 +447,10 @@ const GamePage = () => {
                 let isGlowing = false;
 
                 if (isResponseWindowOpen) {
-                  // Ventana ABIERTA
                   if (isNSF) {
                     isDisabled = false; // Se puede jugar NSF
                     isGlowing = true;
                   }
-
-                } else if (accionPendiente && card.instanceId === accionPendiente.carta_original?.instanceId) {
-                  isDisabled = true;
-                  isGlowing = true; // Brilla la carta que estoy intentando jugar
-
                 } else if (isSelectableInTurn) {
                   isDisabled = false;
                 }
@@ -520,7 +460,10 @@ const GamePage = () => {
                     key={card.instanceId}
                     imageName={card.url}
                     isSelected={selectedCards.includes(card.instanceId)}
-                    onCardClick={() => handleCardClick(card.instanceId)}
+                    onCardClick={() => {
+                      handleCardClick(card.instanceId)
+                      console.log(`[GamePage] Clickeado instanceId: ${card.instanceId}`);
+                    }}
                     subfolder="game-cards"
                     isGlowing={isGlowing}
                     isDisabled={isDisabled}
@@ -655,7 +598,7 @@ const GamePage = () => {
         discardCards={discardPileSelection}
         selectedCard={selectedDiscardCard}
         onCardSelect={setSelectedDiscardCard}
-        onConfirm={() => handleLookIntoAshesConfirm()}
+        onConfirm={() => handleLookIntoTheAshesConfirm()}
       />
     </div>
   );
