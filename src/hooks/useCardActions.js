@@ -5,6 +5,7 @@ import { isValidDetectiveSet } from '@/utils/detectiveSetValidation';
 import { isValidEventCard } from '@/utils/eventCardValidation';
 
 const CARD_IDS = {
+  ARIADNE_OLIVER: 15,
   CARDS_OFF_THE_TABLE: 17,
   ANOTHER_VICTIM: 18,
   DEAD_CARD_FOLLY: 19,
@@ -267,17 +268,25 @@ const useCardActions = (gameId, gameState, onSetEffectTrigger) => {
     // Handle other event cards
     try {
       const playerName = players.find(p => p.id_jugador === currentPlayerId)?.nombre_jugador || 'Alguien';
-      // Solo mostrar display de evento para cartas de evento reales (no para Ariadne)
-      if (cardId !== 15) {
-        const eventCardData = cardService.getEventCardData(cardId);
-        gameState.setEventCardInPlay({
-          imageName: eventCardData.url,
-          message: `${playerName} jugó una carta de evento!`
-        });
+      // Mostrar display también para Ariadne
+      {
+        let imageName;
+        if (cardId === CARD_IDS.ARIADNE_OLIVER) {
+          imageName = cardService.getCardImageUrl(cardId);
+        } else {
+          const eventCardData = cardService.getEventCardData(cardId);
+          imageName = eventCardData?.url ?? cardService.getCardImageUrl(cardId);
+        }
+        if (typeof gameState.setEventCardInPlay === 'function') {
+          gameState.setEventCardInPlay({
+            imageName,
+            message: cardId === CARD_IDS.ARIADNE_OLIVER ? `${playerName} jugó "Ariadne Oliver"` : `${playerName} jugó una carta de evento!`
+          });
+        }
       }
 
       switch (cardId) {
-        case 15: { // Ariadne Oliver
+        case CARD_IDS.ARIADNE_OLIVER: { // Ariadne Oliver
           const targetSet = payload; // estructura: { jugador_id, representacion_id_carta, cartas_ids }
           await apiService.playAriadneOliver(gameId, currentPlayerId, targetSet.representacion_id_carta);
           // Pedir al dueño del set que revele un secreto de su elección
@@ -366,7 +375,7 @@ const useCardActions = (gameId, gameState, onSetEffectTrigger) => {
     const isAriadne = (() => {
       if (selectedCards.length !== 1) return false;
       const card = hand.find(c => c.instanceId === selectedCards[0]);
-      return card?.id === 15;
+      return card?.id === CARD_IDS.ARIADNE_OLIVER;
     })();
 
     if (!isEvent && !isSet && !isAriadne) return;

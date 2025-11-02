@@ -302,10 +302,10 @@ const GamePage = () => {
     return sets;
   }, [playedSetsByPlayer, currentPlayerId]);
 
-  // Para Ariadne (id 15), se pueden elegir sets de cualquier jugador (incluyéndome)
+  // Para Ariadne (id 15), no se pueden elegir sets propios; solo de oponentes
   const setsForSelection = useMemo(() => {
-    return gameState.eventCardToPlay?.id === 15 ? playedSetsByPlayer : opponentSets;
-  }, [playedSetsByPlayer, opponentSets, gameState.eventCardToPlay]);
+    return opponentSets;
+  }, [opponentSets]);
 
 
   if (isLoading) {
