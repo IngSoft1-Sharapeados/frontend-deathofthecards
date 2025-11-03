@@ -39,9 +39,9 @@ describe('cardService', () => {
       const result = cardService.getPlayingHand(handData);
       
       expect(result).toHaveLength(3);
-      expect(result[0]).toEqual({ id: 7, url: '07-detective_poirot.png' });
-      expect(result[1]).toEqual({ id: 8, url: '08-detective_marple.png' });
-      expect(result[2]).toEqual({ id: 9, url: '09-detective_satterthwaite.png' });
+      expect(result[0]).toEqual({ id: 7, url: '07-detective_poirot.png', nombre: 'Hercule Poirot' });
+      expect(result[1]).toEqual({ id: 8, url: '08-detective_marple.png', nombre: 'Miss Marple' });
+      expect(result[2]).toEqual({ id: 9, url: '09-detective_satterthwaite.png', nombre: 'Mr Satterthwaite' });
     });
 
     it('usa fallback para IDs desconocidos', () => {
@@ -54,7 +54,7 @@ describe('cardService', () => {
       
       expect(result).toHaveLength(3);
       expect(result[0].url).toBe('07-detective_poirot.png');
-      expect(result[1]).toEqual({ id: 999, url: '01-card_back.png' });
+      expect(result[1]).toEqual({ id: 999, url: '01-card_back.png', nombre: 'Carta Desconocida' });
       expect(result[2].url).toBe('10-detective_pyne.png');
     });
 
@@ -118,7 +118,7 @@ describe('cardService', () => {
       const result = cardService.getSecretCards(secretData);
       
       expect(result[0].url).toBe('03-secret_murderer.png');
-      expect(result[1]).toEqual({ id: 999, url: '05-secret_back.png' });
+      expect(result[1]).toEqual({ id: 999, url: '05-secret_back.png', nombre: 'Secreto Desconocido' });
     });
 
     it('maneja array vacío', () => {
@@ -176,7 +176,7 @@ describe('cardService', () => {
       const result = cardService.getDraftCards(draftData);
       
       expect(result[0].url).toBe('07-detective_poirot.png');
-      expect(result[1]).toEqual({ id: 888, url: '01-card_back.png' });
+      expect(result[1]).toEqual({ id: 888, url: '01-card_back.png', nombre: 'Carta Desconocida' });
     });
 
     it('maneja array vacío', () => {
@@ -188,12 +188,12 @@ describe('cardService', () => {
   describe('getEventCardData', () => {
     it('encuentra carta de evento por ID', () => {
       const card = cardService.getEventCardData(17);
-      expect(card).toEqual({ id: 17, url: '17-event_cardsonthetable.png' });
+      expect(card).toEqual({ id: 17, url: '17-event_cardsonthetable.png', nombre: 'Cards off the Table' });
     });
 
     it('encuentra otra carta de evento', () => {
       const card = cardService.getEventCardData(22);
-      expect(card).toEqual({ id: 22, url: '22-event_onemore.png' });
+      expect(card).toEqual({ id: 22, url: '22-event_onemore.png', nombre: 'And Then There Was One More...' });
     });
 
     it('devuelve undefined para ID no existente', () => {
@@ -208,7 +208,7 @@ describe('cardService', () => {
 
     it('maneja ID como string y lo convierte', () => {
       const card = cardService.getEventCardData('18');
-      expect(card).toEqual({ id: 18, url: '18-event_anothervictim.png' });
+      expect(card).toEqual({ id: 18, url: '18-event_anothervictim.png', nombre: 'Another Victim' });
     });
 
     it('encuentra todas las cartas de evento', () => {
