@@ -138,6 +138,7 @@ const useWebSocket = (callbacks) => {
       websocketService.off('se-jugo-cards-off-the-table', onCardsOffTheTablePlayed);
       websocketService.off('se-jugo-another-victim', onAnotherVictimPlayed);
       websocketService.off('se-jugo-one-more', onOneMorePlayed);
+      websocketService.off('carta-descartada', onDiscardUpdate);
       websocketService.off('actualizacion-mano', onHandUpdate);
       websocketService.off('jugar-set', onSetPlayed);
       websocketService.off('se-jugo-delay-escape', onDelayEscapePlayed);

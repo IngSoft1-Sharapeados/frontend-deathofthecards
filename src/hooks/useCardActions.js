@@ -28,6 +28,7 @@ const useCardActions = (gameId, gameState, onSetEffectTrigger, iniciarAccionCanc
     hasPlayedSetThisTurn, setHasPlayedSetThisTurn, setConfirmationModalOpen,
     setPlayerSelectionModalOpen, setEventCardToPlay, eventCardToPlay, setSetSelectionModalOpen,
     setLookIntoAshesModalOpen, setDiscardPileSelection, setSelectedDiscardCard,
+    selectedDiscardCard, discardPileSelection,
     // OneMore states
     oneMoreStep, setOneMoreStep,
     oneMoreSourcePlayer, setOneMoreSourcePlayer,
@@ -409,12 +410,12 @@ const useCardActions = (gameId, gameState, onSetEffectTrigger, iniciarAccionCanc
   // --- CORRECCIÓN CLAVE: Lógica de LITA movida aquí ---
   // Paso 2 de LITA: Confirmar la carta del descarte, hacer la LLAMADA 2
   const handleLookIntoTheAshesConfirm = async () => {
-    if (!gameState.selectedDiscardCard || !eventCardToPlay) return;
+    if (!selectedDiscardCard || !eventCardToPlay) return;
 
     try {
-      const selectedCard = gameState.discardPileSelection.find(
-        card => card.instanceId === gameState.selectedDiscardCard
-      );
+      const selectedCard = discardPileSelection.find(
+        card => card.instanceId === selectedDiscardCard
+      );
       if (!selectedCard) throw new Error("Carta seleccionada no válida.");
 
       // --- LLAMADA 2 (NO CANCELABLE) ---

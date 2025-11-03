@@ -508,7 +508,7 @@ const GamePage = () => {
             {(playerTurnState !== 'discarding' || (gameState.hasPlayedSetThisTurn && gameState.isMyTurn && hand.length < 6)) && (
               <button
                 onClick={handlePickUp}
-                disabled={!isPickupButtonEnabled}
+                disabled={!isPickupButtonEnabled || isResponseWindowOpen}
                 className={`${styles.discardButton} ${isPickupButtonEnabled ? styles['pickup-enabled'] : ''}`}
               >
                 Levantar
