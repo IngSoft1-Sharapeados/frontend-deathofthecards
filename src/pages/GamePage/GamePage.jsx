@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { cardService } from '@/services/cardService';
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 import { apiService } from '@/services/apiService';
 
 
@@ -27,9 +27,16 @@ import useCardActions, { useSecrets } from '@/hooks/useCardActions';
 import PlayerSelectionModal from '@/components/EventModals/PlayerSelectionModal';
 import EventDisplay from '@/components/EventModals/EventDisplay';
 import useSecretActions from '@/hooks/useSecretActions';
+import ActionStackModal from '@/components/EventModals/ActionStackModal';
+import ActionResultToast from '@/components/EventModals/ActionResultToast';
+import useActionStack from '@/hooks/useActionStack';
+
 
 // Styles
 import styles from './GamePage.module.css';
+
+const NOT_SO_FAST_ID = 16;
+const NOT_SO_FAST_WINDOW_MS = 5000;
 
 const GamePage = () => {
 
@@ -54,8 +61,19 @@ const GamePage = () => {
     disgracedPlayerIds, isLocalPlayerDisgraced, mySecretCards, isConfirmationModalOpen,
     lookIntoAshesModalOpen, setLookIntoAshesModalOpen,
     discardPileSelection, setDiscardPileSelection,
-    selectedDiscardCard, setSelectedDiscardCard,  setEventCardToPlay
+    selectedDiscardCard, setSelectedDiscardCard, setEventCardToPlay,
   } = gameState;
+
+  const {
+    accionEnProgreso,
+    actionResultMessage,
+    setActionResultMessage,
+    iniciarAccionCancelable,
+    wsCallbacks: actionStackCallbacks,
+  } = useActionStack(gameId, gameState.currentPlayerId);
+
+  gameState.accionEnProgreso = accionEnProgreso;
+
 
   // Desarrollo solamente
 
@@ -69,7 +87,7 @@ const GamePage = () => {
   const { handleSecretCardClick, handleRevealSecret, handleHideSecret, handleRobSecret } = useSecretActions(gameId, gameState);
 
 
-  const webSocketCallbacks = {
+  const baseWebSocketCallbacks = useMemo(() => ({
     onDeckUpdate: (count) => gameState.setDeckCount(count),
 
     onCardsOffTheTablePlayed: (message) => {
@@ -84,7 +102,12 @@ const GamePage = () => {
     },
 
     onAnotherVictimPlayed: async (message) => {
-      const { jugador_id: actorId, objetivo_id: targetId } = message;
+
+      const {
+        jugador_id: actorId,
+        objetivo_id: targetId,
+        representacion_id: repId
+      } = message;
       const actorName = gameState.players.find(p => p.id_jugador === actorId)?.nombre_jugador || 'Un jugador';
       const targetName = gameState.players.find(p => p.id_jugador === targetId)?.nombre_jugador || 'otro jugador';
 
@@ -93,7 +116,6 @@ const GamePage = () => {
         message: `${actorName} robó un set de ${targetName}`
       });
 
-      // Refrescar los sets para todos los jugadores
       try {
         const allSets = await apiService.getPlayedSets(gameId);
         const groupedSets = {};
@@ -105,6 +127,15 @@ const GamePage = () => {
         gameState.setPlayedSetsByPlayer(groupedSets);
       } catch (error) {
         console.error("Error al refrescar sets tras Another Victim:", error);
+      }
+
+      if (actorId === gameState.currentPlayerId) {
+        console.log("[GamePage] ¡Robamos un set! Disparando efecto del set...", message);
+
+        handleSetPlayedEvent?.({
+          jugador_id: actorId,
+          representacion_id: repId
+        });
       }
     },
 
@@ -124,14 +155,15 @@ const GamePage = () => {
 
     onHandUpdate: (message) => {
       console.log("Mensaje completo de WS:", message);
-      const nuevaMano = message.data;
+      const nuevaManoRaw = message.data;
 
-      const handWithInstanceIds = nuevaMano.map((card, index) => {
-        console.log("Procesando carta:", card);
+      const nuevaManoProcesada = cardService.getPlayingHand(nuevaManoRaw);
+
+      const handWithInstanceIds = nuevaManoProcesada.map((card, index) => {
         return {
           ...card,
-          instanceId: `${card.id}-update-${Date.now()}-${index}`,
-          url: cardService.getCardImageUrl(card.id) // <--- agregar URL
+          instanceId: `card-inst-${card.id_instancia}`,
+          id_instancia: card.id_instancia
         };
       });
 
@@ -162,6 +194,16 @@ const GamePage = () => {
 
     onSetPlayed: async (payload) => {
       try {
+        const { jugador_id: actorId, representacion_id: repId } = payload;
+        const actorName = gameState.players.find(p => p.id_jugador === actorId)?.nombre_jugador || 'Un jugador';
+        const setImageUrl = cardService.getCardImageUrl(repId);
+
+        gameState.setEventCardInPlay({
+          imageName: setImageUrl,
+          message: `${actorName} jugó un Set de Detectives`
+        });
+        
+        // --- FIN DE LA MODIFICACIÓN ---
         const allSets = await apiService.getPlayedSets(gameId);
 
         const groupedSets = {};
@@ -250,10 +292,11 @@ const GamePage = () => {
         message: `Se jugó "Early Train To Paddington"`
       });
     },
+
     onLookIntoTheAshesPlayed: (message) => {
       const { playerId } = message;
       const playerName = players.find(p => p.id_jugador === playerId)?.nombre_jugador || 'Alguien';
-      
+
       // Mostrar notificación automáticamente cuando se recibe el WebSocket
       setEventCardInPlay({
         imageName: cardService.getCardImageUrl(20), // URL de la carta "Look Into The Ashes"
@@ -265,14 +308,36 @@ const GamePage = () => {
         setEventCardInPlay(null);
       }, 3000);
     },
-    
+
+
+
     onDiscardUpdate: (discardPile) => gameState.setDiscardPile(discardPile),
-  };
+  }), [gameState]);
+
+  const webSocketCallbacks = useMemo(() => ({
+    ...baseWebSocketCallbacks,
+    ...actionStackCallbacks,
+  }), [baseWebSocketCallbacks, actionStackCallbacks]);
 
   useWebSocket(webSocketCallbacks);
   useGameData(gameId, gameState);
-  const { handleCardClick, handleDraftCardClick, handleDiscard,
-     handlePickUp, handlePlay, handleEventActionConfirm, handleLookIntoAshesConfirm , handleOneMoreSecretSelect } = useCardActions(gameId, gameState, handleSetPlayedEvent);
+
+  const {
+    handleCardClick,
+    handleDraftCardClick,
+    handleDiscard,
+    handlePickUp,
+    handlePlay,
+    handleEventActionConfirm,
+    handleLookIntoTheAshesConfirm,
+    handleOneMoreSecretSelect
+  } = useCardActions(
+    gameId,
+    gameState,
+    () => { },
+    iniciarAccionCancelable
+  );
+
 
   const sortedHand = useMemo(() => {
     return [...hand].sort((a, b) => a.id - b.id);
@@ -284,6 +349,7 @@ const GamePage = () => {
       revelada: Boolean(s.revelada || s.bocaArriba || s.revelado),
     }));
   }, [mySecretCards]);
+
   const getPlayerEmoji = gameState.getPlayerEmoji;
   const isDrawingPhase = playerTurnState === 'drawing' && gameState.isMyTurn;
 
@@ -312,6 +378,8 @@ const GamePage = () => {
     return <div className={styles.loadingSpinner}></div>;
   }
 
+  const isResponseWindowOpen = !!accionEnProgreso;
+
   return (
     <div className={styles.gameContainer}>
       {winners && (
@@ -328,6 +396,14 @@ const GamePage = () => {
       <EventDisplay
         card={gameState.eventCardInPlay}
         onDisplayComplete={() => gameState.setEventCardInPlay(null)}
+      />
+      <ActionStackModal
+        accion={accionEnProgreso}
+        durationSeconds={NOT_SO_FAST_WINDOW_MS / 1000}
+      />
+      <ActionResultToast
+        message={actionResultMessage}
+        onClose={() => setActionResultMessage(null)}
       />
 
       <div className={styles.opponentsContainer} data-player-count={players.length}>
@@ -360,7 +436,7 @@ const GamePage = () => {
         />
       </div>
 
-      <div className={`${styles.bottomContainer} ${(gameState.isMyTurn && !isDrawingPhase) ? styles.myTurn : ''}`}>
+      <div className={`${styles.bottomContainer} ${(gameState.isMyTurn && !isDrawingPhase) ? styles.myTurn : ''} ${isResponseWindowOpen ? styles.handOnTop : ''}`}>
         {isLocalPlayerDisgraced && <DisgraceOverlay />}
         <div className={styles.playerArea}>
           {/* Secret cards carousel */}
@@ -368,15 +444,37 @@ const GamePage = () => {
 
           <div>
             <div data-testid="hand-container" className={styles.handContainer}>
-              {sortedHand.map((card) => (
-                <Card
-                  key={card.instanceId}
-                  imageName={card.url}
-                  isSelected={selectedCards.includes(card.instanceId)}
-                  onCardClick={() => handleCardClick(card.instanceId)}
-                  subfolder="game-cards"
-                />
-              ))}
+              {sortedHand.map((card) => {
+                const isNSF = card.id === NOT_SO_FAST_ID;
+                const isSelectableInTurn = gameState.isMyTurn && playerTurnState === 'discarding';
+
+                let isDisabled = true;
+                let isGlowing = false;
+
+                if (isResponseWindowOpen) {
+                  if (isNSF) {
+                    isDisabled = false; // Se puede jugar NSF
+                    isGlowing = true;
+                  }
+                } else if (isSelectableInTurn) {
+                  isDisabled = false;
+                }
+
+                return (
+                  <Card
+                    key={card.instanceId}
+                    imageName={card.url}
+                    isSelected={selectedCards.includes(card.instanceId)}
+                    onCardClick={() => {
+                      handleCardClick(card.instanceId)
+                      console.log(`[GamePage] Clickeado instanceId: ${card.instanceId}`);
+                    }}
+                    subfolder="game-cards"
+                    isGlowing={isGlowing}
+                    isDisabled={isDisabled}
+                  />
+                );
+              })}
             </div>
           </div>
 
@@ -415,7 +513,7 @@ const GamePage = () => {
             {(playerTurnState !== 'discarding' || (gameState.hasPlayedSetThisTurn && gameState.isMyTurn && hand.length < 6)) && (
               <button
                 onClick={handlePickUp}
-                disabled={!isPickupButtonEnabled}
+                disabled={!isPickupButtonEnabled || isResponseWindowOpen}
                 className={`${styles.discardButton} ${isPickupButtonEnabled ? styles['pickup-enabled'] : ''}`}
               >
                 Levantar
@@ -462,19 +560,19 @@ const GamePage = () => {
           }
         }}
         players={
-          gameState.oneMoreStep === 1 
+          gameState.oneMoreStep === 1
             ? players.filter(p => (playersSecrets[p.id_jugador]?.revealed ?? 0) > 0) // Step 1: Only players with revealed secrets
             : gameState.oneMoreStep === 3
-            ? players // Step 3: Allow choosing any player, including source
-            : opponentPlayers // Other events: only opponents
+              ? players // Step 3: Allow choosing any player, including source
+              : opponentPlayers // Other events: only opponents
         }
         onPlayerSelect={handleEventActionConfirm}
         title={
-          gameState.oneMoreStep === 1 
-            ? "And Then There Was One More: Elige un jugador con secretos revelados" 
+          gameState.oneMoreStep === 1
+            ? "And Then There Was One More: Elige un jugador con secretos revelados"
             : gameState.oneMoreStep === 3
-            ? "And Then There Was One More: Elige el jugador destino"
-            : "Cards off the Table: Elige un jugador"
+              ? "And Then There Was One More: Elige el jugador destino"
+              : "Cards off the Table: Elige un jugador"
         }
       />
       <SetSelectionModal
@@ -505,7 +603,7 @@ const GamePage = () => {
         discardCards={discardPileSelection}
         selectedCard={selectedDiscardCard}
         onCardSelect={setSelectedDiscardCard}
-        onConfirm={() => handleLookIntoAshesConfirm()}
+        onConfirm={() => handleLookIntoTheAshesConfirm()}
       />
     </div>
   );

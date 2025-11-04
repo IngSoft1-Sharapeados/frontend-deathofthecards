@@ -135,42 +135,47 @@ describe('useCardActions', () => {
     const stateForPlay = {
       ...mockGameState,
       hand: [
-        { id: 7, url: 'poirot1.png', instanceId: 'i-1' },
-        { id: 7, url: 'poirot2.png', instanceId: 'i-2' },
-        { id: 9, url: 'satterthwaite.png', instanceId: 'i-3' },
+        { id: 7, url: 'poirot1.png', instanceId: 'i-1', id_instancia: 101 },
+        { id: 7, url: 'poirot2.png', instanceId: 'i-2', id_instancia: 102 },
+        { id: 9, url: 'satterthwaite.png', instanceId: 'i-3', id_instancia: 103 },
       ],
       selectedCards: ['i-1', 'i-2'],
       isMyTurn: true,
-      // estamos en fase de descarte
       playerTurnState: 'discarding',
     };
 
-    // Forzar que el set sea válido
     isValidDetectiveSet.mockReturnValue(true);
+    const mockIniciarAccion = vi.fn().mockResolvedValue({});
 
-    const { result } = renderHook(() => useCardActions('game-123', stateForPlay));
+    const { result } = renderHook(() => useCardActions(
+        'game-123', 
+        stateForPlay, 
+        vi.fn(),
+        mockIniciarAccion 
+    ));
 
     await act(async () => {
       await result.current.handlePlay();
     });
 
-    // setHand debe eliminar las cartas seleccionadas
+    expect(mockIniciarAccion).toHaveBeenCalledWith(expect.objectContaining({
+      cartas_db_ids: [101, 102]
+    }));
+
     expect(stateForPlay.setHand).toHaveBeenCalled();
     const arg = stateForPlay.setHand.mock.calls[0][0];
     const prev = [
-      { id: 7, url: 'poirot1.png', instanceId: 'i-1' },
-      { id: 7, url: 'poirot2.png', instanceId: 'i-2' },
-      { id: 9, url: 'satterthwaite.png', instanceId: 'i-3' },
+      { id: 7, url: 'poirot1.png', instanceId: 'i-1', id_instancia: 101 }, 
+      { id: 7, url: 'poirot2.png', instanceId: 'i-2', id_instancia: 102 }, 
+      { id: 9, url: 'satterthwaite.png', instanceId: 'i-3', id_instancia: 103 }, 
     ];
     const next = typeof arg === 'function' ? arg(prev) : arg;
     expect(next).toEqual([
-      { id: 9, url: 'satterthwaite.png', instanceId: 'i-3' },
+      { id: 9, url: 'satterthwaite.png', instanceId: 'i-3', id_instancia: 103 },
     ]);
 
-    // selección limpiada
     expect(stateForPlay.setSelectedCards).toHaveBeenCalledWith([]);
 
-  // marca el flag de set jugado y vuelve a descarte
   expect(stateForPlay.setHasPlayedSetThisTurn).toHaveBeenCalledWith(true);
   expect(stateForPlay.setPlayerTurnState).toHaveBeenCalledWith('discarding');
   });
@@ -285,25 +290,21 @@ describe('useCardActions', () => {
         await result.current.handlePlay();
       });
 
-      expect(state.setEventCardToPlay).toHaveBeenCalledWith({ id: 15, instanceId: 'a-1' });
+  expect(state.setEventCardToPlay).toHaveBeenCalledWith(expect.objectContaining({ id: 15, instanceId: 'a-1' }));
       expect(state.setSetSelectionModalOpen).toHaveBeenCalledWith(true);
       // No immediate API call should be made until a set is selected
       expect(apiService.playAriadneOliver).not.toHaveBeenCalled();
     });
 
-    test('handleEventActionConfirm for Ariadne calls API and cleans up', async () => {
-      apiService.playAriadneOliver.mockResolvedValue({});
-      apiService.requestTargetToRevealSecret.mockResolvedValue({});
-      apiService.getPlayedSets.mockResolvedValue([]);
-
+    test('handleEventActionConfirm for Ariadne starts cancelable action and cleans up', async () => {
       const state = {
         ...mockGameState,
         hand: [
-          { id: 15, url: 'ariadne.png', instanceId: 'a-1' },
+          { id: 15, url: 'ariadne.png', instanceId: 'a-1', id_instancia: 1001 },
           { id: 9, url: 'other.png', instanceId: 'o-1' },
         ],
         selectedCards: ['a-1'],
-        eventCardToPlay: { id: 15, instanceId: 'a-1' },
+        eventCardToPlay: { id: 15, instanceId: 'a-1', id_instancia: 1001 },
         players: [
           { id_jugador: 1, nombre_jugador: 'You' },
           { id_jugador: 3, nombre_jugador: 'Opp' },
@@ -312,10 +313,10 @@ describe('useCardActions', () => {
         setSetSelectionModalOpen: vi.fn(),
         setPlayerSelectionModalOpen: vi.fn(),
         setConfirmationModalOpen: vi.fn(),
-        setPlayedSetsByPlayer: vi.fn(),
       };
 
-      const { result } = renderHook(() => useCardActions('game-123', state));
+  const iniciarAccionCancelable = vi.fn();
+  const { result } = renderHook(() => useCardActions('game-123', state, undefined, iniciarAccionCancelable));
 
       const targetSet = { jugador_id: 3, representacion_id_carta: 999, cartas_ids: [7, 8, 9] };
 
@@ -323,10 +324,18 @@ describe('useCardActions', () => {
         await result.current.handleEventActionConfirm(targetSet);
       });
 
-      // API calls
-      expect(apiService.playAriadneOliver).toHaveBeenCalledWith('game-123', 1, 999);
-      expect(apiService.requestTargetToRevealSecret).toHaveBeenCalledWith('game-123', 1, 3, 'ariadne-oliver');
-      expect(apiService.getPlayedSets).toHaveBeenCalledWith('game-123');
+      // Iniciar acción cancelable (Ariadne)
+  expect(iniciarAccionCancelable).toHaveBeenCalledTimes(1);
+  const accion = iniciarAccionCancelable.mock.calls[0][0];
+      expect(accion).toMatchObject({
+        tipo_accion: 'evento_ariadne_oliver',
+        cartas_db_ids: [1001],
+        id_carta_tipo_original: 15,
+        payload_original: {
+          id_objetivo: 3,
+          id_representacion_carta: 999,
+        },
+      });
 
       // Hand cleanup removed Ariadne
       expect(state.setHand).toHaveBeenCalled();
@@ -338,13 +347,18 @@ describe('useCardActions', () => {
       // Selection and turn state updates
       expect(state.setSelectedCards).toHaveBeenCalledWith([]);
       expect(state.setHasPlayedSetThisTurn).toHaveBeenCalledWith(true);
-      expect(state.setPlayerTurnState).toHaveBeenCalledWith('discarding');
+      expect(state.setPlayerTurnState).toHaveBeenCalledWith(expect.any(Function));
 
       // Modal cleanup and event reset
       expect(state.setPlayerSelectionModalOpen).toHaveBeenCalledWith(false);
       expect(state.setConfirmationModalOpen).toHaveBeenCalledWith(false);
       expect(state.setSetSelectionModalOpen).toHaveBeenCalledWith(false);
       expect(state.setEventCardToPlay).toHaveBeenCalledWith(null);
+
+      // No llamado directo al API aquí (se hace al resolver la acción)
+      expect(apiService.playAriadneOliver).not.toHaveBeenCalled();
+      expect(apiService.requestTargetToRevealSecret).not.toHaveBeenCalled();
+      expect(apiService.getPlayedSets).not.toHaveBeenCalled();
     });
   });
 });

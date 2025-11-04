@@ -49,7 +49,7 @@ describe('useGameData', () => {
   };
 
   const mockGameData = {
-    handData: [{ id: 1, url: 'card1.png' }],
+    handData: [{ id: 1, url: 'card1.png', id_instancia: 101 }],
     turnData: 1,
     deckData: 50,
     turnOrderData: [1, 2, 3],
@@ -119,7 +119,12 @@ describe('useGameData', () => {
     // Verify hand processing
     expect(cardService.getPlayingHand).toHaveBeenCalledWith(mockGameData.handData);
     expect(mockGameState.setHand).toHaveBeenCalledWith([
-      { id: 1, url: 'card1.png', instanceId: '1-0' }
+      { 
+        id: 1, 
+        url: 'card1.png', 
+        id_instancia: 101,          
+        instanceId: 'card-inst-101' 
+      }
     ]);
 
     // Verify WebSocket connection

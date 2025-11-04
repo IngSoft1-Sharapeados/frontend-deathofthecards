@@ -62,6 +62,7 @@ const useGameState = () => {
   const [discardPileSelection, setDiscardPileSelection] = useState([]);
   const [selectedDiscardCard, setSelectedDiscardCard] = useState(null);
 
+
   // Derived state
   const isMyTurn = currentTurn === currentPlayerId;
   const isLocalPlayerDisgraced = disgracedPlayerIds.has(currentPlayerId);
@@ -158,10 +159,9 @@ const useGameState = () => {
     disgracedPlayerIds, setDisgracedPlayerIds,
     isConfirmationModalOpen, setConfirmationModalOpen,
     isLocalPlayerDisgraced,
-
     lookIntoAshesModalOpen, setLookIntoAshesModalOpen,
     discardPileSelection, setDiscardPileSelection,
-    selectedDiscardCard, setSelectedDiscardCard
+    selectedDiscardCard, setSelectedDiscardCard,
   };
 };
 

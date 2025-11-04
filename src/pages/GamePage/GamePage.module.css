@@ -92,6 +92,10 @@ html, body {
 }
 
 
+.handOnTop {
+  position: relative; 
+  z-index: 2001;    
+}
 
 .mySetsContainer {
   display: flex;

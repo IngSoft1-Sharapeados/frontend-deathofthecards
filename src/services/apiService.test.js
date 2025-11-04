@@ -457,23 +457,22 @@ describe('apiService', () => {
         ok: true,
         json: () => Promise.resolve(mockResponse)
       }));
+      
       const targetSet = {
-        jugador_id: 3,
-        representacion_id_carta: 1,
-        cartas_ids: [7, 8, 9]
+        id_objetivo: 3,
+        id_representacion_carta: 1,
+        ids_cartas: [7, 8, 9]
       };
       const result = await apiService.playAnotherVictim(1, 2, 18, targetSet);
+
       expect(fetch).toHaveBeenCalledWith(
         expect.stringContaining('/partidas/1/evento/AnotherVictim?id_jugador=2&id_carta=18'),
         expect.objectContaining({ 
           method: 'PUT',
-          body: JSON.stringify({
-            id_objetivo: targetSet.jugador_id,
-            id_representacion_carta: targetSet.representacion_id_carta,
-            ids_cartas: targetSet.cartas_ids
-          })
+          body: JSON.stringify(targetSet) 
         })
       );
+
       expect(result).toEqual(mockResponse);
     });
 

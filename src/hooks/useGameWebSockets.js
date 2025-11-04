@@ -96,6 +96,17 @@ const useWebSocket = (callbacks) => {
         playerId: message.jugador_id
       });
     };
+
+    const onAccionEnProgreso = (message) => {
+      callbacksRef.current.onAccionEnProgreso?.(message);
+    };
+    const onPilaActualizada = (message) => {
+      callbacksRef.current.onPilaActualizada?.(message);
+    };
+    const onAccionResuelta = (message) => {
+      callbacksRef.current.onAccionResuelta?.(message);
+    };
+
     // Suscribirse a eventos
     websocketService.on('actualizacion-mazo', onDeckUpdate);
     websocketService.on('turno-actual', onTurnUpdate);
@@ -111,6 +122,11 @@ const useWebSocket = (callbacks) => {
     websocketService.on('se-jugo-look-into-the-ashes', onLookIntoTheAshesPlayed);
     websocketService.on('se-jugo-early-train', onEarlyTrainPlayed);
     websocketService.on('actualizacion-secreto', onSecretUpdate);
+    websocketService.on('accion-en-progreso', onAccionEnProgreso);
+    websocketService.on('pila-actualizada', onPilaActualizada);
+    websocketService.on('accion-resuelta-exitosa', onAccionResuelta);
+    websocketService.on('accion-resuelta-cancelada', onAccionResuelta);
+    websocketService.on('accion-resuelta-fallida', onAccionResuelta);
 
 
     // Función de limpieza - SOLO remover listeners, NO desconectar
@@ -122,12 +138,18 @@ const useWebSocket = (callbacks) => {
       websocketService.off('se-jugo-cards-off-the-table', onCardsOffTheTablePlayed);
       websocketService.off('se-jugo-another-victim', onAnotherVictimPlayed);
       websocketService.off('se-jugo-one-more', onOneMorePlayed);
+      websocketService.off('carta-descartada', onDiscardUpdate);
       websocketService.off('actualizacion-mano', onHandUpdate);
       websocketService.off('jugar-set', onSetPlayed);
       websocketService.off('se-jugo-delay-escape', onDelayEscapePlayed);
       websocketService.off('se-jugo-look-into-the-ashes', onLookIntoTheAshesPlayed);
       websocketService.off('se-jugo-early-train', onEarlyTrainPlayed);
       websocketService.off('actualizacion-secreto', onSecretUpdate);
+      websocketService.off('accion-en-progreso', onAccionEnProgreso);
+      websocketService.off('pila-actualizada', onPilaActualizada);
+      websocketService.off('accion-resuelta-exitosa', onAccionResuelta);
+      websocketService.off('accion-resuelta-cancelada', onAccionResuelta);
+      websocketService.off('accion-resuelta-fallida', onAccionResuelta);
     };
   }, []);
 };
