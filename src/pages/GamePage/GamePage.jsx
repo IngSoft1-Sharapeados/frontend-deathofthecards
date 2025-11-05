@@ -36,6 +36,7 @@ import useActionStack from '@/hooks/useActionStack';
 import styles from './GamePage.module.css';
 
 const NOT_SO_FAST_ID = 16;
+const PYS_ID = 25;
 const NOT_SO_FAST_WINDOW_MS = 5000;
 
 const GamePage = () => {
@@ -62,6 +63,10 @@ const GamePage = () => {
     lookIntoAshesModalOpen, setLookIntoAshesModalOpen,
     discardPileSelection, setDiscardPileSelection,
     selectedDiscardCard, setSelectedDiscardCard, setEventCardToPlay,
+    isPysVotingModalOpen, setIsPysVotingModalOpen,
+    pysActorId, setPysActorId,
+    pysLoadingMessage, setPysLoadingMessage,
+    pysVotos, setPysVotos,
   } = gameState;
 
   const {
@@ -151,8 +156,6 @@ const GamePage = () => {
       });
     },
 
-
-
     onHandUpdate: (message) => {
       console.log("Mensaje completo de WS:", message);
       const nuevaManoRaw = message.data;
@@ -191,7 +194,6 @@ const GamePage = () => {
       gameState.setAsesinoGano(asesinoGano);
     },
 
-
     onSetPlayed: async (payload) => {
       try {
         const { jugador_id: actorId, representacion_id: repId } = payload;
@@ -202,7 +204,7 @@ const GamePage = () => {
           imageName: setImageUrl,
           message: `${actorName} jugó un Set de Detectives`
         });
-        
+
         // --- FIN DE LA MODIFICACIÓN ---
         const allSets = await apiService.getPlayedSets(gameId);
 
@@ -309,7 +311,42 @@ const GamePage = () => {
       }, 3000);
     },
 
+    onPointYourSuspicionsPlayed: (message) => {
+      gameState.setPysActorId(message.jugador_id);
+      gameState.setIsPysVotingModalOpen(true);
+      gameState.setPysLoadingMessage(null); // Limpiar mensaje de "esperando"
+      gameState.setPysVotos({}); // Limpiar votos
+    },
 
+    onVotoRegistrado: (message) => {
+      gameState.setPysVotos(prev => ({
+        ...prev,
+        [message.votante_id]: true
+      }));
+    },
+
+    onVotacionFinalizada: (message) => {
+      gameState.setIsPysVotingModalOpen(false); // Cerrar el modal de votación
+      gameState.setPysLoadingMessage(null); // Limpiar
+
+      const sospechoso = gameState.players.find(p => p.id_jugador === message.sospechoso_id);
+      const sospechosoNombre = sospechoso?.nombre_jugador || `Jugador ${message.sospechoso_id}`;
+
+      gameState.setEventCardInPlay({
+        imageName: cardService.getCardImageUrl(PYS_ID),
+        message: `${sospechosoNombre} fue el más sospechado y debe revelar una carta.`
+      });
+
+      if (gameState.currentPlayerId === gameState.pysActorId) {
+        console.log("Somos el actor, solicitando revelación...");
+        apiService.requestTargetToRevealSecret(
+          gameId,
+          gameState.pysActorId,
+          message.sospechoso_id,
+          'point-your-suspicions'
+        );
+      }
+    },
 
     onDiscardUpdate: (discardPile) => gameState.setDiscardPile(discardPile),
   }), [gameState]);
@@ -604,6 +641,41 @@ const GamePage = () => {
         selectedCard={selectedDiscardCard}
         onCardSelect={setSelectedDiscardCard}
         onConfirm={() => handleLookIntoTheAshesConfirm()}
+      />
+      <PlayerSelectionModal
+        isOpen={isPysVotingModalOpen}
+        onClose={() => {
+          // No permitir cerrar
+          if (!pysLoadingMessage) {
+            alert("Debes votar para continuar.");
+          }
+        }}
+        players={players} // Mostrar todos los jugadores
+        onPlayerSelect={async (targetPlayerId) => {
+          try {
+            // Poner el modal en estado "cargando"
+            gameState.setPysLoadingMessage("Esperando a que los demás jugadores voten...");
+
+            // Enviar nuestro voto
+            await apiService.votePointYourSuspicions(
+              gameId,
+              pysActorId, // El actor que inició PYS
+              currentPlayerId, // Nosotros 
+              targetPlayerId   // El objetivo
+            );
+
+            //  El modal NO se cierra. Se queda en "Esperando..."
+            //    hasta que llegue el WS 'votacion-finalizada'.
+
+          } catch (error) {
+            console.error("Error al votar PYS:", error);
+            alert(`Error al votar: ${error.message}`);
+            gameState.setPysLoadingMessage(null);
+          }
+        }}
+        title="¿A quién sospechás como el asesino?"
+        loadingMessage={pysLoadingMessage}
+        hideCloseButton={true}
       />
     </div>
   );
