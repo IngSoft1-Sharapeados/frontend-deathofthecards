@@ -590,8 +590,11 @@ const useCardActions = (gameId, gameState, onSetEffectTrigger, iniciarAccionCanc
         cardId,
         originId
       );
-
-      console.log("[useCardActions] Carta enviada al origen:", response);
+      if (response?.status === "ok") {
+        console.log("[useCardActions] Carta enviada al origen:", response);
+        gameState.setCardTradeModalOpen(false);
+        gameState.setCardTradeContext(null);
+      }
       gameState.setCardTradeModalOpen(false);
       gameState.setCardTradeContext(null);
     } catch (err) {

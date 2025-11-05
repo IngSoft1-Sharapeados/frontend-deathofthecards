@@ -349,7 +349,8 @@ const GamePage = () => {
     handleEventActionConfirm,
     handleCardTradeConfirm,
     handleLookIntoTheAshesConfirm,
-    handleOneMoreSecretSelect
+    handleOneMoreSecretSelect,
+    handleSendCardTradeResponse
   } = useCardActions(
     gameId,
     gameState,
