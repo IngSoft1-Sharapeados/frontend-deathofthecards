@@ -69,7 +69,13 @@ const useGameState = () => {
   // Pickup is enabled while drawing, or if a set was already played this turn (to allow choosing pickup without discarding again),
   // but only when it's still your turn.
   const isPickupButtonEnabled = isMyTurn && (playerTurnState === 'drawing' || (hasPlayedSetThisTurn && hand.length < 6));
-  const isPlayButtonEnabled = isMyTurn && !isLocalPlayerDisgraced && !hasPlayedSetThisTurn && playerTurnState === 'discarding' && (isValidDetectiveSet(hand, selectedCards) || isValidEventCard(hand, selectedCards));
+  // Caso especial: Ariadne Oliver (15) puede jugarse sola y requiere seleccionar un set destino
+  const isAriadneSelected = (() => {
+    if (!Array.isArray(hand) || !Array.isArray(selectedCards) || selectedCards.length !== 1) return false;
+    const card = hand.find(c => c.instanceId === selectedCards[0]);
+    return card?.id === 15;
+  })();
+  const isPlayButtonEnabled = isMyTurn && !isLocalPlayerDisgraced && !hasPlayedSetThisTurn && playerTurnState === 'discarding' && (isValidDetectiveSet(hand, selectedCards) || isValidEventCard(hand, selectedCards) || isAriadneSelected);
 
   const maxSelect = (isLocalPlayerDisgraced) ? 1 : 6;
   const isDiscardButtonEnabled = selectedCards.length > 0 && selectedCards.length <= maxSelect && isMyTurn && playerTurnState === 'discarding';
