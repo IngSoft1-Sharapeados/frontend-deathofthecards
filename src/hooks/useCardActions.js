@@ -579,6 +579,25 @@ const useCardActions = (gameId, gameState, onSetEffectTrigger, iniciarAccionCanc
       alert(`Error: ${error.message}`);
     }
   };
+  const handleSendCardTradeResponse = async (cardId) => {
+    try {
+      const originId = gameState.cardTradeContext?.originId;
+      if (!originId) throw new Error("No hay jugador de origen para el intercambio");
+
+      const response = await apiService.sendCard(
+        gameId,
+        gameState.currentPlayerId,
+        cardId,
+        originId
+      );
+
+      console.log("[useCardActions] Carta enviada al origen:", response);
+      gameState.setCardTradeModalOpen(false);
+      gameState.setCardTradeContext(null);
+    } catch (err) {
+      console.error("[useCardActions] Error al enviar carta:", err);
+    }
+  };
 
   return {
     handleCardClick,
@@ -588,6 +607,7 @@ const useCardActions = (gameId, gameState, onSetEffectTrigger, iniciarAccionCanc
     handlePlay,
     handleEventActionConfirm,
     handleCardTradeConfirm,
+    handleSendCardTradeResponse,
     handleLookIntoTheAshesConfirm, // Exponer la función de Paso 2
     handleOneMoreSecretSelect: (secretId) => {
       if (oneMoreStep === 2) {
@@ -597,9 +617,8 @@ const useCardActions = (gameId, gameState, onSetEffectTrigger, iniciarAccionCanc
   };
 };
 
-// 'useSecrets' no necesita cambios
 export const useSecrets = (gameId, gameState) => {
-  // ... (código de useSecrets sin cambios)
+
   const {
     setIsSecretsModalOpen,
     setViewingSecretsOfPlayer,

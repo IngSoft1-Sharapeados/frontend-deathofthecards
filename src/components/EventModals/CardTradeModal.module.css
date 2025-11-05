@@ -1,0 +1,216 @@
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modalContent {
+  background: #2f2f4f;
+  padding: 2rem;
+  border-radius: 12px;
+  border: 2px solid #646cff;
+  width: 90%;
+  max-width: 800px;
+  text-align: center;
+  color: #e0e0e0;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modalContent h2 {
+  margin: 0 0 1rem 0;
+  color: #646cff;
+  font-size: 1.8rem;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.modalContent p {
+  margin: 0 0 2rem 0;
+  font-size: 1.1rem;
+  line-height: 1.5;
+  color: #b8b8d0;
+}
+
+.discardGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.8rem;
+  margin: 2rem 0;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+  border: 1px solid #444;
+}
+
+.cardWrapper {
+  transition: all 0.3s ease;
+  cursor: pointer;
+  border-radius: 10px;
+  padding: 0.5rem;
+}
+
+.cardWrapper:hover {
+  transform: translateY(-8px) scale(1.05);
+  z-index: 10;
+  background: rgba(100, 108, 255, 0.1);
+}
+
+.cardWrapper.selected {
+  transform: translateY(-12px) scale(1.08);
+  z-index: 5;
+  background: rgba(100, 108, 255, 0.2);
+  border: 2px solid #646cff;
+  box-shadow: 0 0 25px rgba(100, 108, 255, 0.6);
+}
+
+.cardWrapper.selected:hover {
+  transform: translateY(-12px) scale(1.1);
+  z-index: 11;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #444;
+}
+
+.cancelButton {
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  min-width: 120px;
+}
+
+.cancelButton:hover {
+  background-color: #5a6268;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(108, 117, 125, 0.4);
+}
+
+.cancelButton:active {
+  transform: translateY(0);
+}
+
+.confirmButton {
+  background: linear-gradient(135deg, #646cff, #535bf2);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  min-width: 140px;
+}
+
+.confirmButton:hover:not(:disabled) {
+  background: linear-gradient(135deg, #535bf2, #4348d8);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(100, 108, 255, 0.5);
+}
+
+.confirmButton:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.confirmButton:disabled {
+  background-color: #4a4a6a;
+  color: #888;
+  cursor: not-allowed;
+  opacity: 0.6;
+  transform: none;
+  box-shadow: none;
+}
+
+@media (max-width: 768px) {
+  .modalContent {
+    padding: 1.5rem;
+    margin: 1rem;
+  }
+  
+  .discardGrid {
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 1rem;
+    margin: 1.5rem 0;
+  }
+  
+  .modalActions {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .cancelButton,
+  .confirmButton {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .modalContent {
+    padding: 1rem;
+  }
+  
+  .discardGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.8rem;
+  }
+  
+  .modalContent h2 {
+    font-size: 1.5rem;
+  }
+  
+  .modalContent p {
+    font-size: 1rem;
+  }
+}
+
+@keyframes pulseGlow {
+  0% {
+    box-shadow: 0 0 15px rgba(100, 108, 255, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(100, 108, 255, 0.8);
+  }
+  100% {
+    box-shadow: 0 0 15px rgba(100, 108, 255, 0.4);
+  }
+}
+
+.cardWrapper.selected {
+  animation: pulseGlow 2s infinite;
+}
+
+.modalContent::-webkit-scrollbar {
+  width: 8px;
+}
+
+.modalContent::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+.modalContent::-webkit-scrollbar-thumb {
+  background: #646cff;
+  border-radius: 4px;
+}
+
+.modalContent::-webkit-scrollbar-thumb:hover {
+  background: #535bf2;
+}

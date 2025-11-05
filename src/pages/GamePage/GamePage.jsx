@@ -30,6 +30,7 @@ import EventDisplay from '@/components/EventModals/EventDisplay';
 import useSecretActions from '@/hooks/useSecretActions';
 import ActionStackModal from '@/components/EventModals/ActionStackModal';
 import ActionResultToast from '@/components/EventModals/ActionResultToast';
+import CardTradeModal from '@/components/EventModals/CardTradeModal';
 import useActionStack from '@/hooks/useActionStack';
 
 
@@ -310,7 +311,23 @@ const GamePage = () => {
       }, 3000);
     },
 
+    onCardTradePlayed: (message) => {
+      const { jugador_id: actorId, objetivo_id: targetId } = message;
+      const actorName = gameState.players.find(p => p.id_jugador === actorId)?.nombre_jugador || 'Un jugador';
+      const targetName = gameState.players.find(p => p.id_jugador === targetId)?.nombre_jugador || 'otro jugador';
 
+      // Mostrar efecto visual
+      gameState.setEventCardInPlay({
+        imageName: cardService.getCardImageUrl(CARD_IDS.CARD_TRADE),
+        message: `${actorName} inició un intercambio de cartas con ${targetName}`
+      });
+
+      // Si este cliente es el objetivo, abrir modal
+      if (targetId === gameState.currentPlayerId || actorId === gameState.currentPlayerId) {
+        gameState.setCardTradeModalOpen(true);
+        gameState.setCardTradeContext({ originId: actorId });
+      }
+    },
 
     onDiscardUpdate: (discardPile) => gameState.setDiscardPile(discardPile),
   }), [gameState]);
@@ -609,6 +626,13 @@ const GamePage = () => {
         selectedCard={selectedDiscardCard}
         onCardSelect={setSelectedDiscardCard}
         onConfirm={() => handleLookIntoTheAshesConfirm()}
+      />
+
+      <CardTradeModal
+        isOpen={gameState.isCardTradeModalOpen}
+        hand={hand}
+        onClose={() => gameState.setCardTradeModalOpen(false)}
+        onConfirm={(cardId) => handleSendCardTradeResponse(cardId)}
       />
     </div>
   );
