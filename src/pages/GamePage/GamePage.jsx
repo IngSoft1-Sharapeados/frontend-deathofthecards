@@ -24,6 +24,7 @@ import useWebSocket from '@/hooks/useGameWebSockets';
 import useGameState from '@/hooks/useGameState';
 import useGameData from '@/hooks/useGameData';
 import useCardActions, { useSecrets } from '@/hooks/useCardActions';
+import { CARD_IDS } from '@/hooks/useCardActions';
 import PlayerSelectionModal from '@/components/EventModals/PlayerSelectionModal';
 import EventDisplay from '@/components/EventModals/EventDisplay';
 import useSecretActions from '@/hooks/useSecretActions';
@@ -329,6 +330,7 @@ const GamePage = () => {
     handlePickUp,
     handlePlay,
     handleEventActionConfirm,
+    handleCardTradeConfirm,
     handleLookIntoTheAshesConfirm,
     handleOneMoreSecretSelect
   } = useCardActions(
@@ -561,10 +563,18 @@ const GamePage = () => {
               ? players // Step 3: Allow choosing any player, including source
               : opponentPlayers // Other events: only opponents
         }
-        onPlayerSelect={handleEventActionConfirm}
+        onPlayerSelect={(playerId) => {
+          if (gameState.eventCardToPlay?.id === CARD_IDS.CARD_TRADE) {
+            handleCardTradeConfirm(playerId);
+          } else {
+            handleEventActionConfirm(playerId);
+          }
+        }}
         title={
-          gameState.oneMoreStep === 1
-            ? "And Then There Was One More: Elige un jugador con secretos revelados"
+          gameState.eventCardToPlay?.id === CARD_IDS.CARD_TRADE
+            ? "Card Trade: selecciona un jugador para intercambiar cartas"
+            :gameState.oneMoreStep === 1
+              ? "And Then There Was One More: Elige un jugador con secretos revelados"
             : gameState.oneMoreStep === 3
               ? "And Then There Was One More: Elige el jugador destino"
               : "Cards off the Table: Elige un jugador"

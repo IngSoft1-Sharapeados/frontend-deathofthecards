@@ -277,6 +277,24 @@ const createHttpService = () => {
       method: "POST",
     });
   };
+  
+  const cardTrade = async (gameId, playerId, cardId, targetPlayerId) => {
+    return request(`/partidas/${gameId}/evento/CardTrade?id_jugador=${playerId}&id_carta=${cardId}&id_objetivo=${targetPlayerId}`, {
+      method: "POST",
+    });
+  };
+
+    const sendCard = async (gameId, playerId, cardId, targetPlayerId) => {
+      return request(`/events/send_card`, {
+        method: "POST",
+        body: JSON.stringify({
+          partida_id: gameId,
+          jugador_id: playerId,
+          carta_id: cardId,
+          jugador_objetivo_id: targetPlayerId,
+        }),
+      });
+    };
 
 
   return {
@@ -318,6 +336,8 @@ const createHttpService = () => {
     playNotSoFast,
     resolverAccion,
     cancelarAccion,
+    cardTrade,
+    sendCard,
   };
 };
 

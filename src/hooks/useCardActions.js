@@ -551,8 +551,32 @@ const useCardActions = (gameId, gameState, onSetEffectTrigger, iniciarAccionCanc
         setPlayerSelectionModalOpen(true);
         break;
       }
+      case CARD_IDS.CARD_TRADE: {
+        setPlayerSelectionModalOpen(true);
+        break;
+      }
       default:
         console.warn("Evento de carta no implementado:", cardId);
+    }
+  };
+
+  const handleCardTradeConfirm = async (targetPlayerId) => {
+    if (!eventCardToPlay) return;
+
+    const { id, id_instancia, instanceId } = eventCardToPlay;
+
+    try {
+      await apiService.cardTrade(gameId, currentPlayerId, id, targetPlayerId);
+      
+      // Cerramos el modal
+      setPlayerSelectionModalOpen(false);
+      setEventCardToPlay(null);
+
+      console.log("Esperando que el otro jugador complete el intercambio...");
+
+    } catch (error) {
+      console.error("Error al iniciar Card Trade:", error);
+      alert(`Error: ${error.message}`);
     }
   };
 
@@ -563,6 +587,7 @@ const useCardActions = (gameId, gameState, onSetEffectTrigger, iniciarAccionCanc
     handlePickUp,
     handlePlay,
     handleEventActionConfirm,
+    handleCardTradeConfirm,
     handleLookIntoTheAshesConfirm, // Exponer la función de Paso 2
     handleOneMoreSecretSelect: (secretId) => {
       if (oneMoreStep === 2) {
@@ -617,6 +642,7 @@ export const useSecrets = (gameId, gameState) => {
 
   return { handleOpenSecretsModal, handleCloseSecretsModal };
 };
+export { CARD_IDS };
 
 export default useCardActions;
 
