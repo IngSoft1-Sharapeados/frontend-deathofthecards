@@ -564,9 +564,17 @@ const useCardActions = (gameId, gameState, onSetEffectTrigger, iniciarAccionCanc
     if (!eventCardToPlay) return;
 
     const { id, id_instancia, instanceId } = eventCardToPlay;
-
+    const cardNombre = cardService.getCardNameById(id);
     try {
-      await apiService.cardTrade(gameId, currentPlayerId, id, targetPlayerId);
+        await iniciarAccionCancelable({
+          tipo_accion: "evento_card_trade",
+          cartas_db_ids: [id_instancia],
+          nombre_accion: cardNombre,
+          payload_original: {
+            id_objetivo: targetPlayerId
+          },
+          id_carta_tipo_original: id
+        });
       
       // Cerramos el modal
       setPlayerSelectionModalOpen(false);
