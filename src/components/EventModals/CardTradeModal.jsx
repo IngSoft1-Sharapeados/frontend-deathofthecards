@@ -41,9 +41,6 @@ const CardTradeModal = ({ isOpen, hand, onClose, onConfirm }) => {
         </div>
 
         <div className={styles.modalActions}>
-          <button onClick={onClose} className={styles.cancelButton}>
-            Cancelar
-          </button>
           <button
             onClick={handleConfirm}
             className={styles.confirmButton}

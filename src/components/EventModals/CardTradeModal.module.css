@@ -84,28 +84,6 @@
   border-top: 1px solid #444;
 }
 
-.cancelButton {
-  background-color: #6c757d;
-  color: white;
-  border: none;
-  padding: 12px 24px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: bold;
-  font-size: 1rem;
-  transition: all 0.3s ease;
-  min-width: 120px;
-}
-
-.cancelButton:hover {
-  background-color: #5a6268;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(108, 117, 125, 0.4);
-}
-
-.cancelButton:active {
-  transform: translateY(0);
-}
 
 .confirmButton {
   background: linear-gradient(135deg, #646cff, #535bf2);
@@ -156,7 +134,6 @@
     gap: 1rem;
   }
   
-  .cancelButton,
   .confirmButton {
     width: 100%;
   }
