@@ -39,6 +39,14 @@ const useActionStack = (gameId, currentPlayerId) => {
             switch (tipo_accion) {
                 case 'evento_another_victim':
                     return apiService.playAnotherVictim(gameId, currentPlayerId, id_tipo_carta, payload_original);
+                case 'evento_ariadne_oliver': {
+                    // Jugar Ariadne en el set objetivo y luego solicitar revelación al objetivo
+                    const repId = payload_original?.id_representacion_carta;
+                    const targetPlayerId = payload_original?.id_objetivo;
+                    return apiService
+                        .playAriadneOliver(gameId, currentPlayerId, repId)
+                        .then(() => apiService.requestTargetToRevealSecret(gameId, currentPlayerId, targetPlayerId, 'ariadne-oliver'));
+                }
                 case 'evento_one_more':
                     return apiService.playOneMore(gameId, currentPlayerId, id_tipo_carta, payload_original);
                 case 'evento_early_train':

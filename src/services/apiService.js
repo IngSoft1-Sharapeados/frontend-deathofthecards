@@ -142,10 +142,17 @@ const createHttpService = () => {
   };
 
   const playDetectiveSet = async (gameId, playerId, cardIds) => {
-    // Backend expects: POST /partidas/{id_partida}/Jugar-set?id_jugador=... body: [int, int, int]
-    return request(`/partidas/${gameId}/Jugar-set?id_jugador=${playerId}`, {
+    return request(`/partidas/${gameId}/Jugar-set?id_jugador=${playerId}&set_destino_id=0`, {
       method: "POST",
       body: JSON.stringify(cardIds),
+    });
+  };
+
+  // Ariadne Oliver (id 15): se juega sola y debe agregarse a un set existente (set_destino_id)
+  const playAriadneOliver = async (gameId, playerId, targetRepresentacionId) => {
+    return request(`/partidas/${gameId}/Jugar-set?id_jugador=${playerId}&set_destino_id=${targetRepresentacionId}`, {
+      method: 'POST',
+      body: JSON.stringify([15]),
     });
   };
 
@@ -313,6 +320,7 @@ const createHttpService = () => {
     takeDraftCard,
     pickUpCards,
     playDetectiveSet,
+  playAriadneOliver,
     getPlayedSets,
     getPlayerSecrets,
     getDiscardPile,

@@ -6,6 +6,7 @@ import { isValidEventCard } from '@/utils/eventCardValidation';
 
 const CARD_IDS = {
   COMODIN_ID: 14,
+  ARIADNE_OLIVER: 15,
   NOT_SO_FAST: 16,
   CARDS_OFF_THE_TABLE: 17,
   ANOTHER_VICTIM: 18,
@@ -288,10 +289,37 @@ const useCardActions = (gameId, gameState, onSetEffectTrigger, iniciarAccionCanc
 
     // ---  FLUJO CANCELABLE (Eventos Simples) ---
     try {
+      const playerName = players.find(p => p.id_jugador === currentPlayerId)?.nombre_jugador || 'Alguien';
+      // Mostrar display del evento
+      {
+        let imageName;
+        if (cardId === CARD_IDS.ARIADNE_OLIVER) {
+          imageName = cardService.getCardImageUrl(cardId);
+        } else {
+          const eventCardData = cardService.getEventCardData?.(cardId);
+          imageName = eventCardData?.url ?? cardService.getCardImageUrl(cardId);
+        }
+        if (typeof gameState.setEventCardInPlay === 'function') {
+          gameState.setEventCardInPlay({
+            imageName,
+            message: cardId === CARD_IDS.ARIADNE_OLIVER ? `${playerName} jugó "Ariadne Oliver"` : `${playerName} jugó una carta de evento!`
+          });
+        }
+      }
+
       let tipo_accion = "";
       let payload_original = {};
 
       switch (cardId) {
+        case CARD_IDS.ARIADNE_OLIVER: {
+          const targetSet = payload; // { jugador_id, representacion_id_carta, cartas_ids }
+          tipo_accion = 'evento_ariadne_oliver';
+          payload_original = {
+            id_objetivo: targetSet.jugador_id,
+            id_representacion_carta: targetSet.representacion_id_carta
+          };
+          break;
+        }
         case CARD_IDS.ANOTHER_VICTIM: {
           const targetSet = payload;
           tipo_accion = "evento_another_victim";
@@ -311,6 +339,18 @@ const useCardActions = (gameId, gameState, onSetEffectTrigger, iniciarAccionCanc
           tipo_accion = "evento_delay_escape";
           payload_original = { cantidad: payload };
           break;
+        }
+        case CARD_IDS.CARDS_OFF_THE_TABLE: {
+          // Mantener Cards Off The Table como no-cancelable
+          const targetPlayerId = payload;
+          await apiService.playCardsOffTheTable(gameId, currentPlayerId, targetPlayerId, cardId);
+          // Limpieza de UI similar
+          setSelectedCards([]);
+          const newHandCot = hand.filter(card => card.instanceId !== cardToPlay.instanceId);
+          setHand(newHandCot);
+          setHasPlayedSetThisTurn(true);
+          setPlayerTurnState(() => (newHandCot.length < 6 ? 'drawing' : 'discarding'));
+          return;
         }
         default:
           throw new Error(`Lógica de "iniciar-accion" no implementada para la carta ${cardId}`);
@@ -355,13 +395,25 @@ const useCardActions = (gameId, gameState, onSetEffectTrigger, iniciarAccionCanc
     if (!isMyTurn || playerTurnState !== 'discarding') return;
     const isEvent = isValidEventCard(hand, selectedCards);
     const isSet = isValidDetectiveSet(hand, selectedCards);
-    if (!isEvent && !isSet) return;
+    const isAriadne = (() => {
+      if (selectedCards.length !== 1) return false;
+      const card = hand.find(c => c.instanceId === selectedCards[0]);
+      return card?.id === CARD_IDS.ARIADNE_OLIVER;
+    })();
+
+    if (!isEvent && !isSet && !isAriadne) return;
     const cardIdsToPlay = selectedCards
       .map((instanceId) => hand.find((c) => c.instanceId === instanceId)?.id)
       .filter((id) => id !== undefined);
     try {
       if (isEvent) {
         await handleEventPlay(cardIdsToPlay[0]);
+      } else if (isAriadne) {
+        // Reutilizar SetSelectionModal como con Another Victim
+        const cardInstance = hand.find(c => c.instanceId === selectedCards[0]);
+        if (!cardInstance) return;
+        setEventCardToPlay({ id: cardInstance.id, instanceId: cardInstance.instanceId, id_instancia: cardInstance.id_instancia });
+        setSetSelectionModalOpen(true);
       } else {
         await handleSetPlay(cardIdsToPlay);
       }
@@ -529,6 +581,10 @@ const useCardActions = (gameId, gameState, onSetEffectTrigger, iniciarAccionCanc
       }
       // --------------------
       case CARD_IDS.ANOTHER_VICTIM: {
+        setSetSelectionModalOpen(true);
+        break;
+      }
+      case CARD_IDS.ARIADNE_OLIVER: {
         setSetSelectionModalOpen(true);
         break;
       }

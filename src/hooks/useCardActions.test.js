@@ -271,6 +271,96 @@ describe('useCardActions', () => {
       expect(mockGameState.setSelectedDraftCards).toHaveBeenCalledWith([]);
     });
   });
+
+  describe('Ariadne Oliver flow', () => {
+    test('handlePlay with single Ariadne (id=15) opens SetSelectionModal', async () => {
+      const state = {
+        ...mockGameState,
+        hand: [
+          { id: 15, url: 'ariadne.png', instanceId: 'a-1' },
+          { id: 7, url: 'det.png', instanceId: 'd-1' },
+        ],
+        selectedCards: ['a-1'],
+        setSetSelectionModalOpen: vi.fn(),
+        setEventCardToPlay: vi.fn(),
+      };
+
+      const { result } = renderHook(() => useCardActions('game-123', state));
+      await act(async () => {
+        await result.current.handlePlay();
+      });
+
+  expect(state.setEventCardToPlay).toHaveBeenCalledWith(expect.objectContaining({ id: 15, instanceId: 'a-1' }));
+      expect(state.setSetSelectionModalOpen).toHaveBeenCalledWith(true);
+      // No immediate API call should be made until a set is selected
+      expect(apiService.playAriadneOliver).not.toHaveBeenCalled();
+    });
+
+    test('handleEventActionConfirm for Ariadne starts cancelable action and cleans up', async () => {
+      const state = {
+        ...mockGameState,
+        hand: [
+          { id: 15, url: 'ariadne.png', instanceId: 'a-1', id_instancia: 1001 },
+          { id: 9, url: 'other.png', instanceId: 'o-1' },
+        ],
+        selectedCards: ['a-1'],
+        eventCardToPlay: { id: 15, instanceId: 'a-1', id_instancia: 1001 },
+        players: [
+          { id_jugador: 1, nombre_jugador: 'You' },
+          { id_jugador: 3, nombre_jugador: 'Opp' },
+        ],
+        setEventCardToPlay: vi.fn(),
+        setSetSelectionModalOpen: vi.fn(),
+        setPlayerSelectionModalOpen: vi.fn(),
+        setConfirmationModalOpen: vi.fn(),
+      };
+
+  const iniciarAccionCancelable = vi.fn();
+  const { result } = renderHook(() => useCardActions('game-123', state, undefined, iniciarAccionCancelable));
+
+      const targetSet = { jugador_id: 3, representacion_id_carta: 999, cartas_ids: [7, 8, 9] };
+
+      await act(async () => {
+        await result.current.handleEventActionConfirm(targetSet);
+      });
+
+      // Iniciar acción cancelable (Ariadne)
+  expect(iniciarAccionCancelable).toHaveBeenCalledTimes(1);
+  const accion = iniciarAccionCancelable.mock.calls[0][0];
+      expect(accion).toMatchObject({
+        tipo_accion: 'evento_ariadne_oliver',
+        cartas_db_ids: [1001],
+        id_carta_tipo_original: 15,
+        payload_original: {
+          id_objetivo: 3,
+          id_representacion_carta: 999,
+        },
+      });
+
+      // Hand cleanup removed Ariadne
+      expect(state.setHand).toHaveBeenCalled();
+      const updater = state.setHand.mock.calls[0][0];
+      const prev = state.hand;
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      expect(next).toEqual([{ id: 9, url: 'other.png', instanceId: 'o-1' }]);
+
+      // Selection and turn state updates
+      expect(state.setSelectedCards).toHaveBeenCalledWith([]);
+      expect(state.setHasPlayedSetThisTurn).toHaveBeenCalledWith(true);
+      expect(state.setPlayerTurnState).toHaveBeenCalledWith(expect.any(Function));
+
+      // Modal cleanup and event reset
+      expect(state.setPlayerSelectionModalOpen).toHaveBeenCalledWith(false);
+      expect(state.setConfirmationModalOpen).toHaveBeenCalledWith(false);
+      expect(state.setSetSelectionModalOpen).toHaveBeenCalledWith(false);
+      expect(state.setEventCardToPlay).toHaveBeenCalledWith(null);
+
+      // No llamado directo al API aquí (se hace al resolver la acción)
+      expect(apiService.playAriadneOliver).not.toHaveBeenCalled();
+      expect(apiService.requestTargetToRevealSecret).not.toHaveBeenCalled();
+      expect(apiService.getPlayedSets).not.toHaveBeenCalled();
+    });
+  });
 });
 
 
