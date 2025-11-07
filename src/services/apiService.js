@@ -291,9 +291,9 @@ const createHttpService = () => {
     });
   };
   const sendCard = async (gameId, playerId, cardId, targetPlayerId) => {
-    const query = `?partida_id=${gameId}&jugador_id=${playerId}&carta_id=${cardId}&jugador_objetivo_id=${targetPlayerId}`;
+    const query = `?id_partida=${gameId}&id_jugador=${playerId}&id_carta=${cardId}&id_objetivo=${targetPlayerId}`;
 
-    return request(`/partidas/${gameId}/evento/send_card${query}`, {
+    return request(`/partidas/${gameId}/evento/sendCard${query}`, {
       method: "POST",
     });
   };

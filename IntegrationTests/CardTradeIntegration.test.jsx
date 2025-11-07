@@ -5,7 +5,7 @@ import React from 'react';
 import useGameState from '@/hooks/useGameState';
 import useCardActions from '@/hooks/useCardActions';
 import CardTradeModal from '@/components/EventModals/CardTrade/CardTradeModal';
-import { apiService } from '@/services/apiService'; // ✅ import estático del mock
+import { apiService } from '@/services/apiService'; 
 import '@testing-library/jest-dom';
 
 // --- Mocks --- //
