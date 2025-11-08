@@ -48,7 +48,7 @@ const GamePage = () => {
   const {
     hand, selectedCards, isLoading,
     deckCount, currentTurn, /* turnOrder */ players,
-    winners, asesinoGano,
+    winners, asesinoGano, isDisgraceVictory,
     isDiscardButtonEnabled, currentPlayerId,
     roles, displayedOpponents, draftCards, discardPile,
     playerTurnState, selectedDraftCards, isPickupButtonEnabled,
@@ -310,10 +310,10 @@ const GamePage = () => {
             playersNotDisgraced.every(player => expectedSurvivors.includes(player.id_jugador));
 
           if (allDisgracedExceptMurderers) {
-            console.log('🎭 Victoria por desgracia social: El asesino ganó');
             // Activar el modal de fin de partida
             gameState.setWinners([]);
             gameState.setAsesinoGano(true);
+            gameState.setIsDisgraceVictory(true);
           }
         }, 100);
       } catch (error) {
@@ -420,6 +420,7 @@ const GamePage = () => {
         <GameOverScreen
           winners={winners}
           asesinoGano={asesinoGano}
+          isDisgraceVictory={isDisgraceVictory}
           players={players}
           roles={roles}
           setRoles={gameState.setRoles}

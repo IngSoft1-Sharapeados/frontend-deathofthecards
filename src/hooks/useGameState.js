@@ -27,6 +27,7 @@ const useGameState = () => {
   // Estados para el fin de la partida
   const [winners, setWinners] = useState(null);
   const [asesinoGano, setAsesinoGano] = useState(false);
+  const [isDisgraceVictory, setIsDisgraceVictory] = useState(false);
 
   const [playerTurnState, setPlayerTurnState] = useState('discarding');
   const [selectedDraftCards, setSelectedDraftCards] = useState([]);
@@ -121,6 +122,7 @@ const useGameState = () => {
     displayedOpponents,
     winners, setWinners,
     asesinoGano, setAsesinoGano,
+    isDisgraceVictory, setIsDisgraceVictory,
     mySecretCards, setMySecretCards,
     draftCards, setDraftCards,
 
