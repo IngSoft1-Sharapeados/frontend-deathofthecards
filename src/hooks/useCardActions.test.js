@@ -383,7 +383,7 @@ describe('useCardActions', () => {
 
     test('debería llamar a iniciarAccionCancelable para PYS y actualizar estado', async () => {
 
-      // 1. Setup del Estado
+      // Setup del Estado
       const pysCard = { id: ID_PYS, url: 'pys.png', instanceId: 'pys-1', id_instancia: 101, nombre: 'Point Your Suspicions' };
       const otherCard = { id: 7, url: 'det.png', instanceId: 'd-1', id_instancia: 102 };
 
@@ -398,17 +398,17 @@ describe('useCardActions', () => {
         players: [{ id_jugador: 1, nombre_jugador: 'Tester' }],
       };
 
-      // 2. Renderizar el hook
+      // Renderizar el hook
       const { result } = renderHook(() =>
         useCardActions('game-123', state, vi.fn(), mockIniciarAccion)
       );
 
-      // 3. Actuar (simular clic en "Jugar")
+      // simular clic en "Jugar"
       await act(async () => {
         await result.current.handlePlay();
       });
 
-      // 4. Verificar (Llamada a 'iniciarAccionCancelable')
+      // Verificar (Llamada a 'iniciarAccionCancelable')
       expect(mockIniciarAccion).toHaveBeenCalledTimes(1);
       expect(mockIniciarAccion).toHaveBeenCalledWith({
         tipo_accion: "evento_point_your_suspicions",
@@ -418,7 +418,7 @@ describe('useCardActions', () => {
         id_carta_tipo_original: ID_PYS // El id de tipo
       });
 
-      // 5. Verificar (Actualización optimista de UI)
+      // Verificar
       expect(state.setHand).toHaveBeenCalledTimes(1);
 
       // Verificar que la mano se actualizó correctamente
