@@ -64,6 +64,7 @@ const useGameState = () => {
 
   const [isCardTradeModalOpen, setCardTradeModalOpen] = useState(false);
   const [cardTradeContext, setCardTradeContext] = useState(null);
+  const [isDeadCardFollyModalOpen, setDeadCardFollyModalOpen] = useState(false);
   // Derived state
   const isMyTurn = currentTurn === currentPlayerId;
   const isLocalPlayerDisgraced = disgracedPlayerIds.has(currentPlayerId);
@@ -165,6 +166,7 @@ const useGameState = () => {
     selectedDiscardCard, setSelectedDiscardCard,
     isCardTradeModalOpen, setCardTradeModalOpen,
     cardTradeContext, setCardTradeContext,
+    isDeadCardFollyModalOpen, setDeadCardFollyModalOpen,
   };
 };
 

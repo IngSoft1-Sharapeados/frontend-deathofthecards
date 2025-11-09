@@ -611,6 +611,10 @@ const useCardActions = (gameId, gameState, onSetEffectTrigger, iniciarAccionCanc
         setPlayerSelectionModalOpen(true);
         break;
       }
+      case CARD_IDS.DEAD_CARD_FOLLY: {
+        gameState.setDeadCardFollyModalOpen?.(true);
+        break;
+      }
       default:
         console.warn("Evento de carta no implementado:", cardId);
     }
@@ -643,6 +647,33 @@ const useCardActions = (gameId, gameState, onSetEffectTrigger, iniciarAccionCanc
       alert(`Error: ${error.message}`);
     }
   };
+
+  const handleDeadCardFollyConfirm = async (direccion) => {
+    if (!eventCardToPlay) {
+      console.warn("No hay carta de evento seleccionada para jugar.");
+      return;
+    }
+
+    try {
+      console.log(`[DeadCardFolly] Jugando carta con dirección: ${direccion}`);
+
+      await apiService.playDeadCardFolly(
+        gameId,
+        currentPlayerId,
+        eventCardToPlay.id,
+        direccion
+      );
+
+      gameState.setDeadCardFollyModalOpen(false);
+      setEventCardToPlay(null);
+
+    } catch (error) {
+      console.error("Error al jugar Dead Card Folly:", error);
+      alert(`Error: ${error.message}`);
+    }
+  };
+
+
   const handleSendCardTradeResponse = async (cardId) => {
     try {
       const originId = gameState.cardTradeContext?.originId;
@@ -674,6 +705,7 @@ const useCardActions = (gameId, gameState, onSetEffectTrigger, iniciarAccionCanc
     handlePlay,
     handleEventActionConfirm,
     handleCardTradeConfirm,
+    handleDeadCardFollyConfirm,
     handleSendCardTradeResponse,
     handleLookIntoTheAshesConfirm, // Exponer la función de Paso 2
     handleOneMoreSecretSelect: (secretId) => {

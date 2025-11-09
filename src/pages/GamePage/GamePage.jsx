@@ -32,7 +32,7 @@ import ActionStackModal from '@/components/EventModals/ActionStackModal';
 import ActionResultToast from '@/components/EventModals/ActionResultToast';
 import CardTradeModal from '@/components/EventModals/CardTrade/CardTradeModal';
 import useActionStack from '@/hooks/useActionStack';
-
+import DeadCardFollyModal from '@/components/EventModals/DeadCardFolly/DeadCardFollyModal';
 
 // Styles
 import styles from './GamePage.module.css';
@@ -329,6 +329,34 @@ const GamePage = () => {
       }
     },
 
+  onDeadlyCardFollyPlayed: (message) => {
+    const { jugador_id: actorId, direccion, orden } = message;
+    const actorName =
+      gameState.players.find(p => p.id_jugador === actorId)?.nombre_jugador || "Un jugador";
+
+    gameState.setEventCardInPlay({
+      imageName: cardService.getCardImageUrl(CARD_IDS.DEAD_CARD_FOLLY),
+      message: `${actorName} jugó "Deadly Card Folly" (${direccion})`,
+    });
+
+    // Calcular a quién enviar carta
+    const myId = gameState.currentPlayerId;
+    const i = orden.indexOf(myId);
+    if (i === -1) return;
+    const n = orden.length;
+    const targetId =
+      direccion === "izquierda"
+        ? orden[(i - 1 + n) % n]
+        : orden[(i + 1) % n];
+
+    // Solo si este jugador debe enviar carta
+    if (targetId) {
+      gameState.setCardTradeContext({ originId: myId, targetId });
+      gameState.setCardTradeModalOpen(true); // Reutiliza el modal de cardTrade
+    }
+  },
+
+
     onDiscardUpdate: (discardPile) => gameState.setDiscardPile(discardPile),
   }), [gameState]);
 
@@ -350,7 +378,8 @@ const GamePage = () => {
     handleCardTradeConfirm,
     handleLookIntoTheAshesConfirm,
     handleOneMoreSecretSelect,
-    handleSendCardTradeResponse
+    handleSendCardTradeResponse,
+    handleDeadCardFollyConfirm
   } = useCardActions(
     gameId,
     gameState,
@@ -633,7 +662,11 @@ const GamePage = () => {
         onCardSelect={setSelectedDiscardCard}
         onConfirm={() => handleLookIntoTheAshesConfirm()}
       />
-
+      <DeadCardFollyModal
+        isOpen={gameState.isDeadCardFollyModalOpen}
+        onClose={() => gameState.setDeadCardFollyModalOpen(false)}
+        onConfirm={(direccion) => handleDeadCardFollyConfirm(direccion)}
+      />
       <CardTradeModal
         isOpen={gameState.isCardTradeModalOpen}
         hand={hand}

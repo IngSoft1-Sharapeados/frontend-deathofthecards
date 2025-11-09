@@ -1,0 +1,202 @@
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modalContent {
+  background: #2f2f4f;
+  padding: 2rem;
+  border-radius: 12px;
+  border: 2px solid #646cff;
+  width: 90%;
+  max-width: 500px;
+  text-align: center;
+  color: #e0e0e0;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modalHeader {
+  margin-bottom: 1.5rem;
+}
+
+.modalHeader h2 {
+  margin: 0 0 1rem 0;
+  color: #646cff;
+  font-size: 1.8rem;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.directionButtons {
+  display: flex;
+  justify-content: space-around;
+  gap: 1rem;
+  margin: 2rem 0;
+}
+
+.directionButton {
+  background: linear-gradient(135deg, #646cff, #535bf2);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  min-width: 140px;
+  border: 2px solid transparent;
+}
+
+.directionButton:hover {
+  background: linear-gradient(135deg, #535bf2, #4348d8);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(100, 108, 255, 0.5);
+  border-color: #646cff;
+}
+
+.directionButton:active {
+  transform: translateY(0);
+}
+
+.leftButton, .rightButton {
+  position: relative;
+  overflow: hidden;
+}
+
+.leftButton::before, .rightButton::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 20px;
+  height: 20px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  transform: translateY(-50%);
+}
+
+.leftButton::before {
+  left: 10px;
+}
+
+.rightButton::after {
+  right: 10px;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #444;
+}
+
+.cancelButton {
+  background: transparent;
+  color: #b8b8d0;
+  border: 1px solid #646cff;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  min-width: 120px;
+}
+
+.cancelButton:hover {
+  background: rgba(100, 108, 255, 0.1);
+  color: #e0e0e0;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(100, 108, 255, 0.3);
+}
+
+.cancelButton:active {
+  transform: translateY(0);
+}
+
+/* Scrollbar personalizado */
+.modalContent::-webkit-scrollbar {
+  width: 8px;
+}
+
+.modalContent::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+.modalContent::-webkit-scrollbar-thumb {
+  background: #646cff;
+  border-radius: 4px;
+}
+
+.modalContent::-webkit-scrollbar-thumb:hover {
+  background: #535bf2;
+}
+
+/* Animaciones */
+@keyframes pulseGlow {
+  0% {
+    box-shadow: 0 0 15px rgba(100, 108, 255, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(100, 108, 255, 0.8);
+  }
+  100% {
+    box-shadow: 0 0 15px rgba(100, 108, 255, 0.4);
+  }
+}
+
+.modalContent {
+  animation: pulseGlow 3s infinite;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .modalContent {
+    padding: 1.5rem;
+    margin: 1rem;
+  }
+  
+  .directionButtons {
+    flex-direction: column;
+    gap: 1rem;
+    margin: 1.5rem 0;
+  }
+  
+  .directionButton {
+    width: 100%;
+  }
+  
+  .modalActions {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .cancelButton {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .modalContent {
+    padding: 1rem;
+  }
+  
+  .modalHeader h2 {
+    font-size: 1.5rem;
+  }
+  
+  .directionButton {
+    padding: 10px 16px;
+    font-size: 0.9rem;
+  }
+}

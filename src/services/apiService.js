@@ -297,7 +297,12 @@ const createHttpService = () => {
       method: "POST",
     });
   };
-
+  const playDeadCardFolly = async (gameId, playerId, cardId, direccion) => {
+    const query = `?id_partida=${gameId}&id_jugador=${playerId}&id_carta=${cardId}&direccion=${direccion}`;
+    return request(`/partidas/${gameId}/evento/DeadCardFolly${query}`, {
+      method: "POST",
+    });
+  };
   return {
     createGame,
     listGames,
@@ -340,6 +345,7 @@ const createHttpService = () => {
     cancelarAccion,
     cardTrade,
     sendCard,
+    playDeadCardFolly,
   };
 };
 
