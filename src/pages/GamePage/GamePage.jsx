@@ -48,7 +48,7 @@ const GamePage = () => {
   const {
     hand, selectedCards, isLoading,
     deckCount, currentTurn, /* turnOrder */ players,
-    winners, asesinoGano,
+    winners, asesinoGano, isDisgraceVictory,
     isDiscardButtonEnabled, currentPlayerId,
     roles, displayedOpponents, draftCards, discardPile,
     playerTurnState, selectedDraftCards, isPickupButtonEnabled,
@@ -252,6 +252,8 @@ const GamePage = () => {
       const revealedCount = secrets.filter(s => s.revelado).length;
       const hiddenCount = secrets.length - revealedCount;
 
+      let updatedDisgracedSet = new Set();
+      
       gameState.setDisgracedPlayerIds(prevSet => {
         const newSet = new Set(prevSet);
         if (isNowDisgraced) {
@@ -259,6 +261,7 @@ const GamePage = () => {
         } else {
           newSet.delete(playerId);
         }
+        updatedDisgracedSet = newSet;
         return newSet;
       });
 
@@ -289,6 +292,37 @@ const GamePage = () => {
           });
           gameState.setPlayerSecretsData(processedModalSecrets);
         }
+
+        // Verificar victoria por desgracia social
+        // Esperar un momento para que el estado se actualice completamente
+        setTimeout(() => {
+          // Si ya hay ganadores, no hacer nada
+          if (gameState.winners) return;
+
+          // Necesitamos tener la información de roles y jugadores
+          if (!gameState.roles.murdererId || !gameState.players || gameState.players.length === 0) return;
+
+          // Determinar qué jugadores no están en desgracia
+          const playersNotDisgraced = gameState.players.filter(player => !updatedDisgracedSet.has(player.id_jugador));
+
+          // Verificar si solo quedan el asesino (y cómplice si existe)
+          const expectedSurvivors = [gameState.roles.murdererId];
+          if (gameState.roles.accompliceId) {
+            expectedSurvivors.push(gameState.roles.accompliceId);
+          }
+
+          // Todos los jugadores no en desgracia deben ser exactamente el asesino y/o cómplice
+          const allDisgracedExceptMurderers = 
+            playersNotDisgraced.length === expectedSurvivors.length &&
+            playersNotDisgraced.every(player => expectedSurvivors.includes(player.id_jugador));
+
+          if (allDisgracedExceptMurderers) {
+            // Activar el modal de fin de partida
+            gameState.setWinners([]);
+            gameState.setAsesinoGano(true);
+            gameState.setIsDisgraceVictory(true);
+          }
+        }, 100);
       } catch (error) {
         console.error("Error al refrescar secretos vía WebSocket:", error);
       }
@@ -393,6 +427,7 @@ const GamePage = () => {
         <GameOverScreen
           winners={winners}
           asesinoGano={asesinoGano}
+          isDisgraceVictory={isDisgraceVictory}
           players={players}
           roles={roles}
           setRoles={gameState.setRoles}
