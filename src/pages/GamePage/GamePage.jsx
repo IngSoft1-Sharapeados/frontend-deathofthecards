@@ -125,17 +125,24 @@ const GamePage = () => {
           groupedSets[item.jugador_id] = arr;
         });
         gameState.setPlayedSetsByPlayer(groupedSets);
+
+        // If we stole the set, find it and trigger its effect with full card info
+        if (actorId === gameState.currentPlayerId) {
+          
+
+          // Find the stolen set in the fetched data to get cartas_ids
+          const stolenSet = (allSets || []).find(
+            set => set.jugador_id === actorId && set.representacion_id_carta === repId
+          );
+
+          handleSetPlayedEvent?.({
+            jugador_id: actorId,
+            representacion_id: repId,
+            cartas_ids: stolenSet?.cartas_ids || []
+          });
+        }
       } catch (error) {
         console.error("Error al refrescar sets tras Another Victim:", error);
-      }
-
-      if (actorId === gameState.currentPlayerId) {
-        console.log("[GamePage] ¡Robamos un set! Disparando efecto del set...", message);
-
-        handleSetPlayedEvent?.({
-          jugador_id: actorId,
-          representacion_id: repId
-        });
       }
     },
 
