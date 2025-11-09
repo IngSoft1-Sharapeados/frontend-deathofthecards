@@ -40,7 +40,7 @@ function TestWrapper() {
   // Configurar estado inicial simulado
   React.useEffect(() => {
     gameState.setCardTradeModalOpen(true);
-    gameState.setCardTradeContext({ originId: 7 });
+    gameState.setCardTradeContext({ originId: 7, targetPlayerId: 3 });
     gameState.setCurrentPlayerId(5);
   }, []);
 

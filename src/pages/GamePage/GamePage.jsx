@@ -325,7 +325,7 @@ const GamePage = () => {
       // Si este cliente es el objetivo, abrir modal
       if (targetId === gameState.currentPlayerId || actorId === gameState.currentPlayerId) {
         gameState.setCardTradeModalOpen(true);
-        gameState.setCardTradeContext({ originId: actorId });
+        gameState.setCardTradeContext({ originId: actorId, targetPlayerId: targetId });
       }
     },
 
