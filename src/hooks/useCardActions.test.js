@@ -361,6 +361,104 @@ describe('useCardActions', () => {
       expect(apiService.getPlayedSets).not.toHaveBeenCalled();
     });
   });
+
+  describe('Hermanos Beresford Set (Tommy + Tuppence)', () => {
+    test('should call playDetectiveSet directly without going through cancelable action', async () => {
+      // Set up state with Tommy (12) and Tuppence (13) Beresford in hand
+      const state = {
+        ...mockGameState,
+        hand: [
+          { id: 12, url: 'tommy.png', instanceId: 't-1', id_instancia: 1001 },
+          { id: 13, url: 'tuppence.png', instanceId: 'tu-1', id_instancia: 1002 },
+        ],
+        selectedCards: ['t-1', 'tu-1'],
+        currentPlayerId: 2,
+        isMyTurn: true,
+        playerTurnState: 'discarding',
+      };
+
+      isValidDetectiveSet.mockReturnValue(true);
+      const iniciarAccionCancelable = vi.fn();
+      apiService.playDetectiveSet.mockResolvedValue({});
+
+      const { result } = renderHook(() => useCardActions('game-123', state, undefined, iniciarAccionCancelable));
+
+      await act(async () => {
+        await result.current.handlePlay();
+      });
+
+      // Should call playDetectiveSet directly (not cancelable)
+      expect(apiService.playDetectiveSet).toHaveBeenCalledWith('game-123', 2, [12, 13]);
+      
+      // Should NOT call iniciarAccionCancelable
+      expect(iniciarAccionCancelable).not.toHaveBeenCalled();
+
+      // Should update state normally
+      expect(state.setSelectedCards).toHaveBeenCalledWith([]);
+      expect(state.setHasPlayedSetThisTurn).toHaveBeenCalledWith(true);
+      expect(state.setPlayerTurnState).toHaveBeenCalledWith('discarding');
+    });
+
+    test('should use cancelable action for Tommy + Tommy (same detective)', async () => {
+      // Set up state with two Tommy Beresford cards
+      const state = {
+        ...mockGameState,
+        hand: [
+          { id: 12, url: 'tommy.png', instanceId: 't-1', id_instancia: 1001 },
+          { id: 12, url: 'tommy.png', instanceId: 't-2', id_instancia: 1002 },
+        ],
+        selectedCards: ['t-1', 't-2'],
+        currentPlayerId: 2,
+        isMyTurn: true,
+        playerTurnState: 'discarding',
+      };
+
+      isValidDetectiveSet.mockReturnValue(true);
+      const iniciarAccionCancelable = vi.fn().mockResolvedValue({});
+
+      const { result } = renderHook(() => useCardActions('game-123', state, undefined, iniciarAccionCancelable));
+
+      await act(async () => {
+        await result.current.handlePlay();
+      });
+
+      // Should use cancelable action (normal flow)
+      expect(iniciarAccionCancelable).toHaveBeenCalled();
+      
+      // Should NOT call playDetectiveSet directly
+      expect(apiService.playDetectiveSet).not.toHaveBeenCalled();
+    });
+
+    test('should use cancelable action for Tuppence + Wildcard', async () => {
+      // Set up state with Tuppence and Wildcard
+      const state = {
+        ...mockGameState,
+        hand: [
+          { id: 13, url: 'tuppence.png', instanceId: 'tu-1', id_instancia: 1001 },
+          { id: 14, url: 'wildcard.png', instanceId: 'w-1', id_instancia: 1002 },
+        ],
+        selectedCards: ['tu-1', 'w-1'],
+        currentPlayerId: 2,
+        isMyTurn: true,
+        playerTurnState: 'discarding',
+      };
+
+      isValidDetectiveSet.mockReturnValue(true);
+      const iniciarAccionCancelable = vi.fn().mockResolvedValue({});
+
+      const { result } = renderHook(() => useCardActions('game-123', state, undefined, iniciarAccionCancelable));
+
+      await act(async () => {
+        await result.current.handlePlay();
+      });
+
+      // Should use cancelable action (normal flow)
+      expect(iniciarAccionCancelable).toHaveBeenCalled();
+      
+      // Should NOT call playDetectiveSet directly
+      expect(apiService.playDetectiveSet).not.toHaveBeenCalled();
+    });
+  });
 });
 
 
