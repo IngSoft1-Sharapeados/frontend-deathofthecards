@@ -349,7 +349,7 @@ const GamePage = () => {
         ? orden[(i - 1 + n) % n]
         : orden[(i + 1) % n];
 
-    // Solo si este jugador debe enviar carta
+    
     if (targetId) {
       gameState.setCardTradeContext({ originId: myId, targetId });
       gameState.setCardTradeModalOpen(true); // Reutiliza el modal de cardTrade

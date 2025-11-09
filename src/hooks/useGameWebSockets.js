@@ -100,9 +100,9 @@ const useWebSocket = (callbacks) => {
       console.log('Evento "Card Trade" jugado:', message);
       callbacksRef.current.onCardTradePlayed?.(message);
     };
-    const onDeadlyCardFollyPlayed = (message) => {
-      console.log('Evento "Deadly Card Folly" jugado:', message);
-      callbacksRef.current.onDeadlyCardFollyPlayed?.(message);
+    const onDeadCardFollyPlayed = (message) => {
+      console.log('Evento "Dead Card Folly" jugado:', message);
+      callbacksRef.current.onDeadCardFollyPlayed?.(message);
     };
     
     const onAccionEnProgreso = (message) => {
@@ -131,7 +131,7 @@ const useWebSocket = (callbacks) => {
     websocketService.on('se-jugo-early-train', onEarlyTrainPlayed);
     websocketService.on('actualizacion-secreto', onSecretUpdate);
     websocketService.on('se-jugo-card-trade', onCardTradePlayed);
-    websocketService.on('se-jugo-deadly-card-folly', onDeadlyCardFollyPlayed);
+    websocketService.on('se-jugo-dead-card-folly', onDeadCardFollyPlayed);
     websocketService.on('accion-en-progreso', onAccionEnProgreso);
     websocketService.on('pila-actualizada', onPilaActualizada);
     websocketService.on('accion-resuelta-exitosa', onAccionResuelta);
@@ -156,7 +156,7 @@ const useWebSocket = (callbacks) => {
       websocketService.off('se-jugo-early-train', onEarlyTrainPlayed);
       websocketService.off('actualizacion-secreto', onSecretUpdate);
       websocketService.off('se-jugo-card-trade', onCardTradePlayed);
-      websocketService.off('se-jugo-deadly-card-folly', onDeadlyCardFollyPlayed);
+      websocketService.off('se-jugo-dead-card-folly', onDeadCardFollyPlayed);
       websocketService.off('accion-en-progreso', onAccionEnProgreso);
       websocketService.off('pila-actualizada', onPilaActualizada);
       websocketService.off('accion-resuelta-exitosa', onAccionResuelta);

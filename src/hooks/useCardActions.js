@@ -655,17 +655,17 @@ const useCardActions = (gameId, gameState, onSetEffectTrigger, iniciarAccionCanc
     }
 
     try {
-      console.log(`[DeadCardFolly] Jugando carta con dirección: ${direccion}`);
+      console.log(`[DeadCardFolly] Iniciando acción cancelable dead card folly con dirección: ${direccion}`);
 
-      await apiService.playDeadCardFolly(
-        gameId,
-        currentPlayerId,
-        eventCardToPlay.id,
-        direccion
-      );
-
-      gameState.setDeadCardFollyModalOpen(false);
-      setEventCardToPlay(null);
+      await iniciarAccionCancelable({
+        tipo_accion: "evento_dead_card_folly",
+        cartas_db_ids: [eventCardToPlay.id],
+        nombre_accion: cardService.getCardNameById(eventCardToPlay.id),
+        id_carta_tipo_original: eventCardToPlay.id, 
+        payload_original: { direccion },
+      });
+        gameState.setDeadCardFollyModalOpen(false);
+        setEventCardToPlay(null);
 
     } catch (error) {
       console.error("Error al jugar Dead Card Folly:", error);
