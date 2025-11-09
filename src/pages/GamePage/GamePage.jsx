@@ -55,22 +55,25 @@ const GamePage = () => {
     playedSetsByPlayer,
     isPlayButtonEnabled,
     isSecretsModalOpen, isSecretsLoading, playerSecretsData, viewingSecretsOfPlayer,
-    playersSecrets,
+    playersSecrets, 
     isPlayerSelectionModalOpen, setEventCardInPlay,
     canRevealSecrets, canHideSecrets, selectedSecretCard, canRobSecrets, isSetSelectionModalOpen,
     disgracedPlayerIds, isLocalPlayerDisgraced, mySecretCards, isConfirmationModalOpen,
     lookIntoAshesModalOpen, setLookIntoAshesModalOpen,
     discardPileSelection, setDiscardPileSelection,
     selectedDiscardCard, setSelectedDiscardCard, setEventCardToPlay,
+    isAddToSetModalOpen, setAddToSetModalOpen,
   } = gameState;
 
+  const { handleSetPlayedEvent, modals: detectiveModals } = useDetectiveSecretReveal(gameId, gameState, players);
+  
   const {
     accionEnProgreso,
     actionResultMessage,
     setActionResultMessage,
     iniciarAccionCancelable,
     wsCallbacks: actionStackCallbacks,
-  } = useActionStack(gameId, gameState.currentPlayerId);
+  } = useActionStack(gameId, gameState.currentPlayerId, handleSetPlayedEvent);
 
   gameState.accionEnProgreso = accionEnProgreso;
 
@@ -82,7 +85,6 @@ const GamePage = () => {
   }
 
   const { handleOpenSecretsModal, handleCloseSecretsModal } = useSecrets(gameId, gameState);
-  const { handleSetPlayedEvent, modals: detectiveModals } = useDetectiveSecretReveal(gameId, gameState, players);
   // Secret actions handlers used by SecretsModal
   const { handleSecretCardClick, handleRevealSecret, handleHideSecret, handleRobSecret } = useSecretActions(gameId, gameState);
 
@@ -364,7 +366,8 @@ const GamePage = () => {
     handlePlay,
     handleEventActionConfirm,
     handleLookIntoTheAshesConfirm,
-    handleOneMoreSecretSelect
+    handleOneMoreSecretSelect,
+    handleAddToSetConfirm
   } = useCardActions(
     gameId,
     gameState,
@@ -406,6 +409,24 @@ const GamePage = () => {
   const setsForSelection = useMemo(() => {
     return opponentSets;
   }, [opponentSets]);
+
+  const myMatchingSets = useMemo(() => {
+    const cardToPlay = gameState.eventCardToPlay; 
+    if (!isAddToSetModalOpen || !cardToPlay) return {};
+    
+    const myPlayer = players.find(p => p.id_jugador === currentPlayerId);
+    const mySets = playedSetsByPlayer[currentPlayerId] || [];
+    
+    // Filtramos solo los sets que coinciden con el TIPO de la carta seleccionada
+    const matching = mySets.filter(set => set.representacion_id_carta === cardToPlay.id);
+    
+    // El modal espera un objeto { [playerId]: [sets] }
+    return myPlayer ? { [myPlayer.id_jugador]: matching } : {};
+  }, [isAddToSetModalOpen, playedSetsByPlayer, currentPlayerId, players, gameState.eventCardToPlay]);
+
+  const myPlayerObject = useMemo(() => {
+    return players.filter(p => p.id_jugador === currentPlayerId);
+  }, [players, currentPlayerId]);
 
 
   if (isLoading) {
@@ -618,6 +639,14 @@ const GamePage = () => {
         onSetSelect={handleEventActionConfirm}
         title={gameState.eventCardToPlay?.id === 15 ? 'Ariadne Oliver: Elige un set donde agregarla' : 'Another Victim: Elige un set para robar'}
       />
+      <SetSelectionModal
+        isOpen={isAddToSetModalOpen}
+        onClose={() => setAddToSetModalOpen(false)}
+        opponentSets={myMatchingSets} // Usar los sets filtrados
+        players={myPlayerObject}      // Solo nosotros
+        onSetSelect={handleAddToSetConfirm}
+        title="Añadir a Set Existente"
+      />
       <ConfirmationModal
         isOpen={isConfirmationModalOpen}
         onClose={() => gameState.setConfirmationModalOpen(false)}

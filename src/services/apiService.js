@@ -285,6 +285,17 @@ const createHttpService = () => {
     });
   };
 
+  const agregarCartaASet = async (gameId, jugadorSetId, tipoSetId, cartaInstanciaId) => {
+    return request(`/partidas/${gameId}/agregar-a-set`, {
+      method: "POST",
+      body: JSON.stringify({
+        id_jugador_set: jugadorSetId,
+        id_tipo_set: tipoSetId,
+        id_carta_instancia: cartaInstanciaId
+      }),
+    });
+  };
+
 
   return {
     createGame,
@@ -308,7 +319,7 @@ const createHttpService = () => {
     takeDraftCard,
     pickUpCards,
     playDetectiveSet,
-  playAriadneOliver,
+    playAriadneOliver,
     getPlayedSets,
     getPlayerSecrets,
     getDiscardPile,
@@ -326,6 +337,7 @@ const createHttpService = () => {
     playNotSoFast,
     resolverAccion,
     cancelarAccion,
+    agregarCartaASet
   };
 };
 

@@ -3,7 +3,7 @@ import { apiService } from '@/services/apiService';
 
 const NOT_SO_FAST_WINDOW_MS = 5000;
 
-const useActionStack = (gameId, currentPlayerId) => {
+const useActionStack = (gameId, currentPlayerId, onSetEffectTrigger) => {
     const [accionEnProgreso, setAccionEnProgreso] = useState(null);
     const [actionResultMessage, setActionResultMessage] = useState(null);
 
@@ -29,11 +29,11 @@ const useActionStack = (gameId, currentPlayerId) => {
     }, []);
 
     const ejecutarAccionOriginal = useCallback(
-        (accion) => {
+        async (accion) => {
             console.log(`[useActionStack] 🟢 EJECUTANDO ACCIÓN: ${accion.tipo_accion}`, accion);
             const { tipo_accion, payload_original, cartas_originales_db_ids, id_carta_tipo_original } = accion;
 
-            const id_carta_jugada = cartas_originales_db_ids[0];
+            const id_instancia_carta = cartas_originales_db_ids[0];
             const id_tipo_carta = id_carta_tipo_original;
 
             switch (tipo_accion) {
@@ -55,54 +55,56 @@ const useActionStack = (gameId, currentPlayerId) => {
                     return apiService.playDelayTheMurdererEscape(gameId, currentPlayerId, id_tipo_carta, payload_original.cantidad);
                 case 'jugar_set_detective':
                     return apiService.playDetectiveSet(gameId, currentPlayerId, payload_original.set_cartas);
+                case 'agregar_a_set':
+                    const id_instancia_carta = cartas_originales_db_ids[0];
+
+                    const id_tipo_set = payload_original.representacion_id_carta;
+
+                    const id_jugador_set = accion.id_jugador_original;
+                    await apiService.agregarCartaASet(
+                        gameId,
+                        id_jugador_set,    
+                        id_tipo_set,
+                        id_instancia_carta
+                    );
+
+                    // Re-ejecutar el efecto del set (Frontend)
+                    onSetEffectTrigger?.({ // Llamar al callback de GamePage
+                        jugador_id: currentPlayerId,
+                        representacion_id: id_tipo_set
+                    });
+
+
+                    return;
                 default:
                     console.error(`Acción original no reconocida: ${tipo_accion}`);
             }
         },
-        [gameId, currentPlayerId]
+        [gameId, currentPlayerId, onSetEffectTrigger]
     );
 
     useEffect(() => {
         if (accionEnProgreso) {
-            // --- ARREGLO Y LOG ---
-            // 1. EL ARREGLO: Guardamos un "snapshot" de la acción
-            //    para evitar la Race Condition.
-            console.log("[useActionStack] ⏱️ TIMER INICIADO. Guardando snapshot de acción.", accionEnProgreso);
             const accionAlIniciarTimer = accionEnProgreso;
             const somosElActor = accionAlIniciarTimer.id_jugador_original === currentPlayerId;
             const delay = somosElActor ? NOT_SO_FAST_WINDOW_MS : (NOT_SO_FAST_WINDOW_MS + 2000);
 
             const timerId = setTimeout(() => {
-                console.log('[useActionStack] 🔔 Timer finalizado. Llamando a /resolver-accion (HTTP)...');
 
                 apiService
                     .resolverAccion(gameId)
-                    .then((respuesta) => {
-                        console.log('[useActionStack] ✅ Respuesta HTTP de /resolver-accion RECIBIDA:', respuesta);
-                        console.log('[useActionStack]     ...revisando contra snapshot:', accionAlIniciarTimer);
-                        console.log(`[useActionStack]     ...¿es nuestro turno? ${somosElActor}`);
-
-                        // --- ARREGLO ---
-                        // 2. Usamos el "snapshot" (accionAlIniciarTimer) en lugar del
-                        //    estado (accionEnProgreso), que podría estar null.
+                    .then(async (respuesta) => {
                         if (
                             respuesta.decision === 'ejecutar' &&
                             somosElActor
                         ) {
-                            // --- NUEVO LOG ---
-                            console.log('[useActionStack]     ...¡Condición CUMPLIDA! Llamando a ejecutarAccionOriginal.');
-                            // --- FIN LOG ---
-                            ejecutarAccionOriginal(accionAlIniciarTimer);
+                            await ejecutarAccionOriginal(accionAlIniciarTimer);
                         } else {
-                            // --- NUEVO LOG ---
-                            console.log('[useActionStack]     ...Condición NO CUMPLIDA. No se ejecuta nada.');
                             if (respuesta.decision !== 'ejecutar')
                                 console.log(`[useActionStack]         ...Razón: La decisión fue "${respuesta.decision}".`);
                             if (accionAlIniciarTimer.id_jugador_original !== currentPlayerId)
                                 console.log('[useActionStack]         ...Razón: No somos el jugador original.');
-                            // --- FIN LOG ---
                         }
-                        // --- FIN ARREGLO ---
                     })
                     .catch((err) => {
                         if (err.message.includes('La acción ya fue resuelta')) {
@@ -124,9 +126,6 @@ const useActionStack = (gameId, currentPlayerId) => {
         async (payload) => {
             if (!gameId || !currentPlayerId) return;
             try {
-                // --- NUEVO LOG ---
-                console.log('[useActionStack] 📤 Enviando (HTTP) /iniciar-accion...', payload);
-                // --- FIN LOG ---
                 await apiService.iniciarAccion(gameId, currentPlayerId, payload);
             } catch (error) {
                 console.error('Error al iniciar la acción:', error);
