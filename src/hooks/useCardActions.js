@@ -625,26 +625,33 @@ const useCardActions = (gameId, gameState, onSetEffectTrigger, iniciarAccionCanc
 
     const { id, id_instancia, instanceId } = eventCardToPlay;
     const cardNombre = cardService.getCardNameById(id);
+    
     try {
-        await iniciarAccionCancelable({
-          tipo_accion: "evento_card_trade",
-          cartas_db_ids: [id_instancia],
-          nombre_accion: cardNombre,
-          payload_original: {
-            id_objetivo: targetPlayerId
-          },
-          id_carta_tipo_original: id
-        });
-      
-      // Cerramos el modal
+      // Guardar el contexto del trade ANTES de iniciar la acción
+      gameState.setCardTradeContext({ 
+        originId: currentPlayerId, 
+        targetPlayerId: targetPlayerId 
+      });
+
+      await iniciarAccionCancelable({
+        tipo_accion: "evento_card_trade",
+        cartas_db_ids: [id_instancia],
+        nombre_accion: cardNombre,
+        payload_original: {
+          id_objetivo: targetPlayerId
+        },
+        id_carta_tipo_original: id
+      });
+
       setPlayerSelectionModalOpen(false);
       setEventCardToPlay(null);
 
-      console.log("Esperando que el otro jugador complete el intercambio...");
+      console.log("Intercambio iniciado. Selecciona una carta para enviar...");
 
     } catch (error) {
       console.error("Error al iniciar Card Trade:", error);
       alert(`Error: ${error.message}`);
+      gameState.setCardTradeContext(null);
     }
   };
 
@@ -676,27 +683,35 @@ const useCardActions = (gameId, gameState, onSetEffectTrigger, iniciarAccionCanc
 
   const handleSendCardTradeResponse = async (cardId) => {
     try {
-      const originId = gameState.cardTradeContext?.originId;
-      if (!originId) throw new Error("No hay jugador de origen para el intercambio");
+      const { originId, targetPlayerId } = gameState.cardTradeContext || {};
+      
+      if (!originId || !targetPlayerId) {
+        throw new Error("Contexto de intercambio incompleto");
+      }
+
+      // Determinar el destino basado en quién es el jugador actual
+      const destinationId = (currentPlayerId === originId) ? targetPlayerId : originId;
+
+      console.log(`[useCardActions] Enviando carta ${cardId} de ${currentPlayerId} a ${destinationId}`);
 
       const response = await apiService.sendCard(
         gameId,
-        gameState.currentPlayerId,
-        cardId,
-        originId
+        currentPlayerId,  // senderId
+        cardId,           // cardId
+        destinationId     // targetPlayerId
       );
+      
       if (response?.status === "ok") {
-        console.log("[useCardActions] Carta enviada al origen:", response);
+        console.log("[useCardActions] Carta enviada:", response);
         gameState.setCardTradeModalOpen(false);
         gameState.setCardTradeContext(null);
       }
-      gameState.setCardTradeModalOpen(false);
-      gameState.setCardTradeContext(null);
+      
     } catch (err) {
       console.error("[useCardActions] Error al enviar carta:", err);
+      alert(`Error al enviar carta: ${err.message}`);
     }
   };
-
   return {
     handleCardClick,
     handleDraftCardClick,

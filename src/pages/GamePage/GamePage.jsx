@@ -325,34 +325,38 @@ const GamePage = () => {
       // Si este cliente es el objetivo, abrir modal
       if (targetId === gameState.currentPlayerId || actorId === gameState.currentPlayerId) {
         gameState.setCardTradeModalOpen(true);
-        gameState.setCardTradeContext({ originId: actorId });
+        gameState.setCardTradeContext({ originId: actorId, targetPlayerId: targetId });
       }
     },
 
-  onDeadlyCardFollyPlayed: (message) => {
+  onDeadCardFollyPlayed: (message) => {
     const { jugador_id: actorId, direccion, orden } = message;
-    const actorName =
-      gameState.players.find(p => p.id_jugador === actorId)?.nombre_jugador || "Un jugador";
+    const actorName = gameState.players.find(p => p.id_jugador === actorId)?.nombre_jugador || "Un jugador";
 
     gameState.setEventCardInPlay({
       imageName: cardService.getCardImageUrl(CARD_IDS.DEAD_CARD_FOLLY),
-      message: `${actorName} jugó "Deadly Card Folly" (${direccion})`,
+      message: `${actorName} jugó "Dead Card Folly" (${direccion})`,
     });
 
-    // Calcular a quién enviar carta
+    // Calcular a quién debe enviar carta el jugador actual
     const myId = gameState.currentPlayerId;
     const i = orden.indexOf(myId);
     if (i === -1) return;
-    const n = orden.length;
-    const targetId =
-      direccion === "izquierda"
-        ? orden[(i - 1 + n) % n]
-        : orden[(i + 1) % n];
-
     
-    if (targetId) {
-      gameState.setCardTradeContext({ originId: myId, targetId });
-      gameState.setCardTradeModalOpen(true); // Reutiliza el modal de cardTrade
+    const n = orden.length;
+    const targetPlayerId = direccion === "izquierda" 
+      ? orden[(i - 1 + n) % n] 
+      : orden[(i + 1) % n];
+
+    console.log(`[DeadCardFolly] Jugador ${myId} debe enviar carta a ${targetPlayerId}`, { orden, direccion });
+
+    // Abrir modal de Card Trade para que el jugador envíe una carta
+    if (targetPlayerId) {
+      gameState.setCardTradeContext({
+        originId: myId, 
+        targetPlayerId: targetPlayerId
+      });
+      gameState.setCardTradeModalOpen(true);
     }
   },
 
