@@ -31,7 +31,7 @@ const useActionStack = (gameId, currentPlayerId, onSetEffectTrigger) => {
         async (accion) => {
             const { tipo_accion, payload_original, cartas_originales_db_ids, id_carta_tipo_original } = accion;
 
-            const id_instancia_carta = cartas_originales_db_ids[0];
+            const id_carta_jugada = cartas_originales_db_ids[0]; //CUIDADO ACA CHEQUEAR QUE NO ROMPE NADA 
             const id_tipo_carta = id_carta_tipo_original;
 
             switch (tipo_accion) {

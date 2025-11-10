@@ -419,7 +419,31 @@ const GamePage = () => {
       }
     },
 
+    onSocialFauxPasPlayed: async (message) => {
+      const { jugador_emisor: senderId, jugador_objetivo: targetId } = message.data;
+      const senderName = gameState.players.find(p => p.id_jugador === senderId)?.nombre_jugador || 'Un jugador';
+      const targetName = gameState.players.find(p => p.id_jugador === targetId)?.nombre_jugador || 'otro jugador';
 
+      // Mostrar notificación del evento
+      gameState.setEventCardInPlay({
+        imageName: cardService.getCardImageUrl(27),
+        message: `${senderName} jugó "Social Faux Pas" sobre ${targetName}`
+      });
+
+      // Si somos el objetivo, abrir nuestros secretos para revelar uno
+      if (targetId === gameState.currentPlayerId) {
+        const currentPlayer = gameState.players.find(p => p.id_jugador === gameState.currentPlayerId);
+        
+        // Configurar el modal de secretos para Social Faux Pas
+        gameState.setCanRevealSecrets(true);
+        gameState.setCanHideSecrets(false);
+        gameState.setCanRobSecrets(false);
+        
+        // Abrir el modal de nuestros propios secretos
+        handleOpenSecretsModal(currentPlayer);
+      }
+    },
+    
     onDiscardUpdate: (discardPile) => gameState.setDiscardPile(discardPile),
   }), [gameState]);
 
