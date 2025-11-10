@@ -1,0 +1,120 @@
+.chatContainer {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  width: 280px;
+  height: 320px;
+  display: flex;
+  flex-direction: column;
+  background-color: #1f2937;
+  border: 2px solid #334155;
+  border-radius: 8px;
+  z-index: 1000;
+}
+
+.chatHeader {
+  padding: 10px 12px;
+  background-color: #334155;
+  color: #e0e0e0;
+  font-weight: bold;
+  font-size: 0.95rem;
+  border-radius: 6px 6px 0 0;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.messagesContainer {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background-color: #111827;
+}
+
+.messagesContainer::-webkit-scrollbar {
+  width: 6px;
+}
+
+.messagesContainer::-webkit-scrollbar-track {
+  background: #1f2937;
+}
+
+.messagesContainer::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 3px;
+}
+
+.emptyState {
+  color: #888;
+  text-align: center;
+  padding: 20px;
+  font-size: 0.9rem;
+}
+
+.message {
+  font-size: 0.85rem;
+  color: #e0e0e0;
+  line-height: 1.4;
+  word-wrap: break-word;
+}
+
+.messageName {
+  font-weight: bold;
+  color: #3b82f6;
+}
+
+.inputContainer {
+  display: flex;
+  gap: 6px;
+  padding: 10px;
+  background-color: #1f2937;
+  border-top: 1px solid #334155;
+  border-radius: 0 0 6px 6px;
+  flex-shrink: 0;
+}
+
+.input {
+  flex: 1;
+  padding: 8px 10px;
+  background-color: #111827;
+  border: 1px solid #334155;
+  border-radius: 6px;
+  color: #e0e0e0;
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.input:focus {
+  border-color: #3b82f6;
+}
+
+.input::placeholder {
+  color: #888;
+}
+
+.sendButton {
+  padding: 8px 14px;
+  background-color: #2563eb;
+  border: 2px solid #3b82f6;
+  border-radius: 6px;
+  color: white;
+  font-weight: bold;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.sendButton:hover:not(:disabled) {
+  background-color: #1d4ed8;
+  transform: scale(1.05);
+}
+
+.sendButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: #334155;
+  border-color: #555;
+}

@@ -294,6 +294,13 @@ const createHttpService = () => {
     });
   };
 
+  const sendChatMessage = async (gameId, playerId, mensaje) => {
+    return request(`/partidas/${gameId}/envio-mensaje?id_jugador=${playerId}`, {
+      method: "POST",
+      body: JSON.stringify(mensaje),
+    });
+  };
+
 
 
 
@@ -338,7 +345,8 @@ const createHttpService = () => {
     resolverAccion,
     cancelarAccion,
     playPointYourSuspicions,
-    votePointYourSuspicions
+    votePointYourSuspicions,
+    sendChatMessage
   };
 };
 
