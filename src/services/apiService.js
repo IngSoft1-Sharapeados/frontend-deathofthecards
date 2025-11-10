@@ -296,6 +296,17 @@ const createHttpService = () => {
 
 
 
+  const agregarCartaASet = async (gameId, jugadorSetId, tipoSetId, cartaInstanciaId) => {
+    return request(`/partidas/${gameId}/agregar-a-set`, {
+      method: "POST",
+      body: JSON.stringify({
+        id_jugador_set: jugadorSetId,
+        id_tipo_set: tipoSetId,
+        id_carta_instancia: cartaInstanciaId
+      }),
+    });
+  };
+
   const cardTrade = async (gameId, playerId, cardId, targetPlayerId) => {
     return request(`/partidas/${gameId}/evento/CardTrade?id_jugador=${playerId}&id_carta=${cardId}&id_objetivo=${targetPlayerId}`, {
       method: "POST",
@@ -332,6 +343,7 @@ const createHttpService = () => {
     pickUpCards,
     playDetectiveSet,
     playAriadneOliver,
+    playAriadneOliver,
     getPlayedSets,
     getPlayerSecrets,
     getDiscardPile,
@@ -351,6 +363,7 @@ const createHttpService = () => {
     cancelarAccion,
     playPointYourSuspicions,
     votePointYourSuspicions,
+    agregarCartaASet,
     cardTrade,
     sendCard,
   };
