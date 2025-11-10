@@ -105,6 +105,21 @@ const useWebSocket = (callbacks) => {
       callbacksRef.current.onDeadCardFollyPlayed?.(message);
     };
     
+    const onPointYourSuspicionsPlayed = (message) => {
+      console.log('Evento "Point Your Suspicions" jugado:', message);
+      callbacksRef.current.onPointYourSuspicionsPlayed?.(message);
+    };
+
+    const onVotoRegistrado = (message) => {
+      console.log('Voto registrado:', message);
+      callbacksRef.current.onVotoRegistrado?.(message);
+    };
+
+    const onVotacionFinalizada = (message) => {
+      console.log('Votación finalizada:', message);
+      callbacksRef.current.onVotacionFinalizada?.(message);
+    };
+
     const onAccionEnProgreso = (message) => {
       callbacksRef.current.onAccionEnProgreso?.(message);
     };
@@ -137,6 +152,9 @@ const useWebSocket = (callbacks) => {
     websocketService.on('accion-resuelta-exitosa', onAccionResuelta);
     websocketService.on('accion-resuelta-cancelada', onAccionResuelta);
     websocketService.on('accion-resuelta-fallida', onAccionResuelta);
+    websocketService.on('se-jugo-point-your-suspicions', onPointYourSuspicionsPlayed);
+    websocketService.on('voto-registrado', onVotoRegistrado);
+    websocketService.on('votacion-finalizada', onVotacionFinalizada);
 
 
     // Función de limpieza - SOLO remover listeners, NO desconectar
@@ -162,6 +180,9 @@ const useWebSocket = (callbacks) => {
       websocketService.off('accion-resuelta-exitosa', onAccionResuelta);
       websocketService.off('accion-resuelta-cancelada', onAccionResuelta);
       websocketService.off('accion-resuelta-fallida', onAccionResuelta);
+      websocketService.off('se-jugo-point-your-suspicions', onPointYourSuspicionsPlayed);
+      websocketService.off('voto-registrado', onVotoRegistrado);
+      websocketService.off('votacion-finalizada', onVotacionFinalizada);
     };
   }, []);
 };

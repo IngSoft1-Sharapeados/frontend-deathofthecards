@@ -27,6 +27,7 @@ const useGameState = () => {
   // Estados para el fin de la partida
   const [winners, setWinners] = useState(null);
   const [asesinoGano, setAsesinoGano] = useState(false);
+  const [isDisgraceVictory, setIsDisgraceVictory] = useState(false);
 
   const [playerTurnState, setPlayerTurnState] = useState('discarding');
   const [selectedDraftCards, setSelectedDraftCards] = useState([]);
@@ -61,6 +62,11 @@ const useGameState = () => {
   const [lookIntoAshesModalOpen, setLookIntoAshesModalOpen] = useState(false);
   const [discardPileSelection, setDiscardPileSelection] = useState([]);
   const [selectedDiscardCard, setSelectedDiscardCard] = useState(null);
+
+  const [isPysVotingModalOpen, setIsPysVotingModalOpen] = useState(false);
+  const [pysActorId, setPysActorId] = useState(null); // Quién jugó la carta
+  const [pysLoadingMessage, setPysLoadingMessage] = useState(null); // "Esperando votos..."
+  const [pysVotos, setPysVotos] = useState({});
 
   const [isCardTradeModalOpen, setCardTradeModalOpen] = useState(false);
   const [cardTradeContext, setCardTradeContext] = useState(null);
@@ -123,6 +129,7 @@ const useGameState = () => {
     displayedOpponents,
     winners, setWinners,
     asesinoGano, setAsesinoGano,
+    isDisgraceVictory, setIsDisgraceVictory,
     mySecretCards, setMySecretCards,
     draftCards, setDraftCards,
 
@@ -164,6 +171,10 @@ const useGameState = () => {
     lookIntoAshesModalOpen, setLookIntoAshesModalOpen,
     discardPileSelection, setDiscardPileSelection,
     selectedDiscardCard, setSelectedDiscardCard,
+    isPysVotingModalOpen, setIsPysVotingModalOpen,
+    pysActorId, setPysActorId,
+    pysLoadingMessage, setPysLoadingMessage,
+    pysVotos, setPysVotos,
     isCardTradeModalOpen, setCardTradeModalOpen,
     cardTradeContext, setCardTradeContext,
     isDeadCardFollyModalOpen, setDeadCardFollyModalOpen,
