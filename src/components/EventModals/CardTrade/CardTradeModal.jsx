@@ -4,12 +4,20 @@ import Card from "@/components/Card/Card";
 
 const CardTradeModal = ({ isOpen, hand, onClose, onConfirm }) => {
   const [selectedCard, setSelectedCard] = useState(null);
-
+  const [isSending, setIsSending] = useState(false); //para evitar multiples sends
   if (!isOpen) return null;
 
-  const handleConfirm = () => {
-    if (selectedCard) {
-      onConfirm(selectedCard);
+  const handleConfirm = async () => {
+    if (!selectedCard || isSending) return; // evita doble click
+    setIsSending(true);
+
+    try {
+      await onConfirm(selectedCard); 
+      onClose(); // cierra el modal apenas termina correctamente
+    } catch (error) {
+      console.error("[CardTradeModal] Error al confirmar:", error);
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -44,9 +52,9 @@ const CardTradeModal = ({ isOpen, hand, onClose, onConfirm }) => {
           <button
             onClick={handleConfirm}
             className={styles.confirmButton}
-            disabled={!selectedCard}
+            disabled={!selectedCard || isSending}
           >
-            Confirmar
+            {isSending ? "Enviando..." : "Confirmar"}
           </button>
         </div>
       </div>

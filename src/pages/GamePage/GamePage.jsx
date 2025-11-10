@@ -311,23 +311,33 @@ const GamePage = () => {
       }, 3000);
     },
 
-    onCardTradePlayed: (message) => {
-      const { jugador_id: actorId, objetivo_id: targetId } = message;
-      const actorName = gameState.players.find(p => p.id_jugador === actorId)?.nombre_jugador || 'Un jugador';
-      const targetName = gameState.players.find(p => p.id_jugador === targetId)?.nombre_jugador || 'otro jugador';
+  onCardTradePlayed: (message) => {
+    const { jugador_id: actorId, objetivo_id: targetId } = message;
+    const actorName =
+      gameState.players.find(p => p.id_jugador === actorId)?.nombre_jugador || 'Un jugador';
+    const targetName =
+      gameState.players.find(p => p.id_jugador === targetId)?.nombre_jugador || 'otro jugador';
 
-      // Mostrar efecto visual
-      gameState.setEventCardInPlay({
-        imageName: cardService.getCardImageUrl(CARD_IDS.CARD_TRADE),
-        message: `${actorName} inició un intercambio de cartas con ${targetName}`
+    // Mostrar efecto visual
+    gameState.setEventCardInPlay({
+      imageName: cardService.getCardImageUrl(CARD_IDS.CARD_TRADE),
+      message: `${actorName} inició un intercambio de cartas con ${targetName}`,
+    });
+
+    // Si este cliente es el actor o el objetivo, abrir modal
+    if (targetId === gameState.currentPlayerId || actorId === gameState.currentPlayerId) {
+      const handSnapshot = [...(gameState.hand || [])]; // snapshot mano antes de abrir modal
+
+      gameState.setCardTradeContext({
+        originId: actorId,
+        targetPlayerId: targetId,
+        handSnapshot,
       });
 
-      // Si este cliente es el objetivo, abrir modal
-      if (targetId === gameState.currentPlayerId || actorId === gameState.currentPlayerId) {
-        gameState.setCardTradeModalOpen(true);
-        gameState.setCardTradeContext({ originId: actorId, targetPlayerId: targetId });
-      }
-    },
+      gameState.setCardTradeModalOpen(true);
+    }
+  },
+
 
   onDeadCardFollyPlayed: (message) => {
     const { jugador_id: actorId, direccion, orden } = message;
@@ -673,7 +683,7 @@ const GamePage = () => {
       />
       <CardTradeModal
         isOpen={gameState.isCardTradeModalOpen}
-        hand={hand}
+        hand={gameState.cardTradeContext?.handSnapshot || hand}
         onClose={() => gameState.setCardTradeModalOpen(false)}
         onConfirm={(cardId) => handleSendCardTradeResponse(cardId)}
       />
