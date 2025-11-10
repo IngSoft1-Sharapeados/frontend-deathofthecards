@@ -362,9 +362,11 @@ const GamePage = () => {
 
     // Abrir modal de Card Trade para que el jugador envíe una carta
     if (targetPlayerId) {
+      const handSnapshot = [...(gameState.hand || [])]; // snapshot mano antes de abrir modal
       gameState.setCardTradeContext({
         originId: myId, 
-        targetPlayerId: targetPlayerId
+        targetPlayerId: targetPlayerId,
+        handSnapshot,
       });
       gameState.setCardTradeModalOpen(true);
     }
