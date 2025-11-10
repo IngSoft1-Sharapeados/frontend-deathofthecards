@@ -15,6 +15,7 @@ vi.mock('@/utils/eventCardValidation', () => ({
   isValidEventCard: vi.fn(),
 }));
 
+
 describe('useCardActions', () => {
   const mockGameState = {
     hand: [
@@ -34,6 +35,7 @@ describe('useCardActions', () => {
     playerTurnState: 'discarding',
     setPlayerTurnState: vi.fn(),
     setHasPlayedSetThisTurn: vi.fn(),
+    setEventCardToPlay: vi.fn(),
   };
 
   beforeEach(() => {
@@ -45,6 +47,7 @@ describe('useCardActions', () => {
 
     // Por defecto, que el set sea inválido salvo que el test lo fuerce
     isValidDetectiveSet.mockReturnValue(false);
+    isValidEventCard.mockReturnValue(false);
     // Default mocks for services used by handlers
     apiService.discardCards.mockResolvedValue({});
     apiService.pickUpCards.mockResolvedValue([]);
@@ -435,6 +438,116 @@ describe('useCardActions', () => {
 
       expect(state.setEventCardToPlay).toHaveBeenCalledWith(null); // Limpia la carta en juego
     });
+  });
+
+describe('Flujo de "Agregar a Set"', () => {
+
+  // Mockear la función 'iniciarAccionCancelable'
+  const mockIniciarAccion = vi.fn();
+  // Mockear el 'onSetEffectTrigger' (no se usa en este hook, pero 'useCardActions' lo recibe)
+  const mockOnSetEffectTrigger = vi.fn();
+
+  beforeEach(() => {
+    // Configurar mocks específicos para este flujo
+    isValidEventCard.mockReturnValue(false);
+    isValidDetectiveSet.mockReturnValue(false);
+    // (canPlaySingleDetective se mockea a través del 'state' que pasamos)
+
+    // Mockear los servicios
+    cardService.getCardNameById.mockReturnValue('Test Detective');
+    mockIniciarAccion.mockClear();
+  });
+
+  test('handlePlay debería abrir el modal "AddToSet" cuando se selecciona un detective válido', async () => {
+
+    // 1. Setup del Estado
+    const state = {
+      ...mockGameState, // Asume que mockGameState tiene los setters mockeados
+      hand: [{ id: 7, instanceId: 'det-1', id_instancia: 101 }],
+      selectedCards: ['det-1'],
+      // Esto es lo que 'useGameState' calcularía:
+      canPlaySingleDetective: true,
+      // Mocks de setters que se llamarán
+      setEventCardToPlay: vi.fn(),
+      setAddToSetModalOpen: vi.fn(),
+    };
+
+    // 2. Renderizar el hook
+    const { result } = renderHook(() =>
+      useCardActions('game-123', state, mockOnSetEffectTrigger, mockIniciarAccion)
+    );
+
+    // 3. Actuar (simular clic en "Jugar")
+    await act(async () => {
+      await result.current.handlePlay();
+    });
+
+    // 4. Verificar
+    // NO debe iniciar la acción todavía
+    expect(mockIniciarAccion).not.toHaveBeenCalled();
+    // DEBE guardar la carta para el modal
+    expect(state.setEventCardToPlay).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 7, id_instancia: 101 })
+    );
+    // DEBE abrir el modal correcto
+    expect(state.setAddToSetModalOpen).toHaveBeenCalledWith(true);
+  });
+
+
+  test('handleAddToSetConfirm debería llamar a iniciarAccionCancelable y actualizar la UI', async () => {
+
+    // 1. Setup del Estado
+    const cardToPlay = { id: 7, instanceId: 'det-1', id_instancia: 101, nombre: 'Test Detective' };
+    const targetSet = { representacion_id_carta: 7, id: 'set-1' }; // El set al que se añade
+
+    const state = {
+      ...mockGameState,
+      hand: [cardToPlay, { id: 9, instanceId: 'other-1', id_instancia: 102 }],
+      eventCardToPlay: cardToPlay, // El modal pasa esta carta
+      setAddToSetModalOpen: vi.fn(),
+    };
+
+    // 2. Renderizar el hook
+    const { result } = renderHook(() =>
+      useCardActions('game-123', state, mockOnSetEffectTrigger, mockIniciarAccion)
+    );
+
+    // 3. Actuar (simular clic en el modal de 'SetSelectionModal')
+    await act(async () => {
+      await result.current.handleAddToSetConfirm(targetSet);
+    });
+
+    // 4. Verificar (Llamada a 'iniciarAccionCancelable')
+    expect(mockIniciarAccion).toHaveBeenCalledTimes(1);
+    expect(mockIniciarAccion).toHaveBeenCalledWith({
+      tipo_accion: "agregar_a_set",
+      cartas_db_ids: [101], // El id_instancia
+      nombre_accion: 'Añadir a Set (Test Detective)',
+      payload_original: {
+        id_carta_tipo: 7,
+        representacion_id_carta: 7 // El id del set
+      },
+      id_carta_tipo_original: 7 // El id de tipo
+    });
+
+    // 5. Verificar (Actualización optimista de UI)
+    expect(state.setHand).toHaveBeenCalledTimes(1);
+
+    // Verificar que la mano se actualizó correctamente
+    const updater = state.setHand.mock.calls[0][0];
+    const prevHand = state.hand;
+    const nextHand = updater(prevHand);
+    expect(nextHand).toEqual([{ id: 9, instanceId: 'other-1', id_instancia: 102 }]); // Solo la otra carta
+
+    expect(state.setSelectedCards).toHaveBeenCalledWith([]);
+    expect(state.setHasPlayedSetThisTurn).toHaveBeenCalledWith(true);
+    expect(state.setPlayerTurnState).toHaveBeenCalledWith('discarding');
+
+    // 6. Verificar (Limpieza de Modales)
+    expect(state.setAddToSetModalOpen).toHaveBeenCalledWith(false);
+    expect(state.setEventCardToPlay).toHaveBeenCalledWith(null);
+    });
+  
   });
 });
 

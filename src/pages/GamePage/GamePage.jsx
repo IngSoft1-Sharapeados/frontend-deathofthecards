@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { cardService } from '@/services/cardService';
-import { useMemo, useEffect } from 'react';
+import { useMemo, useEffect, useState, useCallback } from 'react';
 import { apiService } from '@/services/apiService';
 
 
@@ -19,6 +19,7 @@ import DisgraceOverlay from '@/components/UI/DisgraceOverlay';
 import ConfirmationModal from '@/components/EventModals/ConfirmationModal';
 import LookIntoAshesModal from '@/components/EventModals/LookIntoAshesModal';
 import DiscardDeck from '@/components/DiscardDeck/DiscardDeck.jsx';
+import Chat from '@/components/Chat/Chat.jsx';
 // Hooks
 import useWebSocket from '@/hooks/useGameWebSockets';
 import useGameState from '@/hooks/useGameState';
@@ -32,6 +33,11 @@ import ActionStackModal from '@/components/EventModals/ActionStackModal';
 import ActionResultToast from '@/components/EventModals/ActionResultToast';
 import CardTradeModal from '@/components/EventModals/CardTrade/CardTradeModal';
 import useActionStack from '@/hooks/useActionStack';
+import websocketService from '@/services/websocketService';
+import useEventLog from '@/hooks/useEventLog';
+import EventLogModal from '@/components/EventLog/EventLogModal';
+import { useTurnTimer, TURN_DURATION } from '@/hooks/useTurnTimer'; 
+import TurnTimer from '@/components/TurnTimer/TurnTimer';
 import DeadCardFollyModal from '@/components/EventModals/DeadCardFolly/DeadCardFollyModal';
 
 // Styles
@@ -48,6 +54,8 @@ const GamePage = () => {
 
   // --- State Management ---
   const gameState = useGameState();
+  const { events, logTurnStart, logEventCardPlayed, logSetPlayed, logCardAddedToSet, logAriadneOliverPlayed, logGameStart } = useEventLog();
+  const [isEventLogOpen, setIsEventLogOpen] = useState(false);
   const {
     hand, selectedCards, isLoading,
     deckCount, currentTurn, /* turnOrder */ players,
@@ -65,11 +73,14 @@ const GamePage = () => {
     lookIntoAshesModalOpen, setLookIntoAshesModalOpen,
     discardPileSelection, setDiscardPileSelection,
     selectedDiscardCard, setSelectedDiscardCard, setEventCardToPlay,
-    isPysVotingModalOpen, setIsPysVotingModalOpen,
+    isPysVotingModalOpen, setIsPysVotingModalOpen, setTurnStartedAt, turnStartedAt,
     pysActorId, setPysActorId,
     pysLoadingMessage, setPysLoadingMessage,
-    pysVotos, setPysVotos,
+    pysVotos, setPysVotos, isMyTurn,
+    isAddToSetModalOpen, setAddToSetModalOpen,
   } = gameState;
+
+  const { handleSetPlayedEvent, modals: detectiveModals } = useDetectiveSecretReveal(gameId, gameState, players);
 
   const {
     accionEnProgreso,
@@ -77,10 +88,25 @@ const GamePage = () => {
     setActionResultMessage,
     iniciarAccionCancelable,
     wsCallbacks: actionStackCallbacks,
-  } = useActionStack(gameId, gameState.currentPlayerId);
+  } = useActionStack(gameId, gameState.currentPlayerId, handleSetPlayedEvent);
 
   gameState.accionEnProgreso = accionEnProgreso;
 
+  
+
+
+
+  // Log de inicio de partida (solo una vez cuando hay jugadores y turno)
+  useEffect(() => {
+    if (players.length > 0 && currentTurn && events.length === 0) {
+      logGameStart();
+      // Log del primer turno
+      const firstPlayer = players.find(p => p.id_jugador === currentTurn);
+      if (firstPlayer) {
+        logTurnStart(firstPlayer.nombre_jugador);
+      }
+    }
+  }, [players, currentTurn, events.length, logGameStart, logTurnStart]);
 
   // Desarrollo solamente
 
@@ -89,7 +115,6 @@ const GamePage = () => {
   }
 
   const { handleOpenSecretsModal, handleCloseSecretsModal } = useSecrets(gameId, gameState);
-  const { handleSetPlayedEvent, modals: detectiveModals } = useDetectiveSecretReveal(gameId, gameState, players);
   // Secret actions handlers used by SecretsModal
   const { handleSecretCardClick, handleRevealSecret, handleHideSecret, handleRobSecret } = useSecretActions(gameId, gameState);
 
@@ -106,6 +131,8 @@ const GamePage = () => {
         imageName: '17-event_cardsonthetable.png',
         message: `${actorName} jugó "Cards off the Table" sobre ${targetName}`,
       });
+      
+      logEventCardPlayed(actorName, 17);
     },
 
     onAnotherVictimPlayed: async (message) => {
@@ -122,6 +149,8 @@ const GamePage = () => {
         imageName: '18-event_anothervictim.png',
         message: `${actorName} robó un set de ${targetName}`
       });
+      
+      logEventCardPlayed(actorName, 18);
 
       try {
         const allSets = await apiService.getPlayedSets(gameId);
@@ -163,6 +192,8 @@ const GamePage = () => {
         imageName: '22-event_onemore.png',
         message: `${actorName} robó un secreto de ${sourceName} y se lo dio a ${destName}`
       });
+      
+      logEventCardPlayed(actorName, 22);
     },
 
     onHandUpdate: (message) => {
@@ -187,6 +218,15 @@ const GamePage = () => {
       gameState.setCurrentTurn(turn);
       gameState.setPlayerTurnState('discarding');
       gameState.setHasPlayedSetThisTurn(false);
+      
+      // Log del inicio de turno
+      const player = gameState.players.find(p => p.id_jugador === turn);
+      if (player) {
+        logTurnStart(player.nombre_jugador);
+      }
+      
+      // Iniciar el timer del turno
+      setTurnStartedAt(Date.now());
     },
 
     onDraftUpdate: (newDraftData) => {
@@ -205,7 +245,7 @@ const GamePage = () => {
 
     onSetPlayed: async (payload) => {
       try {
-        const { jugador_id: actorId, representacion_id: repId } = payload;
+        const { jugador_id: actorId, representacion_id: repId, cartas_ids: cardsIds } = payload;
         const actorName = gameState.players.find(p => p.id_jugador === actorId)?.nombre_jugador || 'Un jugador';
         const setImageUrl = cardService.getCardImageUrl(repId);
 
@@ -213,6 +253,8 @@ const GamePage = () => {
           imageName: setImageUrl,
           message: `${actorName} jugó un Set de Detectives`
         });
+        
+        logSetPlayed(actorName, repId, cardsIds || []);
 
         // --- FIN DE LA MODIFICACIÓN ---
         const allSets = await apiService.getPlayedSets(gameId);
@@ -234,10 +276,13 @@ const GamePage = () => {
     },
 
     onDelayEscapePlayed: async (message) => {
+      const actorName = gameState.players.find(p => p.id_jugador === message.jugador_id)?.nombre_jugador || 'Un jugador';
       gameState.setEventCardInPlay({
         imageName: '23-event_delayescape.png',
         message: `Se jugó "Delay The Murderer Escape"`
       });
+      
+      logEventCardPlayed(actorName, 23);
       // Forzar a todos los clientes a refrescar los datos afectados
       try {
         const [deckData, discardData] = await Promise.all([
@@ -257,7 +302,7 @@ const GamePage = () => {
       const hiddenCount = secrets.length - revealedCount;
 
       let updatedDisgracedSet = new Set();
-      
+
       gameState.setDisgracedPlayerIds(prevSet => {
         const newSet = new Set(prevSet);
         if (isNowDisgraced) {
@@ -316,7 +361,7 @@ const GamePage = () => {
           }
 
           // Todos los jugadores no en desgracia deben ser exactamente el asesino y/o cómplice
-          const allDisgracedExceptMurderers = 
+          const allDisgracedExceptMurderers =
             playersNotDisgraced.length === expectedSurvivors.length &&
             playersNotDisgraced.every(player => expectedSurvivors.includes(player.id_jugador));
 
@@ -332,10 +377,13 @@ const GamePage = () => {
       }
     },
     onEarlyTrainPlayed: (message) => {
+      const actorName = gameState.players.find(p => p.id_jugador === message.jugador_id)?.nombre_jugador || 'Un jugador';
       gameState.setEventCardInPlay({
         imageName: '24-event_earlytrain.png',
         message: `Se jugó "Early Train To Paddington"`
       });
+      
+      logEventCardPlayed(actorName, 24);
     },
 
     onLookIntoTheAshesPlayed: (message) => {
@@ -347,6 +395,8 @@ const GamePage = () => {
         imageName: cardService.getCardImageUrl(20), // URL de la carta "Look Into The Ashes"
         message: `${playerName} jugó "Look Into The Ashes"!`
       });
+      
+      logEventCardPlayed(playerName, 20);
 
       // Auto-ocultar después de 3 segundos
       setTimeout(() => {
@@ -355,10 +405,13 @@ const GamePage = () => {
     },
 
     onPointYourSuspicionsPlayed: (message) => {
+      const actorName = gameState.players.find(p => p.id_jugador === message.jugador_id)?.nombre_jugador || 'Un jugador';
       gameState.setPysActorId(message.jugador_id);
       gameState.setIsPysVotingModalOpen(true);
       gameState.setPysLoadingMessage(null); // Limpiar mensaje de "esperando"
       gameState.setPysVotos({}); // Limpiar votos
+      
+      logEventCardPlayed(actorName, 25);
     },
 
     onVotoRegistrado: (message) => {
@@ -402,6 +455,8 @@ const GamePage = () => {
         imageName: cardService.getCardImageUrl(CARD_IDS.CARD_TRADE),
         message: `${actorName} inició un intercambio de cartas con ${targetName}`,
       });
+      
+      logEventCardPlayed(actorName, CARD_IDS.CARD_TRADE);
 
       // Si este cliente es el actor o el objetivo, abrir modal
       if (targetId === gameState.currentPlayerId || actorId === gameState.currentPlayerId) {
@@ -473,15 +528,37 @@ const GamePage = () => {
     handleCardTradeConfirm,
     handleLookIntoTheAshesConfirm,
     handleOneMoreSecretSelect,
+    handleAddToSetConfirm,
     handleSendCardTradeResponse,
     handleDeadCardFollyConfirm
   } = useCardActions(
     gameId,
     gameState,
     () => { },
-    iniciarAccionCancelable
+    iniciarAccionCancelable,
+    logCardAddedToSet,
+    logEventCardPlayed,
+    logAriadneOliverPlayed
   );
 
+  const { timeLeft } = useTurnTimer({
+    gameId,
+    currentPlayerId,
+    currentTurn,
+    hand,
+    setHand: gameState.setHand,
+    turnStartedAt,
+    isMyTurn,
+    playerTurnState: playerTurnState
+  });
+
+  const handleEventDisplayComplete = useCallback(() => {
+    gameState.setEventCardInPlay(null);
+  }, [gameState.setEventCardInPlay]); 
+  
+  const handleActionResultToastClose = useCallback(() => {
+    setActionResultMessage(null);
+  }, [setActionResultMessage]); 
 
   const sortedHand = useMemo(() => {
     return [...hand].sort((a, b) => a.id - b.id);
@@ -517,12 +594,33 @@ const GamePage = () => {
     return opponentSets;
   }, [opponentSets]);
 
+  const myMatchingSets = useMemo(() => {
+    const cardToPlay = gameState.eventCardToPlay;
+    if (!isAddToSetModalOpen || !cardToPlay) return {};
+
+    const myPlayer = players.find(p => p.id_jugador === currentPlayerId);
+    const mySets = playedSetsByPlayer[currentPlayerId] || [];
+
+    // Filtramos solo los sets que coinciden con el TIPO de la carta seleccionada
+    const matching = mySets.filter(set => set.representacion_id_carta === cardToPlay.id);
+
+    // El modal espera un objeto { [playerId]: [sets] }
+    return myPlayer ? { [myPlayer.id_jugador]: matching } : {};
+  }, [isAddToSetModalOpen, playedSetsByPlayer, currentPlayerId, players, gameState.eventCardToPlay]);
+
+  const myPlayerObject = useMemo(() => {
+    return players.filter(p => p.id_jugador === currentPlayerId);
+  }, [players, currentPlayerId]);
+
 
   if (isLoading) {
     return <div className={styles.loadingSpinner}></div>;
   }
 
   const isResponseWindowOpen = !!accionEnProgreso;
+
+  const currentPlayer = players.find(p => p.id_jugador === currentPlayerId);
+  const currentPlayerName = currentPlayer?.nombre_jugador || 'Jugador';
 
   return (
     <div className={styles.gameContainer}>
@@ -538,9 +636,10 @@ const GamePage = () => {
           onReturnToMenu={() => navigate("/")}
         />
       )}
+      <TurnTimer timeLeft={timeLeft} maxTime={TURN_DURATION} />
       <EventDisplay
         card={gameState.eventCardInPlay}
-        onDisplayComplete={() => gameState.setEventCardInPlay(null)}
+        onDisplayComplete={handleEventDisplayComplete}
       />
       <ActionStackModal
         accion={accionEnProgreso}
@@ -548,7 +647,7 @@ const GamePage = () => {
       />
       <ActionResultToast
         message={actionResultMessage}
-        onClose={() => setActionResultMessage(null)}
+        onClose={handleActionResultToastClose}
       />
 
       <div className={styles.opponentsContainer} data-player-count={players.length}>
@@ -735,6 +834,16 @@ const GamePage = () => {
         players={players}
         onSetSelect={handleEventActionConfirm}
         title={gameState.eventCardToPlay?.id === 15 ? 'Ariadne Oliver: Elige un set donde agregarla' : 'Another Victim: Elige un set para robar'}
+        data-testid="another-victim-modal"
+      />
+      <SetSelectionModal
+        isOpen={isAddToSetModalOpen}
+        onClose={() => setAddToSetModalOpen(false)}
+        opponentSets={myMatchingSets} // Usar los sets filtrados
+        players={myPlayerObject}      // Solo nosotros
+        onSetSelect={handleAddToSetConfirm}
+        title="Añadir a Set Existente"
+        data-testid="add-to-set-modal"
       />
       <ConfirmationModal
         isOpen={isConfirmationModalOpen}
@@ -793,6 +902,12 @@ const GamePage = () => {
         loadingMessage={pysLoadingMessage}
         hideCloseButton={true}
       />
+      <Chat 
+        gameId={gameId}
+        playerId={currentPlayerId}
+        playerName={currentPlayerName}
+        websocketService={websocketService}
+      />
       <DeadCardFollyModal
         isOpen={gameState.isDeadCardFollyModalOpen}
         onClose={() => gameState.setDeadCardFollyModalOpen(false)}
@@ -804,6 +919,21 @@ const GamePage = () => {
         onClose={() => gameState.setCardTradeModalOpen(false)}
         onConfirm={(cardId) => handleSendCardTradeResponse(cardId)}
       />
+
+      <EventLogModal
+        isOpen={isEventLogOpen}
+        onClose={() => setIsEventLogOpen(false)}
+        events={events}
+      />
+
+      {/* Botón flotante para abrir el log de eventos */}
+      <button
+        onClick={() => setIsEventLogOpen(true)}
+        className={styles.eventLogFloatingButton}
+        title="Ver log de eventos"
+      >
+        📋
+      </button>
     </div>
   );
 };

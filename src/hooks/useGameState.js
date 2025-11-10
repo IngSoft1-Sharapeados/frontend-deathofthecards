@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from 'react';
-import { isValidDetectiveSet } from '@/utils/detectiveSetValidation';
+import { isValidDetectiveSet, canAddCardToSet } from '@/utils/detectiveSetValidation';
 import { isValidEventCard } from '@/utils/eventCardValidation';
 
 
@@ -23,6 +23,8 @@ const useGameState = () => {
   const [playedSetsByPlayer, setPlayedSetsByPlayer] = useState({});
   // Track if player has played a set in the current turn
   const [hasPlayedSetThisTurn, setHasPlayedSetThisTurn] = useState(false);
+  const [turnStartedAt, setTurnStartedAt] = useState(false);
+  const [isAddToSetModalOpen, setAddToSetModalOpen] = useState(false);
 
   // Estados para el fin de la partida
   const [winners, setWinners] = useState(null);
@@ -41,7 +43,7 @@ const useGameState = () => {
 
   const [selectedSecretCard, setSelectedSecretCard] = useState(null);
   const [canRevealSecrets, setCanRevealSecrets] = useState(false);
-  const [canHideSecrets, setCanHideSecrets] = useState(false); 
+  const [canHideSecrets, setCanHideSecrets] = useState(false);
   const [canRobSecrets, setCanRobSecrets] = useState(false);
 
   const [isPlayerSelectionModalOpen, setPlayerSelectionModalOpen] = useState(false);
@@ -75,15 +77,46 @@ const useGameState = () => {
   const isMyTurn = currentTurn === currentPlayerId;
   const isLocalPlayerDisgraced = disgracedPlayerIds.has(currentPlayerId);
   // Pickup is enabled while drawing, or if a set was already played this turn (to allow choosing pickup without discarding again),
-  // but only when it's still your turn.
   const isPickupButtonEnabled = isMyTurn && (playerTurnState === 'drawing' || (hasPlayedSetThisTurn && hand.length < 6));
-  // Caso especial: Ariadne Oliver (15) puede jugarse sola y requiere seleccionar un set destino
+
   const isAriadneSelected = (() => {
     if (!Array.isArray(hand) || !Array.isArray(selectedCards) || selectedCards.length !== 1) return false;
     const card = hand.find(c => c.instanceId === selectedCards[0]);
     return card?.id === 15;
   })();
-  const isPlayButtonEnabled = isMyTurn && !isLocalPlayerDisgraced && !hasPlayedSetThisTurn && playerTurnState === 'discarding' && (isValidDetectiveSet(hand, selectedCards) || isValidEventCard(hand, selectedCards) || isAriadneSelected);
+
+  const myPlayedSets = useMemo(() => {
+    return playedSetsByPlayer[currentPlayerId] || [];
+  }, [playedSetsByPlayer, currentPlayerId]);
+
+  // Comprueba si la carta seleccionada se puede añadir a un set existente
+  const canPlaySingleDetective = useMemo(() => {
+    return canAddCardToSet(hand, selectedCards, myPlayedSets);
+  }, [hand, selectedCards, myPlayedSets]);
+
+  const isPlayButtonEnabled = useMemo(() => {
+    // Condiciones de bloqueo:
+    if (!isMyTurn ||
+      isLocalPlayerDisgraced || // No puedes jugar si estás en desgracia
+      hasPlayedSetThisTurn ||    // No puedes jugar si ya jugaste un set/evento
+      playerTurnState !== 'discarding' 
+    ) {
+      return false;
+    }
+
+    // Condiciones de habilitación:
+    const isEvent = isValidEventCard(hand, selectedCards);
+    const isSet = isValidDetectiveSet(hand, selectedCards);
+
+    // Comprobar si es un evento, un set, Ariadne, O si se puede añadir a un set
+    return isEvent || isSet || isAriadneSelected || canPlaySingleDetective;
+
+  }, [
+    isMyTurn, isLocalPlayerDisgraced, playerTurnState, hasPlayedSetThisTurn,
+    hand, selectedCards, isAriadneSelected, canPlaySingleDetective
+  ]);
+
+
 
   const maxSelect = (isLocalPlayerDisgraced) ? 1 : 6;
   const isDiscardButtonEnabled = selectedCards.length > 0 && selectedCards.length <= maxSelect && isMyTurn && playerTurnState === 'discarding';
@@ -133,9 +166,9 @@ const useGameState = () => {
     mySecretCards, setMySecretCards,
     draftCards, setDraftCards,
 
-  playedSetsByPlayer, setPlayedSetsByPlayer,
-  hasPlayedSetThisTurn, setHasPlayedSetThisTurn,
-    discardPile,setDiscardPile,
+    playedSetsByPlayer, setPlayedSetsByPlayer,
+    hasPlayedSetThisTurn, setHasPlayedSetThisTurn,
+    discardPile, setDiscardPile,
     canRevealSecrets, setCanRevealSecrets,
     canHideSecrets, setCanHideSecrets,
 
@@ -158,7 +191,7 @@ const useGameState = () => {
 
     selectedSecretCard, setSelectedSecretCard,
     canRobSecrets, setCanRobSecrets,
-    
+
     // OneMore event states
     oneMoreStep, setOneMoreStep,
     oneMoreSourcePlayer, setOneMoreSourcePlayer,
@@ -171,10 +204,13 @@ const useGameState = () => {
     lookIntoAshesModalOpen, setLookIntoAshesModalOpen,
     discardPileSelection, setDiscardPileSelection,
     selectedDiscardCard, setSelectedDiscardCard,
+    isAddToSetModalOpen, setAddToSetModalOpen,
+    canPlaySingleDetective,
     isPysVotingModalOpen, setIsPysVotingModalOpen,
+    turnStartedAt, setTurnStartedAt,
     pysActorId, setPysActorId,
     pysLoadingMessage, setPysLoadingMessage,
-    pysVotos, setPysVotos,
+    pysVotos, setPysVotos, isMyTurn,
     isCardTradeModalOpen, setCardTradeModalOpen,
     cardTradeContext, setCardTradeContext,
     isDeadCardFollyModalOpen, setDeadCardFollyModalOpen,
