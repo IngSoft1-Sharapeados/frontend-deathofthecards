@@ -439,13 +439,26 @@ const useCardActions = (gameId, gameState, onSetEffectTrigger, iniciarAccionCanc
 
       const cardsToRemoveFromHand = [...selectedCards];
 
-      await iniciarAccionCancelable({
-        tipo_accion,
-        cartas_db_ids,
-        nombre_accion: "Set de Detectives",
-        payload_original,
-        id_carta_tipo_original: idParaMostrar || cardIdsToPlay[0]
-      });
+      // Detectar si es el set de los Hermanos Beresford juntos (Tommy=12 + Tuppence=13).
+      const isBeresforderBrothersPair = 
+        cardIdsToPlay.length === 2 && 
+        cardIdsToPlay.includes(12) && 
+        cardIdsToPlay.includes(13);
+
+      if (isBeresforderBrothersPair) {
+        // Ejecutar directamente.
+        await apiService.playDetectiveSet(gameId, currentPlayerId, cardIdsToPlay);
+      } else {
+        // Flujo normal: acción cancelable.
+        await iniciarAccionCancelable({
+          tipo_accion,
+          cartas_db_ids,
+          nombre_accion: "Set de Detectives",
+          payload_original,
+          id_carta_tipo_original: idParaMostrar || cardIdsToPlay[0]
+        });
+      }
+
       setSelectedCards([]);
       setHand(prevHand =>
         prevHand.filter(card => !cardsToRemoveFromHand.includes(card.instanceId))

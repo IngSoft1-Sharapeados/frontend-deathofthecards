@@ -436,6 +436,8 @@ describe('useCardActions', () => {
       expect(state.setEventCardToPlay).toHaveBeenCalledWith(null); // Limpia la carta en juego
     });
   });
+
+
 });
 
 
