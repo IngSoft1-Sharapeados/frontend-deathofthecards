@@ -6,6 +6,7 @@ import styles from './Chat.module.css';
 const Chat = ({ gameId, playerId, playerName, websocketService }) => {
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState('');
+  const [isMinimized, setIsMinimized] = useState(false);
   const messagesEndRef = useRef(null);
   const lastMessageRef = useRef(null);
 
@@ -56,42 +57,49 @@ const Chat = ({ gameId, playerId, playerName, websocketService }) => {
   };
 
   return (
-    <div className={styles.chatContainer}>
-      <div className={styles.chatHeader}>
-        💬 Chat
-      </div>
-
-      <div className={styles.messagesContainer}>
-        {messages.length === 0 ? (
-          <div className={styles.emptyState}>No hay mensajes</div>
-        ) : (
-          messages.map((msg, index) => (
-            <div key={index} className={styles.message}>
-              <span className={styles.messageName}>{msg.nombre}:</span> {msg.texto}
-            </div>
-          ))
-        )}
-        <div ref={messagesEndRef} />
-      </div>
-
-      <div className={styles.inputContainer}>
-        <input
-          type="text"
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="Mensaje..."
-          className={styles.input}
-          maxLength={200}
-        />
-        <button 
-          onClick={handleSendMessage}
-          disabled={!inputValue.trim()}
-          className={styles.sendButton}
-        >
-          ➤
+    <div className={`${styles.chatContainer} ${isMinimized ? styles.minimized : ''}`}>
+      <div className={styles.chatHeader} onClick={() => setIsMinimized(!isMinimized)}>
+        <span>💬 Chat</span>
+        <button className={styles.minimizeButton}>
+          {isMinimized ? '▲' : '▼'}
         </button>
       </div>
+
+      {!isMinimized && (
+        <>
+          <div className={styles.messagesContainer}>
+            {messages.length === 0 ? (
+              <div className={styles.emptyState}>No hay mensajes</div>
+            ) : (
+              messages.map((msg, index) => (
+                <div key={index} className={styles.message}>
+                  <span className={styles.messageName}>{msg.nombre}:</span> {msg.texto}
+                </div>
+              ))
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+
+          <div className={styles.inputContainer}>
+            <input
+              type="text"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Mensaje..."
+              className={styles.input}
+              maxLength={200}
+            />
+            <button 
+              onClick={handleSendMessage}
+              disabled={!inputValue.trim()}
+              className={styles.sendButton}
+            >
+              ➤
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 };
