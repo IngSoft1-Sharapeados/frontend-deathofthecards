@@ -24,11 +24,13 @@ import useWebSocket from '@/hooks/useGameWebSockets';
 import useGameState from '@/hooks/useGameState';
 import useGameData from '@/hooks/useGameData';
 import useCardActions, { useSecrets } from '@/hooks/useCardActions';
+import { CARD_IDS } from '@/hooks/useCardActions';
 import PlayerSelectionModal from '@/components/EventModals/PlayerSelectionModal';
 import EventDisplay from '@/components/EventModals/EventDisplay';
 import useSecretActions from '@/hooks/useSecretActions';
 import ActionStackModal from '@/components/EventModals/ActionStackModal';
 import ActionResultToast from '@/components/EventModals/ActionResultToast';
+import CardTradeModal from '@/components/EventModals/CardTrade/CardTradeModal';
 import useActionStack from '@/hooks/useActionStack';
 import { useTurnTimer, TURN_DURATION } from '@/hooks/useTurnTimer'; 
 import TurnTimer from '@/components/TurnTimer/TurnTimer';
@@ -393,7 +395,34 @@ const GamePage = () => {
           'point-your-suspicions'
         );
       }
+    },  
+    onCardTradePlayed: (message) => {
+      const { jugador_id: actorId, objetivo_id: targetId } = message;
+      const actorName =
+        gameState.players.find(p => p.id_jugador === actorId)?.nombre_jugador || 'Un jugador';
+      const targetName =
+        gameState.players.find(p => p.id_jugador === targetId)?.nombre_jugador || 'otro jugador';
+
+      // Mostrar efecto visual
+      gameState.setEventCardInPlay({
+        imageName: cardService.getCardImageUrl(CARD_IDS.CARD_TRADE),
+        message: `${actorName} inició un intercambio de cartas con ${targetName}`,
+      });
+
+      // Si este cliente es el actor o el objetivo, abrir modal
+      if (targetId === gameState.currentPlayerId || actorId === gameState.currentPlayerId) {
+        const handSnapshot = [...(gameState.hand || [])]; // snapshot mano antes de abrir modal
+
+        gameState.setCardTradeContext({
+          originId: actorId,
+          targetPlayerId: targetId,
+          handSnapshot,
+        });
+
+        gameState.setCardTradeModalOpen(true);
+      }
     },
+
 
     onDiscardUpdate: (discardPile) => gameState.setDiscardPile(discardPile),
   }), [gameState]);
@@ -413,8 +442,10 @@ const GamePage = () => {
     handlePickUp,
     handlePlay,
     handleEventActionConfirm,
+    handleCardTradeConfirm,
     handleLookIntoTheAshesConfirm,
-    handleOneMoreSecretSelect
+    handleOneMoreSecretSelect,
+    handleSendCardTradeResponse
   } = useCardActions(
     gameId,
     gameState,
@@ -670,10 +701,18 @@ const GamePage = () => {
               ? players // Step 3: Allow choosing any player, including source
               : opponentPlayers // Other events: only opponents
         }
-        onPlayerSelect={handleEventActionConfirm}
+        onPlayerSelect={(playerId) => {
+          if (gameState.eventCardToPlay?.id === CARD_IDS.CARD_TRADE) {
+            handleCardTradeConfirm(playerId);
+          } else {
+            handleEventActionConfirm(playerId);
+          }
+        }}
         title={
-          gameState.oneMoreStep === 1
-            ? "And Then There Was One More: Elige un jugador con secretos revelados"
+          gameState.eventCardToPlay?.id === CARD_IDS.CARD_TRADE
+            ? "Card Trade: selecciona un jugador para intercambiar cartas"
+            :gameState.oneMoreStep === 1
+              ? "And Then There Was One More: Elige un jugador con secretos revelados"
             : gameState.oneMoreStep === 3
               ? "And Then There Was One More: Elige el jugador destino"
               : "Cards off the Table: Elige un jugador"
@@ -743,6 +782,13 @@ const GamePage = () => {
         title="¿A quién sospechás como el asesino?"
         loadingMessage={pysLoadingMessage}
         hideCloseButton={true}
+      />
+
+      <CardTradeModal
+        isOpen={gameState.isCardTradeModalOpen}
+        hand={gameState.cardTradeContext?.handSnapshot || hand}
+        onClose={() => gameState.setCardTradeModalOpen(false)}
+        onConfirm={(cardId) => handleSendCardTradeResponse(cardId)}
       />
     </div>
   );

@@ -54,6 +54,8 @@ const useActionStack = (gameId, currentPlayerId) => {
                     return apiService.playDetectiveSet(gameId, currentPlayerId, payload_original.set_cartas);
                 case 'evento_point_your_suspicions':
                   return apiService.playPointYourSuspicions(gameId, currentPlayerId, id_tipo_carta);
+                case 'evento_card_trade':
+                    return apiService.cardTrade(gameId, currentPlayerId, id_carta_jugada,payload_original.id_objetivo);
                 default:
                     console.error(`Acción original no reconocida: ${tipo_accion}`);
             }
