@@ -96,6 +96,10 @@ const useWebSocket = (callbacks) => {
         playerId: message.jugador_id
       });
     };
+    const onCardTradePlayed = (message) => {
+      console.log('Evento "Card Trade" jugado:', message);
+      callbacksRef.current.onCardTradePlayed?.(message);
+    };
 
     const onPointYourSuspicionsPlayed = (message) => {
       console.log('Evento "Point Your Suspicions" jugado:', message);
@@ -137,6 +141,7 @@ const useWebSocket = (callbacks) => {
     websocketService.on('se-jugo-look-into-the-ashes', onLookIntoTheAshesPlayed);
     websocketService.on('se-jugo-early-train', onEarlyTrainPlayed);
     websocketService.on('actualizacion-secreto', onSecretUpdate);
+    websocketService.on('se-jugo-card-trade', onCardTradePlayed);
     websocketService.on('accion-en-progreso', onAccionEnProgreso);
     websocketService.on('pila-actualizada', onPilaActualizada);
     websocketService.on('accion-resuelta-exitosa', onAccionResuelta);
@@ -163,6 +168,7 @@ const useWebSocket = (callbacks) => {
       websocketService.off('se-jugo-look-into-the-ashes', onLookIntoTheAshesPlayed);
       websocketService.off('se-jugo-early-train', onEarlyTrainPlayed);
       websocketService.off('actualizacion-secreto', onSecretUpdate);
+      websocketService.off('se-jugo-card-trade', onCardTradePlayed);
       websocketService.off('accion-en-progreso', onAccionEnProgreso);
       websocketService.off('pila-actualizada', onPilaActualizada);
       websocketService.off('accion-resuelta-exitosa', onAccionResuelta);

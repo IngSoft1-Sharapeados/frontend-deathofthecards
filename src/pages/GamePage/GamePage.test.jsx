@@ -54,11 +54,15 @@ vi.mock('@/hooks/useGameState', () => ({ default: () => mockUseGameState }));
 vi.mock('@/hooks/useGameData', () => ({ default: vi.fn() }));
 vi.mock('@/hooks/useGameWebSockets', () => ({ default: vi.fn() }));
 
-// FIX: Update the mock to export both the default (useCardActions) and named (useSecrets) hooks
-vi.mock('@/hooks/useCardActions', () => ({
-  default: () => mockUseCardActions,
-  useSecrets: () => mockUseSecrets,
-}));
+vi.mock('@/hooks/useCardActions', async () => {
+  const actual = await vi.importActual('@/hooks/useCardActions');
+  return {
+    CARD_IDS: actual.CARD_IDS, 
+    default: () => mockUseCardActions,
+    useSecrets: () => mockUseSecrets,
+  };
+});
+
 
 vi.mock('react-router-dom', async (importOriginal) => {
   const actual = await importOriginal();
