@@ -19,6 +19,7 @@ import DisgraceOverlay from '@/components/UI/DisgraceOverlay';
 import ConfirmationModal from '@/components/EventModals/ConfirmationModal';
 import LookIntoAshesModal from '@/components/EventModals/LookIntoAshesModal';
 import DiscardDeck from '@/components/DiscardDeck/DiscardDeck.jsx';
+import Chat from '@/components/Chat/Chat.jsx';
 // Hooks
 import useWebSocket from '@/hooks/useGameWebSockets';
 import useGameState from '@/hooks/useGameState';
@@ -32,6 +33,7 @@ import ActionStackModal from '@/components/EventModals/ActionStackModal';
 import ActionResultToast from '@/components/EventModals/ActionResultToast';
 import CardTradeModal from '@/components/EventModals/CardTrade/CardTradeModal';
 import useActionStack from '@/hooks/useActionStack';
+import websocketService from '@/services/websocketService';
 import useEventLog from '@/hooks/useEventLog';
 import EventLogModal from '@/components/EventLog/EventLogModal';
 import { useTurnTimer, TURN_DURATION } from '@/hooks/useTurnTimer'; 
@@ -582,6 +584,9 @@ const GamePage = () => {
 
   const isResponseWindowOpen = !!accionEnProgreso;
 
+  const currentPlayer = players.find(p => p.id_jugador === currentPlayerId);
+  const currentPlayerName = currentPlayer?.nombre_jugador || 'Jugador';
+
   return (
     <div className={styles.gameContainer}>
       {winners && (
@@ -861,6 +866,12 @@ const GamePage = () => {
         title="¿A quién sospechás como el asesino?"
         loadingMessage={pysLoadingMessage}
         hideCloseButton={true}
+      />
+      <Chat 
+        gameId={gameId}
+        playerId={currentPlayerId}
+        playerName={currentPlayerName}
+        websocketService={websocketService}
       />
 
       <CardTradeModal
