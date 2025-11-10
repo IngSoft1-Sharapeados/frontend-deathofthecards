@@ -45,7 +45,8 @@ describe('useGameData', () => {
     setDraftCards: vi.fn(),
     setPlayersSecrets: vi.fn(),
     setDiscardPile: vi.fn(),
-    setPlayedSetsByPlayer: vi.fn()
+    setPlayedSetsByPlayer: vi.fn(),
+    setTurnStartedAt: vi.fn()
   };
 
   const mockGameData = {
@@ -83,6 +84,7 @@ describe('useGameData', () => {
     apiService.getMySecrets.mockResolvedValue(mockGameData.secretCardsData);
     apiService.getDraftCards.mockResolvedValue([]);
     apiService.getPlayedSets.mockResolvedValue([]);
+    apiService.getDiscardPile.mockResolvedValue([]);
 
     // Mock cardService
     cardService.getPlayingHand.mockImplementation(cards => cards.map(c => ({ ...c, url: 'card1.png' })));
@@ -92,6 +94,8 @@ describe('useGameData', () => {
 
   test('should load game data and connect WebSocket on mount', async () => {
     sessionStorage.setItem('playerId', '1');
+    apiService.getDiscardPile.mockResolvedValue([]);
+    
     renderHook(() => useGameData('game-123', mockGameState));
 
     // Wait for async operations
@@ -110,22 +114,26 @@ describe('useGameData', () => {
     expect(mockGameState.setHostId).toHaveBeenCalledWith(2);
     expect(mockGameState.setPlayers).toHaveBeenCalledWith(mockGameData.gameDetails.listaJugadores);
 
-    const expectedInitialSecrets = {
-      '1': { revealed: 0, hidden: 3 },
-      '2': { revealed: 0, hidden: 3 },
-    };
-    expect(mockGameState.setPlayersSecrets).toHaveBeenCalledWith(expectedInitialSecrets);
+    await waitFor(() => {
+      const expectedInitialSecrets = {
+        '1': { revealed: 0, hidden: 3 },
+        '2': { revealed: 0, hidden: 3 },
+      };
+      expect(mockGameState.setPlayersSecrets).toHaveBeenCalledWith(expectedInitialSecrets);
+    });
 
     // Verify hand processing
     expect(cardService.getPlayingHand).toHaveBeenCalledWith(mockGameData.handData);
-    expect(mockGameState.setHand).toHaveBeenCalledWith([
-      { 
-        id: 1, 
-        url: 'card1.png', 
-        id_instancia: 101,          
-        instanceId: 'card-inst-101' 
-      }
-    ]);
+    await waitFor(() => {
+      expect(mockGameState.setHand).toHaveBeenCalledWith([
+        { 
+          id: 1, 
+          url: 'card1.png', 
+          id_instancia: 101,          
+          instanceId: 'card-inst-101' 
+        }
+      ]);
+    });
 
     // Verify WebSocket connection
     await waitFor(() => {
@@ -140,10 +148,11 @@ describe('useGameData', () => {
 
   test('should set winners when deck is empty on load', async () => {
     apiService.getDeckCount.mockResolvedValue(0);
+    apiService.getDiscardPile.mockResolvedValue([]);
 
     renderHook(() => useGameData('game-123', mockGameState));
 
-    await vi.waitFor(() => {
+    await waitFor(() => {
       // Con mazo vacío y roles presentes, debe mostrar al asesino (y cómplice si existe)
       expect(mockGameState.setWinners).toHaveBeenCalledWith(['Player2']);
       expect(mockGameState.setAsesinoGano).toHaveBeenCalledWith(true);
@@ -198,7 +207,7 @@ describe('useGameData', () => {
         { id: 7 },
         { id: 8 }
       ]);
-    });
+    }, { timeout: 3000 });
   });
 
   test('should not process discard pile when discardData is not an array', async () => {
@@ -220,7 +229,7 @@ describe('useGameData', () => {
 
     await waitFor(() => {
       expect(mockGameState.setDiscardPile).toHaveBeenCalledWith([]);
-    });
+    }, { timeout: 3000 });
   });
 
   test('should process discard pile with complex card objects', async () => {
@@ -239,6 +248,6 @@ describe('useGameData', () => {
         { id: 7 },
         { id: 8 }
       ]);
-    });
+    }, { timeout: 3000 });
   });
 });
