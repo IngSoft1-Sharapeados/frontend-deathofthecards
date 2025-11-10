@@ -633,12 +633,15 @@ const useCardActions = (gameId, gameState, onSetEffectTrigger, iniciarAccionCanc
     const cardNombre = cardService.getCardNameById(id);
     
     try {
+        gameState.setHand(prev =>
+          prev.filter(c => c.id_instancia !== id_instancia)
+        );
       // Guardar el contexto del trade ANTES de iniciar la acción
       gameState.setCardTradeContext({ 
         originId: currentPlayerId, 
         targetPlayerId: targetPlayerId 
       });
-
+      
       await iniciarAccionCancelable({
         tipo_accion: "evento_card_trade",
         cartas_db_ids: [id_instancia],
@@ -662,14 +665,12 @@ const useCardActions = (gameId, gameState, onSetEffectTrigger, iniciarAccionCanc
   };
 
   const handleDeadCardFollyConfirm = async (direccion) => {
-    if (!eventCardToPlay) {
-      console.warn("No hay carta de evento seleccionada para jugar.");
-      return;
-    }
-
+    if (!eventCardToPlay) return;
     try {
       console.log(`[DeadCardFolly] Iniciando acción cancelable dead card folly con dirección: ${direccion}`);
-
+      gameState.setHand(prev =>
+        prev.filter(c => c.id_instancia !== eventCardToPlay.id_instancia)
+      );
       await iniciarAccionCancelable({
         tipo_accion: "evento_dead_card_folly",
         cartas_db_ids: [eventCardToPlay.id],
@@ -706,13 +707,34 @@ const useCardActions = (gameId, gameState, onSetEffectTrigger, iniciarAccionCanc
         cardId,           // cardId
         destinationId     // targetPlayerId
       );
-      
-      if (response?.status === "ok") {
-        console.log("[useCardActions] Carta enviada:", response);
+
+      if (response?.status === "ok" || response?.detail?.includes("correctamente")) {
+        console.log("[useCardActions] Carta enviada correctamente");
+
+        //  Actualizar la mano inmediatamente 
+        try {
+          const freshHandData = await apiService.getHand(gameId, currentPlayerId, {
+            cache: "no-store",
+            headers: { "Cache-Control": "no-cache" },
+          });
+
+          const playingHand = [...cardService.getPlayingHand(freshHandData)];
+          const handWithInstanceIds = playingHand.map((card) => ({
+            ...card,
+            instanceId: `card-inst-${card.id_instancia}`,
+          }));
+
+          console.log("[DEBUG] Actualizando mano local:", handWithInstanceIds);
+          gameState.setHand([...handWithInstanceIds]);
+        } catch (err) {
+          console.warn("[useCardActions] No se pudo refrescar la mano:", err);
+        }
+
         gameState.setCardTradeModalOpen(false);
         gameState.setCardTradeContext(null);
+      } else {
+        console.error("[useCardActions] Respuesta inesperada del backend:", response);
       }
-      
     } catch (err) {
       console.error("[useCardActions] Error al enviar carta:", err);
       alert(`Error al enviar carta: ${err.message}`);

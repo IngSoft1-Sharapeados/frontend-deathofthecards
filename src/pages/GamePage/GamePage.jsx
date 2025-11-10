@@ -389,32 +389,33 @@ const GamePage = () => {
           'point-your-suspicions'
         );
       }
-    },  onCardTradePlayed: (message) => {
-    const { jugador_id: actorId, objetivo_id: targetId } = message;
-    const actorName =
-      gameState.players.find(p => p.id_jugador === actorId)?.nombre_jugador || 'Un jugador';
-    const targetName =
-      gameState.players.find(p => p.id_jugador === targetId)?.nombre_jugador || 'otro jugador';
+    },  
+    onCardTradePlayed: (message) => {
+      const { jugador_id: actorId, objetivo_id: targetId } = message;
+      const actorName =
+        gameState.players.find(p => p.id_jugador === actorId)?.nombre_jugador || 'Un jugador';
+      const targetName =
+        gameState.players.find(p => p.id_jugador === targetId)?.nombre_jugador || 'otro jugador';
 
-    // Mostrar efecto visual
-    gameState.setEventCardInPlay({
-      imageName: cardService.getCardImageUrl(CARD_IDS.CARD_TRADE),
-      message: `${actorName} inició un intercambio de cartas con ${targetName}`,
-    });
-
-    // Si este cliente es el actor o el objetivo, abrir modal
-    if (targetId === gameState.currentPlayerId || actorId === gameState.currentPlayerId) {
-      const handSnapshot = [...(gameState.hand || [])]; // snapshot mano antes de abrir modal
-
-      gameState.setCardTradeContext({
-        originId: actorId,
-        targetPlayerId: targetId,
-        handSnapshot,
+      // Mostrar efecto visual
+      gameState.setEventCardInPlay({
+        imageName: cardService.getCardImageUrl(CARD_IDS.CARD_TRADE),
+        message: `${actorName} inició un intercambio de cartas con ${targetName}`,
       });
 
-      gameState.setCardTradeModalOpen(true);
-    }
-  },
+      // Si este cliente es el actor o el objetivo, abrir modal
+      if (targetId === gameState.currentPlayerId || actorId === gameState.currentPlayerId) {
+        const handSnapshot = [...(gameState.hand || [])]; // snapshot mano antes de abrir modal
+
+        gameState.setCardTradeContext({
+          originId: actorId,
+          targetPlayerId: targetId,
+          handSnapshot,
+        });
+
+        gameState.setCardTradeModalOpen(true);
+      }
+    },
 
 
   onDeadCardFollyPlayed: (message) => {
