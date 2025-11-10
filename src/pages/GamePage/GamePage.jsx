@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { cardService } from '@/services/cardService';
-import { useMemo, useEffect, useState } from 'react';
+import { useMemo, useEffect, useState, useCallback } from 'react';
 import { apiService } from '@/services/apiService';
 
 
@@ -34,6 +34,8 @@ import CardTradeModal from '@/components/EventModals/CardTrade/CardTradeModal';
 import useActionStack from '@/hooks/useActionStack';
 import useEventLog from '@/hooks/useEventLog';
 import EventLogModal from '@/components/EventLog/EventLogModal';
+import { useTurnTimer, TURN_DURATION } from '@/hooks/useTurnTimer'; 
+import TurnTimer from '@/components/TurnTimer/TurnTimer';
 
 
 // Styles
@@ -69,10 +71,10 @@ const GamePage = () => {
     lookIntoAshesModalOpen, setLookIntoAshesModalOpen,
     discardPileSelection, setDiscardPileSelection,
     selectedDiscardCard, setSelectedDiscardCard, setEventCardToPlay,
-    isPysVotingModalOpen, setIsPysVotingModalOpen,
+    isPysVotingModalOpen, setIsPysVotingModalOpen, setTurnStartedAt, turnStartedAt,
     pysActorId, setPysActorId,
     pysLoadingMessage, setPysLoadingMessage,
-    pysVotos, setPysVotos,
+    pysVotos, setPysVotos, isMyTurn,
     isAddToSetModalOpen, setAddToSetModalOpen,
   } = gameState;
 
@@ -87,6 +89,9 @@ const GamePage = () => {
   } = useActionStack(gameId, gameState.currentPlayerId, handleSetPlayedEvent);
 
   gameState.accionEnProgreso = accionEnProgreso;
+
+  
+
 
 
   // Log de inicio de partida (solo una vez cuando hay jugadores y turno)
@@ -217,6 +222,9 @@ const GamePage = () => {
       if (player) {
         logTurnStart(player.nombre_jugador);
       }
+      
+      // Iniciar el timer del turno
+      setTurnStartedAt(Date.now());
     },
 
     onDraftUpdate: (newDraftData) => {
@@ -496,6 +504,24 @@ const GamePage = () => {
     logAriadneOliverPlayed
   );
 
+  const { timeLeft } = useTurnTimer({
+    gameId,
+    currentPlayerId,
+    currentTurn,
+    hand,
+    setHand: gameState.setHand,
+    turnStartedAt,
+    isMyTurn,
+    playerTurnState: playerTurnState
+  });
+
+  const handleEventDisplayComplete = useCallback(() => {
+    gameState.setEventCardInPlay(null);
+  }, [gameState.setEventCardInPlay]); 
+  
+  const handleActionResultToastClose = useCallback(() => {
+    setActionResultMessage(null);
+  }, [setActionResultMessage]); 
 
   const sortedHand = useMemo(() => {
     return [...hand].sort((a, b) => a.id - b.id);
@@ -570,9 +596,10 @@ const GamePage = () => {
           onReturnToMenu={() => navigate("/")}
         />
       )}
+      <TurnTimer timeLeft={timeLeft} maxTime={TURN_DURATION} />
       <EventDisplay
         card={gameState.eventCardInPlay}
-        onDisplayComplete={() => gameState.setEventCardInPlay(null)}
+        onDisplayComplete={handleEventDisplayComplete}
       />
       <ActionStackModal
         accion={accionEnProgreso}
@@ -580,7 +607,7 @@ const GamePage = () => {
       />
       <ActionResultToast
         message={actionResultMessage}
-        onClose={() => setActionResultMessage(null)}
+        onClose={handleActionResultToastClose}
       />
 
       <div className={styles.opponentsContainer} data-player-count={players.length}>
