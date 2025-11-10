@@ -673,7 +673,7 @@ const useCardActions = (gameId, gameState, onSetEffectTrigger, iniciarAccionCanc
       );
       await iniciarAccionCancelable({
         tipo_accion: "evento_dead_card_folly",
-        cartas_db_ids: [eventCardToPlay.id],
+        cartas_db_ids: [eventCardToPlay.id_instancia],
         nombre_accion: cardService.getCardNameById(eventCardToPlay.id),
         id_carta_tipo_original: eventCardToPlay.id, 
         payload_original: { direccion },
