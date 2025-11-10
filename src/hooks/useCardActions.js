@@ -39,6 +39,8 @@ const useCardActions = (gameId, gameState, onSetEffectTrigger, iniciarAccionCanc
     setSelectedSecretCard,
     isLocalPlayerDisgraced,
     accionEnProgreso,
+    canPlaySingleDetective,
+    setAddToSetModalOpen,
   } = gameState;
 
   const handlePlayNotSoFast = useCallback(async (card) => {
@@ -100,7 +102,6 @@ const useCardActions = (gameId, gameState, onSetEffectTrigger, iniciarAccionCanc
   }, [isMyTurn, playerTurnState, hasPlayedSetThisTurn, setSelectedDraftCards, hand.length]);
 
   const handleDiscard = useCallback(async () => {
-    // ... (sin cambios, tu lógica de Early Train es correcta)
     if (selectedCards.length === 0 || !isMyTurn) return;
     try {
       const cardToDiscard = hand.find(c => c.instanceId === selectedCards[0]);
@@ -392,29 +393,36 @@ const useCardActions = (gameId, gameState, onSetEffectTrigger, iniciarAccionCanc
   };
 
   const handlePlay = useCallback(async () => {
-    // ... (sin cambios)
     if (!isMyTurn || playerTurnState !== 'discarding') return;
+
     const isEvent = isValidEventCard(hand, selectedCards);
     const isSet = isValidDetectiveSet(hand, selectedCards);
+    const isAddingToSet = canPlaySingleDetective;
     const isAriadne = (() => {
       if (selectedCards.length !== 1) return false;
       const card = hand.find(c => c.instanceId === selectedCards[0]);
       return card?.id === CARD_IDS.ARIADNE_OLIVER;
     })();
 
-    if (!isEvent && !isSet && !isAriadne) return;
+    if (!isEvent && !isSet && !isAriadne && !isAddingToSet) return;
     const cardIdsToPlay = selectedCards
       .map((instanceId) => hand.find((c) => c.instanceId === instanceId)?.id)
       .filter((id) => id !== undefined);
     try {
+      const cardInstance = hand.find(c => c.instanceId === selectedCards[0]);
       if (isEvent) {
         await handleEventPlay(cardIdsToPlay[0]);
+
       } else if (isAriadne) {
         // Reutilizar SetSelectionModal como con Another Victim
-        const cardInstance = hand.find(c => c.instanceId === selectedCards[0]);
         if (!cardInstance) return;
         setEventCardToPlay({ id: cardInstance.id, instanceId: cardInstance.instanceId, id_instancia: cardInstance.id_instancia });
         setSetSelectionModalOpen(true);
+
+      } else if (isAddingToSet) {
+        setEventCardToPlay(cardInstance);
+        setAddToSetModalOpen(true);
+
       } else {
         await handleSetPlay(cardIdsToPlay);
       }
@@ -469,6 +477,50 @@ const useCardActions = (gameId, gameState, onSetEffectTrigger, iniciarAccionCanc
     } catch (error) {
       console.error('Error al iniciar "Jugar Set":', error);
       alert(`Error: ${error.message}`);
+    }
+  };
+
+  // Se llama desde el SetSelectionModal
+  const handleAddToSetConfirm = async (targetSet) => {
+    if (!eventCardToPlay || !targetSet) {
+      console.error("Falta 'eventCardToPlay' o 'targetSet' en handleAddToSetConfirm");
+      return;
+    }
+
+    const cardToPlay = eventCardToPlay;
+    const cardNombre = cardService.getCardNameById(cardToPlay.id);
+
+    try {
+      const payload = {
+        tipo_accion: "agregar_a_set", 
+        cartas_db_ids: [cardToPlay.id_instancia], 
+        nombre_accion: `Añadir a Set (${cardNombre})`,
+        payload_original: {
+          id_carta_tipo: cardToPlay.id,
+          representacion_id_carta: targetSet.representacion_id_carta
+        },
+        id_carta_tipo_original: cardToPlay.id 
+      };
+
+      // Llamar al Action Stack 
+      await iniciarAccionCancelable(payload);
+
+      // Actualización optimista de la UI
+      const cardsToRemoveFromHand = [cardToPlay.instanceId];
+      setSelectedCards([]);
+
+      setHand(prevHand =>
+        prevHand.filter(card => !cardsToRemoveFromHand.includes(card.instanceId))
+      );
+      setHasPlayedSetThisTurn(true);
+      setPlayerTurnState('discarding'); // Volver a la fase de descarte
+
+    } catch (error) {
+      console.error('Error al iniciar "Añadir a Set":', error);
+      alert(`Error: ${error.message}`);
+    } finally {
+      setAddToSetModalOpen(false);
+      setEventCardToPlay(null);
     }
   };
 
@@ -730,6 +782,7 @@ const useCardActions = (gameId, gameState, onSetEffectTrigger, iniciarAccionCanc
     handleDraftCardClick,
     handleDiscard,
     handlePickUp,
+    handleAddToSetConfirm,
     handlePlay,
     handleEventActionConfirm,
     handleCardTradeConfirm,

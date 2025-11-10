@@ -70,8 +70,15 @@ const GamePage = () => {
     isPysVotingModalOpen, setIsPysVotingModalOpen, setTurnStartedAt, turnStartedAt,
     pysActorId, setPysActorId,
     pysLoadingMessage, setPysLoadingMessage,
+<<<<<<< HEAD
     pysVotos, setPysVotos, isMyTurn
+=======
+    pysVotos, setPysVotos,
+    isAddToSetModalOpen, setAddToSetModalOpen,
+>>>>>>> dev
   } = gameState;
+
+  const { handleSetPlayedEvent, modals: detectiveModals } = useDetectiveSecretReveal(gameId, gameState, players);
 
   const {
     accionEnProgreso,
@@ -79,7 +86,7 @@ const GamePage = () => {
     setActionResultMessage,
     iniciarAccionCancelable,
     wsCallbacks: actionStackCallbacks,
-  } = useActionStack(gameId, gameState.currentPlayerId);
+  } = useActionStack(gameId, gameState.currentPlayerId, handleSetPlayedEvent);
 
   gameState.accionEnProgreso = accionEnProgreso;
 
@@ -94,7 +101,6 @@ const GamePage = () => {
   }
 
   const { handleOpenSecretsModal, handleCloseSecretsModal } = useSecrets(gameId, gameState);
-  const { handleSetPlayedEvent, modals: detectiveModals } = useDetectiveSecretReveal(gameId, gameState, players);
   // Secret actions handlers used by SecretsModal
   const { handleSecretCardClick, handleRevealSecret, handleHideSecret, handleRobSecret } = useSecretActions(gameId, gameState);
 
@@ -263,7 +269,7 @@ const GamePage = () => {
       const hiddenCount = secrets.length - revealedCount;
 
       let updatedDisgracedSet = new Set();
-      
+
       gameState.setDisgracedPlayerIds(prevSet => {
         const newSet = new Set(prevSet);
         if (isNowDisgraced) {
@@ -322,7 +328,7 @@ const GamePage = () => {
           }
 
           // Todos los jugadores no en desgracia deben ser exactamente el asesino y/o cómplice
-          const allDisgracedExceptMurderers = 
+          const allDisgracedExceptMurderers =
             playersNotDisgraced.length === expectedSurvivors.length &&
             playersNotDisgraced.every(player => expectedSurvivors.includes(player.id_jugador));
 
@@ -445,6 +451,7 @@ const GamePage = () => {
     handleCardTradeConfirm,
     handleLookIntoTheAshesConfirm,
     handleOneMoreSecretSelect,
+    handleAddToSetConfirm,
     handleSendCardTradeResponse
   } = useCardActions(
     gameId,
@@ -505,6 +512,24 @@ const GamePage = () => {
   const setsForSelection = useMemo(() => {
     return opponentSets;
   }, [opponentSets]);
+
+  const myMatchingSets = useMemo(() => {
+    const cardToPlay = gameState.eventCardToPlay;
+    if (!isAddToSetModalOpen || !cardToPlay) return {};
+
+    const myPlayer = players.find(p => p.id_jugador === currentPlayerId);
+    const mySets = playedSetsByPlayer[currentPlayerId] || [];
+
+    // Filtramos solo los sets que coinciden con el TIPO de la carta seleccionada
+    const matching = mySets.filter(set => set.representacion_id_carta === cardToPlay.id);
+
+    // El modal espera un objeto { [playerId]: [sets] }
+    return myPlayer ? { [myPlayer.id_jugador]: matching } : {};
+  }, [isAddToSetModalOpen, playedSetsByPlayer, currentPlayerId, players, gameState.eventCardToPlay]);
+
+  const myPlayerObject = useMemo(() => {
+    return players.filter(p => p.id_jugador === currentPlayerId);
+  }, [players, currentPlayerId]);
 
 
   if (isLoading) {
@@ -725,6 +750,16 @@ const GamePage = () => {
         players={players}
         onSetSelect={handleEventActionConfirm}
         title={gameState.eventCardToPlay?.id === 15 ? 'Ariadne Oliver: Elige un set donde agregarla' : 'Another Victim: Elige un set para robar'}
+        data-testid="another-victim-modal"
+      />
+      <SetSelectionModal
+        isOpen={isAddToSetModalOpen}
+        onClose={() => setAddToSetModalOpen(false)}
+        opponentSets={myMatchingSets} // Usar los sets filtrados
+        players={myPlayerObject}      // Solo nosotros
+        onSetSelect={handleAddToSetConfirm}
+        title="Añadir a Set Existente"
+        data-testid="add-to-set-modal"
       />
       <ConfirmationModal
         isOpen={isConfirmationModalOpen}

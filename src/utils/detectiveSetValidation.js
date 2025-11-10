@@ -1,15 +1,3 @@
-// Utility to validate if selected hand cards form a valid Detective set
-// Card ids reference from cardService DETECTIVE_CARDS
-// 7 Poirot -> 3 of a kind
-// 8 Miss Marple -> 3 of a kind
-// 9 Mr Satterthwaite -> 2 of a kind
-// 10 Parker Pyne -> 2 of a kind
-// 11 Lady Eileen "Bundle" Brent -> 2 of a kind
-// 12 Tommy Beresford -> 2 of a kind, also pairable with 13
-// 13 Tuppence Beresford -> 2 of a kind, also pairable with 12
-// 14 Harley Quin -> wildcard
-
-
 const DETECTIVE_IDS = new Set([7, 8, 9, 10, 11, 12, 13, 14]);
 const WILDCARD_ID = 14;
 
@@ -77,4 +65,37 @@ export function isValidDetectiveSet(hand, selectedInstanceIds) {
   return false;
 }
 
-export default { isValidDetectiveSet };
+export function canAddCardToSet(hand, selectedInstanceIds, playedSets) {
+  if (!Array.isArray(selectedInstanceIds) || selectedInstanceIds.length !== 1) {
+    return false;
+  }
+
+  // Encontrar la carta seleccionada en la mano
+  const card = hand.find((c) => c.instanceId === selectedInstanceIds[0]);
+  if (!card) {
+    return false;
+  }
+
+  const cardId = card.id;
+
+  // No se puede añadir un comodín a un set existente
+  if (cardId === WILDCARD_ID) {
+    return false;
+  }
+
+  // La carta debe ser un detective
+  if (!DETECTIVE_IDS.has(cardId)) {
+    return false;
+  }
+
+  // El jugador debe tener sets ya jugados
+  if (!Array.isArray(playedSets) || playedSets.length === 0) {
+    return false;
+  }
+
+  // Comprobar si el jugador tiene un set jugado del MISMO TIPO
+  return playedSets.some(set => set.representacion_id_carta === cardId);
+}
+
+
+export default { isValidDetectiveSet, canAddCardToSet };
