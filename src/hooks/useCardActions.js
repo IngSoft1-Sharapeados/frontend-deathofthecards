@@ -629,9 +629,9 @@ const useCardActions = (gameId, gameState, onSetEffectTrigger, iniciarAccionCanc
     const cardNombre = cardService.getCardNameById(id);
     
     try {
-      gameState.setHand(prev =>
-        prev.filter(c => c.id !== gameState.eventCardToPlay?.id)
-      );
+        gameState.setHand(prev =>
+          prev.filter(c => c.id_instancia !== id_instancia)
+        );
       // Guardar el contexto del trade ANTES de iniciar la acción
       gameState.setCardTradeContext({ 
         originId: currentPlayerId, 
@@ -702,7 +702,6 @@ const useCardActions = (gameId, gameState, onSetEffectTrigger, iniciarAccionCanc
           console.warn("[useCardActions] No se pudo refrescar la mano:", err);
         }
 
-        // ✅ Cerrar modal y limpiar contexto
         gameState.setCardTradeModalOpen(false);
         gameState.setCardTradeContext(null);
       } else {
