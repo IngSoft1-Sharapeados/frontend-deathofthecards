@@ -23,11 +23,8 @@ const useGameState = () => {
   const [playedSetsByPlayer, setPlayedSetsByPlayer] = useState({});
   // Track if player has played a set in the current turn
   const [hasPlayedSetThisTurn, setHasPlayedSetThisTurn] = useState(false);
-<<<<<<< HEAD
   const [turnStartedAt, setTurnStartedAt] = useState(false);
-=======
   const [isAddToSetModalOpen, setAddToSetModalOpen] = useState(false);
->>>>>>> dev
 
   // Estados para el fin de la partida
   const [winners, setWinners] = useState(null);

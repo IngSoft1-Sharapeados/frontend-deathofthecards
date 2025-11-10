@@ -70,12 +70,8 @@ const GamePage = () => {
     isPysVotingModalOpen, setIsPysVotingModalOpen, setTurnStartedAt, turnStartedAt,
     pysActorId, setPysActorId,
     pysLoadingMessage, setPysLoadingMessage,
-<<<<<<< HEAD
-    pysVotos, setPysVotos, isMyTurn
-=======
-    pysVotos, setPysVotos,
+    pysVotos, setPysVotos, isMyTurn,
     isAddToSetModalOpen, setAddToSetModalOpen,
->>>>>>> dev
   } = gameState;
 
   const { handleSetPlayedEvent, modals: detectiveModals } = useDetectiveSecretReveal(gameId, gameState, players);
