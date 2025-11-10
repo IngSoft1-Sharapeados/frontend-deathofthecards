@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { cardService } from '@/services/cardService';
-import { useMemo, useEffect } from 'react';
+import { useMemo, useEffect, useState } from 'react';
 import { apiService } from '@/services/apiService';
 
 
@@ -32,6 +32,8 @@ import ActionStackModal from '@/components/EventModals/ActionStackModal';
 import ActionResultToast from '@/components/EventModals/ActionResultToast';
 import CardTradeModal from '@/components/EventModals/CardTrade/CardTradeModal';
 import useActionStack from '@/hooks/useActionStack';
+import useEventLog from '@/hooks/useEventLog';
+import EventLogModal from '@/components/EventLog/EventLogModal';
 
 
 // Styles
@@ -48,6 +50,8 @@ const GamePage = () => {
 
   // --- State Management ---
   const gameState = useGameState();
+  const { events, logTurnStart, logEventCardPlayed, logSetPlayed, logCardAddedToSet, logAriadneOliverPlayed, logGameStart } = useEventLog();
+  const [isEventLogOpen, setIsEventLogOpen] = useState(false);
   const {
     hand, selectedCards, isLoading,
     deckCount, currentTurn, /* turnOrder */ players,
@@ -85,6 +89,18 @@ const GamePage = () => {
   gameState.accionEnProgreso = accionEnProgreso;
 
 
+  // Log de inicio de partida (solo una vez cuando hay jugadores y turno)
+  useEffect(() => {
+    if (players.length > 0 && currentTurn && events.length === 0) {
+      logGameStart();
+      // Log del primer turno
+      const firstPlayer = players.find(p => p.id_jugador === currentTurn);
+      if (firstPlayer) {
+        logTurnStart(firstPlayer.nombre_jugador);
+      }
+    }
+  }, [players, currentTurn, events.length, logGameStart, logTurnStart]);
+
   // Desarrollo solamente
 
   if (import.meta.env.DEV) {
@@ -108,6 +124,8 @@ const GamePage = () => {
         imageName: '17-event_cardsonthetable.png',
         message: `${actorName} jugó "Cards off the Table" sobre ${targetName}`,
       });
+      
+      logEventCardPlayed(actorName, 17);
     },
 
     onAnotherVictimPlayed: async (message) => {
@@ -124,6 +142,8 @@ const GamePage = () => {
         imageName: '18-event_anothervictim.png',
         message: `${actorName} robó un set de ${targetName}`
       });
+      
+      logEventCardPlayed(actorName, 18);
 
       try {
         const allSets = await apiService.getPlayedSets(gameId);
@@ -165,6 +185,8 @@ const GamePage = () => {
         imageName: '22-event_onemore.png',
         message: `${actorName} robó un secreto de ${sourceName} y se lo dio a ${destName}`
       });
+      
+      logEventCardPlayed(actorName, 22);
     },
 
     onHandUpdate: (message) => {
@@ -189,6 +211,12 @@ const GamePage = () => {
       gameState.setCurrentTurn(turn);
       gameState.setPlayerTurnState('discarding');
       gameState.setHasPlayedSetThisTurn(false);
+      
+      // Log del inicio de turno
+      const player = gameState.players.find(p => p.id_jugador === turn);
+      if (player) {
+        logTurnStart(player.nombre_jugador);
+      }
     },
 
     onDraftUpdate: (newDraftData) => {
@@ -207,7 +235,7 @@ const GamePage = () => {
 
     onSetPlayed: async (payload) => {
       try {
-        const { jugador_id: actorId, representacion_id: repId } = payload;
+        const { jugador_id: actorId, representacion_id: repId, cartas_ids: cardsIds } = payload;
         const actorName = gameState.players.find(p => p.id_jugador === actorId)?.nombre_jugador || 'Un jugador';
         const setImageUrl = cardService.getCardImageUrl(repId);
 
@@ -215,6 +243,8 @@ const GamePage = () => {
           imageName: setImageUrl,
           message: `${actorName} jugó un Set de Detectives`
         });
+        
+        logSetPlayed(actorName, repId, cardsIds || []);
 
         // --- FIN DE LA MODIFICACIÓN ---
         const allSets = await apiService.getPlayedSets(gameId);
@@ -236,10 +266,13 @@ const GamePage = () => {
     },
 
     onDelayEscapePlayed: async (message) => {
+      const actorName = gameState.players.find(p => p.id_jugador === message.jugador_id)?.nombre_jugador || 'Un jugador';
       gameState.setEventCardInPlay({
         imageName: '23-event_delayescape.png',
         message: `Se jugó "Delay The Murderer Escape"`
       });
+      
+      logEventCardPlayed(actorName, 23);
       // Forzar a todos los clientes a refrescar los datos afectados
       try {
         const [deckData, discardData] = await Promise.all([
@@ -334,10 +367,13 @@ const GamePage = () => {
       }
     },
     onEarlyTrainPlayed: (message) => {
+      const actorName = gameState.players.find(p => p.id_jugador === message.jugador_id)?.nombre_jugador || 'Un jugador';
       gameState.setEventCardInPlay({
         imageName: '24-event_earlytrain.png',
         message: `Se jugó "Early Train To Paddington"`
       });
+      
+      logEventCardPlayed(actorName, 24);
     },
 
     onLookIntoTheAshesPlayed: (message) => {
@@ -349,6 +385,8 @@ const GamePage = () => {
         imageName: cardService.getCardImageUrl(20), // URL de la carta "Look Into The Ashes"
         message: `${playerName} jugó "Look Into The Ashes"!`
       });
+      
+      logEventCardPlayed(playerName, 20);
 
       // Auto-ocultar después de 3 segundos
       setTimeout(() => {
@@ -357,10 +395,13 @@ const GamePage = () => {
     },
 
     onPointYourSuspicionsPlayed: (message) => {
+      const actorName = gameState.players.find(p => p.id_jugador === message.jugador_id)?.nombre_jugador || 'Un jugador';
       gameState.setPysActorId(message.jugador_id);
       gameState.setIsPysVotingModalOpen(true);
       gameState.setPysLoadingMessage(null); // Limpiar mensaje de "esperando"
       gameState.setPysVotos({}); // Limpiar votos
+      
+      logEventCardPlayed(actorName, 25);
     },
 
     onVotoRegistrado: (message) => {
@@ -404,6 +445,8 @@ const GamePage = () => {
         imageName: cardService.getCardImageUrl(CARD_IDS.CARD_TRADE),
         message: `${actorName} inició un intercambio de cartas con ${targetName}`,
       });
+      
+      logEventCardPlayed(actorName, CARD_IDS.CARD_TRADE);
 
       // Si este cliente es el actor o el objetivo, abrir modal
       if (targetId === gameState.currentPlayerId || actorId === gameState.currentPlayerId) {
@@ -447,7 +490,10 @@ const GamePage = () => {
     gameId,
     gameState,
     () => { },
-    iniciarAccionCancelable
+    iniciarAccionCancelable,
+    logCardAddedToSet,
+    logEventCardPlayed,
+    logAriadneOliverPlayed
   );
 
 
@@ -796,6 +842,21 @@ const GamePage = () => {
         onClose={() => gameState.setCardTradeModalOpen(false)}
         onConfirm={(cardId) => handleSendCardTradeResponse(cardId)}
       />
+
+      <EventLogModal
+        isOpen={isEventLogOpen}
+        onClose={() => setIsEventLogOpen(false)}
+        events={events}
+      />
+
+      {/* Botón flotante para abrir el log de eventos */}
+      <button
+        onClick={() => setIsEventLogOpen(true)}
+        className={styles.eventLogFloatingButton}
+        title="Ver log de eventos"
+      >
+        📋
+      </button>
     </div>
   );
 };

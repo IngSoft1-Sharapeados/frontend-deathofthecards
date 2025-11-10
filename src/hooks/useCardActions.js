@@ -19,7 +19,7 @@ const CARD_IDS = {
   POINT_SUSPICIONS: 25,
 };
 
-const useCardActions = (gameId, gameState, onSetEffectTrigger, iniciarAccionCancelable) => {
+const useCardActions = (gameId, gameState, onSetEffectTrigger, iniciarAccionCancelable, logCardAddedToSet, logEventCardPlayed, logAriadneOliverPlayed) => {
   const {
     hand, setHand, selectedDraftCards, draftCards,
     selectedCards, setSelectedCards,
@@ -367,6 +367,14 @@ const useCardActions = (gameId, gameState, onSetEffectTrigger, iniciarAccionCanc
         id_carta_tipo_original: cardId
       });
 
+      // Log del evento (si aplica)
+      if (cardId === CARD_IDS.ARIADNE_OLIVER && logAriadneOliverPlayed) {
+        const player = players.find(p => p.id_jugador === currentPlayerId);
+        if (player) {
+          logAriadneOliverPlayed(player.nombre_jugador);
+        }
+      }
+
       // 2. Limpieza de UI
       setSelectedCards([]);
 
@@ -504,6 +512,14 @@ const useCardActions = (gameId, gameState, onSetEffectTrigger, iniciarAccionCanc
 
       // Llamar al Action Stack 
       await iniciarAccionCancelable(payload);
+
+      // Log del evento
+      if (logCardAddedToSet) {
+        const player = players.find(p => p.id_jugador === currentPlayerId);
+        if (player) {
+          logCardAddedToSet(player.nombre_jugador, cardToPlay.id);
+        }
+      }
 
       // Actualización optimista de la UI
       const cardsToRemoveFromHand = [cardToPlay.instanceId];

@@ -1,0 +1,123 @@
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border-radius: 12px;
+  width: 90%;
+  max-width: 600px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  border: 2px solid #0f3460;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 2px solid #0f3460;
+}
+
+.header h2 {
+  margin: 0;
+  color: #e94560;
+  font-size: 24px;
+}
+
+.closeButton {
+  background: none;
+  border: none;
+  color: #e94560;
+  font-size: 32px;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s;
+}
+
+.closeButton:hover {
+  transform: scale(1.2);
+}
+
+.content {
+  padding: 20px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.emptyMessage {
+  text-align: center;
+  color: #a0a0a0;
+  font-style: italic;
+  padding: 40px 20px;
+}
+
+.eventList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.eventItem {
+  padding: 12px;
+  margin-bottom: 8px;
+  border-radius: 6px;
+  background-color: rgba(15, 52, 96, 0.3);
+  border-left: 4px solid;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.eventItem.game-start {
+  border-left-color: #9b59b6;
+  background-color: rgba(155, 89, 182, 0.2);
+  font-weight: bold;
+}
+
+.eventItem.turn-start {
+  border-left-color: #4a90e2;
+}
+
+.eventItem.event-card {
+  border-left-color: #e94560;
+}
+
+.eventItem.set-played {
+  border-left-color: #f39c12;
+}
+
+.eventItem.card-added-to-set {
+  border-left-color: #2ecc71;
+}
+
+.timestamp {
+  color: #a0a0a0;
+  font-size: 12px;
+  font-family: monospace;
+  white-space: nowrap;
+  min-width: 70px;
+}
+
+.message {
+  color: #ffffff;
+  flex: 1;
+  line-height: 1.4;
+}
