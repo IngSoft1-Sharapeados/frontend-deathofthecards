@@ -63,6 +63,11 @@ const useGameState = () => {
   const [discardPileSelection, setDiscardPileSelection] = useState([]);
   const [selectedDiscardCard, setSelectedDiscardCard] = useState(null);
 
+  const [isPysVotingModalOpen, setIsPysVotingModalOpen] = useState(false);
+  const [pysActorId, setPysActorId] = useState(null); // Quién jugó la carta
+  const [pysLoadingMessage, setPysLoadingMessage] = useState(null); // "Esperando votos..."
+  const [pysVotos, setPysVotos] = useState({});
+
 
   // Derived state
   const isMyTurn = currentTurn === currentPlayerId;
@@ -164,6 +169,10 @@ const useGameState = () => {
     lookIntoAshesModalOpen, setLookIntoAshesModalOpen,
     discardPileSelection, setDiscardPileSelection,
     selectedDiscardCard, setSelectedDiscardCard,
+    isPysVotingModalOpen, setIsPysVotingModalOpen,
+    pysActorId, setPysActorId,
+    pysLoadingMessage, setPysLoadingMessage,
+    pysVotos, setPysVotos,
   };
 };
 
