@@ -38,6 +38,7 @@ import useActionStack from '@/hooks/useActionStack';
 import styles from './GamePage.module.css';
 
 const NOT_SO_FAST_ID = 16;
+const PYS_ID = 25;
 const NOT_SO_FAST_WINDOW_MS = 5000;
 
 const GamePage = () => {
@@ -50,7 +51,7 @@ const GamePage = () => {
   const {
     hand, selectedCards, isLoading,
     deckCount, currentTurn, /* turnOrder */ players,
-    winners, asesinoGano,
+    winners, asesinoGano, isDisgraceVictory,
     isDiscardButtonEnabled, currentPlayerId,
     roles, displayedOpponents, draftCards, discardPile,
     playerTurnState, selectedDraftCards, isPickupButtonEnabled,
@@ -64,6 +65,10 @@ const GamePage = () => {
     lookIntoAshesModalOpen, setLookIntoAshesModalOpen,
     discardPileSelection, setDiscardPileSelection,
     selectedDiscardCard, setSelectedDiscardCard, setEventCardToPlay,
+    isPysVotingModalOpen, setIsPysVotingModalOpen,
+    pysActorId, setPysActorId,
+    pysLoadingMessage, setPysLoadingMessage,
+    pysVotos, setPysVotos,
   } = gameState;
 
   const {
@@ -127,17 +132,24 @@ const GamePage = () => {
           groupedSets[item.jugador_id] = arr;
         });
         gameState.setPlayedSetsByPlayer(groupedSets);
+
+        // If we stole the set, find it and trigger its effect with full card info
+        if (actorId === gameState.currentPlayerId) {
+          
+
+          // Find the stolen set in the fetched data to get cartas_ids
+          const stolenSet = (allSets || []).find(
+            set => set.jugador_id === actorId && set.representacion_id_carta === repId
+          );
+
+          handleSetPlayedEvent?.({
+            jugador_id: actorId,
+            representacion_id: repId,
+            cartas_ids: stolenSet?.cartas_ids || []
+          });
+        }
       } catch (error) {
         console.error("Error al refrescar sets tras Another Victim:", error);
-      }
-
-      if (actorId === gameState.currentPlayerId) {
-        console.log("[GamePage] ¡Robamos un set! Disparando efecto del set...", message);
-
-        handleSetPlayedEvent?.({
-          jugador_id: actorId,
-          representacion_id: repId
-        });
       }
     },
 
@@ -152,8 +164,6 @@ const GamePage = () => {
         message: `${actorName} robó un secreto de ${sourceName} y se lo dio a ${destName}`
       });
     },
-
-
 
     onHandUpdate: (message) => {
       console.log("Mensaje completo de WS:", message);
@@ -193,7 +203,6 @@ const GamePage = () => {
       gameState.setAsesinoGano(asesinoGano);
     },
 
-
     onSetPlayed: async (payload) => {
       try {
         const { jugador_id: actorId, representacion_id: repId } = payload;
@@ -204,7 +213,7 @@ const GamePage = () => {
           imageName: setImageUrl,
           message: `${actorName} jugó un Set de Detectives`
         });
-        
+
         // --- FIN DE LA MODIFICACIÓN ---
         const allSets = await apiService.getPlayedSets(gameId);
 
@@ -247,6 +256,8 @@ const GamePage = () => {
       const revealedCount = secrets.filter(s => s.revelado).length;
       const hiddenCount = secrets.length - revealedCount;
 
+      let updatedDisgracedSet = new Set();
+      
       gameState.setDisgracedPlayerIds(prevSet => {
         const newSet = new Set(prevSet);
         if (isNowDisgraced) {
@@ -254,6 +265,7 @@ const GamePage = () => {
         } else {
           newSet.delete(playerId);
         }
+        updatedDisgracedSet = newSet;
         return newSet;
       });
 
@@ -284,6 +296,37 @@ const GamePage = () => {
           });
           gameState.setPlayerSecretsData(processedModalSecrets);
         }
+
+        // Verificar victoria por desgracia social
+        // Esperar un momento para que el estado se actualice completamente
+        setTimeout(() => {
+          // Si ya hay ganadores, no hacer nada
+          if (gameState.winners) return;
+
+          // Necesitamos tener la información de roles y jugadores
+          if (!gameState.roles.murdererId || !gameState.players || gameState.players.length === 0) return;
+
+          // Determinar qué jugadores no están en desgracia
+          const playersNotDisgraced = gameState.players.filter(player => !updatedDisgracedSet.has(player.id_jugador));
+
+          // Verificar si solo quedan el asesino (y cómplice si existe)
+          const expectedSurvivors = [gameState.roles.murdererId];
+          if (gameState.roles.accompliceId) {
+            expectedSurvivors.push(gameState.roles.accompliceId);
+          }
+
+          // Todos los jugadores no en desgracia deben ser exactamente el asesino y/o cómplice
+          const allDisgracedExceptMurderers = 
+            playersNotDisgraced.length === expectedSurvivors.length &&
+            playersNotDisgraced.every(player => expectedSurvivors.includes(player.id_jugador));
+
+          if (allDisgracedExceptMurderers) {
+            // Activar el modal de fin de partida
+            gameState.setWinners([]);
+            gameState.setAsesinoGano(true);
+            gameState.setIsDisgraceVictory(true);
+          }
+        }, 100);
       } catch (error) {
         console.error("Error al refrescar secretos vía WebSocket:", error);
       }
@@ -311,7 +354,42 @@ const GamePage = () => {
       }, 3000);
     },
 
-  onCardTradePlayed: (message) => {
+    onPointYourSuspicionsPlayed: (message) => {
+      gameState.setPysActorId(message.jugador_id);
+      gameState.setIsPysVotingModalOpen(true);
+      gameState.setPysLoadingMessage(null); // Limpiar mensaje de "esperando"
+      gameState.setPysVotos({}); // Limpiar votos
+    },
+
+    onVotoRegistrado: (message) => {
+      gameState.setPysVotos(prev => ({
+        ...prev,
+        [message.votante_id]: true
+      }));
+    },
+
+    onVotacionFinalizada: (message) => {
+      gameState.setIsPysVotingModalOpen(false); // Cerrar el modal de votación
+      gameState.setPysLoadingMessage(null); // Limpiar
+
+      const sospechoso = gameState.players.find(p => p.id_jugador === message.sospechoso_id);
+      const sospechosoNombre = sospechoso?.nombre_jugador || `Jugador ${message.sospechoso_id}`;
+
+      gameState.setEventCardInPlay({
+        imageName: cardService.getCardImageUrl(PYS_ID),
+        message: `${sospechosoNombre} fue el más sospechado y debe revelar una carta.`
+      });
+
+      if (gameState.currentPlayerId === gameState.pysActorId) {
+        console.log("Somos el actor, solicitando revelación...");
+        apiService.requestTargetToRevealSecret(
+          gameId,
+          gameState.pysActorId,
+          message.sospechoso_id,
+          'point-your-suspicions'
+        );
+      }
+    },  onCardTradePlayed: (message) => {
     const { jugador_id: actorId, objetivo_id: targetId } = message;
     const actorName =
       gameState.players.find(p => p.id_jugador === actorId)?.nombre_jugador || 'Un jugador';
@@ -416,6 +494,7 @@ const GamePage = () => {
         <GameOverScreen
           winners={winners}
           asesinoGano={asesinoGano}
+          isDisgraceVictory={isDisgraceVictory}
           players={players}
           roles={roles}
           setRoles={gameState.setRoles}
@@ -642,6 +721,41 @@ const GamePage = () => {
         selectedCard={selectedDiscardCard}
         onCardSelect={setSelectedDiscardCard}
         onConfirm={() => handleLookIntoTheAshesConfirm()}
+      />
+      <PlayerSelectionModal
+        isOpen={isPysVotingModalOpen}
+        onClose={() => {
+          // No permitir cerrar
+          if (!pysLoadingMessage) {
+            alert("Debes votar para continuar.");
+          }
+        }}
+        players={players} // Mostrar todos los jugadores
+        onPlayerSelect={async (targetPlayerId) => {
+          try {
+            // Poner el modal en estado "cargando"
+            gameState.setPysLoadingMessage("Esperando a que los demás jugadores voten...");
+
+            // Enviar nuestro voto
+            await apiService.votePointYourSuspicions(
+              gameId,
+              pysActorId, // El actor que inició PYS
+              currentPlayerId, // Nosotros 
+              targetPlayerId   // El objetivo
+            );
+
+            //  El modal NO se cierra. Se queda en "Esperando..."
+            //    hasta que llegue el WS 'votacion-finalizada'.
+
+          } catch (error) {
+            console.error("Error al votar PYS:", error);
+            alert(`Error al votar: ${error.message}`);
+            gameState.setPysLoadingMessage(null);
+          }
+        }}
+        title="¿A quién sospechás como el asesino?"
+        loadingMessage={pysLoadingMessage}
+        hideCloseButton={true}
       />
 
       <CardTradeModal

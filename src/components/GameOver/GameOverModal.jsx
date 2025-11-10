@@ -25,6 +25,7 @@ const GameOverModal = ({
   roles = { murdererId: null, accompliceId: null }, // Roles locales (pueden estar desactualizados)
   setRoles,
   gameId,
+  isDisgraceVictory = false, // Indica si la victoria fue por desgracia social
 }) => {
   const [resolvedWinnerNames, setResolvedWinnerNames] = useState(null); // Estado para guardar nombres resueltos
 
@@ -71,12 +72,24 @@ const GameOverModal = ({
   let mensaje = 'Calculando resultado...';
   if (resolvedWinnerNames !== null) {
     if (asesinoGano) {
-      if (resolvedWinnerNames.length === 0) {
-        mensaje = "¡El Asesino se escapó!"; // Asesino ganó, pero no pudimos obtener el nombre
-      } else if (resolvedWinnerNames.length === 1) {
-        mensaje = `¡El asesino ${resolvedWinnerNames[0]} ganó la partida!`; // Gana solo el asesino
+      // Victoria por desgracia social
+      if (isDisgraceVictory) {
+        if (resolvedWinnerNames.length === 0) {
+          mensaje = "¡El asesino ganó la partida debido a que todos los jugadores están en desgracia social!";
+        } else if (resolvedWinnerNames.length === 1) {
+          mensaje = `¡El asesino ${resolvedWinnerNames[0]} ganó la partida debido a que todos los jugadores están en desgracia social!`;
+        } else {
+          mensaje = `¡El asesino y su cómplice (${resolvedWinnerNames.join(', ')}) ganaron la partida debido a que todos los jugadores están en desgracia social!`;
+        }
       } else {
-        mensaje = `¡El asesino y su cómplice (${resolvedWinnerNames.join(', ')}) ganaron la partida!`; // Ganan ambos
+        // Victoria normal (mazo vacío)
+        if (resolvedWinnerNames.length === 0) {
+          mensaje = "¡El Asesino se escapó!"; // Asesino ganó, pero no pudimos obtener el nombre
+        } else if (resolvedWinnerNames.length === 1) {
+          mensaje = `¡El asesino ${resolvedWinnerNames[0]} ganó la partida!`; // Gana solo el asesino
+        } else {
+          mensaje = `¡El asesino y su cómplice (${resolvedWinnerNames.join(', ')}) ganaron la partida!`; // Ganan ambos
+        }
       }
     } else {
       // Si asesinoGano es false
@@ -108,6 +121,7 @@ GameOverModal.propTypes = {
   }),
   setRoles: PropTypes.func,
   gameId: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+  isDisgraceVictory: PropTypes.bool,
 };
 
 export default GameOverModal;

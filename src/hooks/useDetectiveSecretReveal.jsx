@@ -14,8 +14,9 @@ export default function useDetectiveSecretReveal(gameId, gameState, players) {
   const [targetSecrets, setTargetSecrets] = useState([]);
   const [isLoadingSecrets, setIsLoadingSecrets] = useState(false);
   const [isSecretsOpen, setIsSecretsOpen] = useState(false);
-  const [flowMode, setFlowMode] = useState(null); // 'detective' | 'lady' | 'parker'
+  const [flowMode, setFlowMode] = useState(null); // 'detective' | 'lady' | 'parker' | 'satterwaite'
   const [lastRepId, setLastRepId] = useState(null);
+  const [hasWildcard, setHasWildcard] = useState(false); // Para Mr. Satterwaite con comodín
   // Selected secret ids for confirm flows
   const [selectedSecretId, setSelectedSecretId] = useState(null); // for target's secrets
   const [mySelectedSecretId, setMySelectedSecretId] = useState(null); // for personal (lady/beresford)
@@ -25,11 +26,14 @@ export default function useDetectiveSecretReveal(gameId, gameState, players) {
   const isTargetChoiceRep = (representacion_id) => representacion_id === 11 || representacion_id === 12 || representacion_id === 13;
   // Parker Pyne (10): el jugador que juega el set elige objetivo y selecciona un secreto REVELADO de ese jugador para ocultar
   const isParkerPyne = (representacion_id) => representacion_id === 10;
+  // Mr. Satterwaite (9): el jugador elige objetivo, el objetivo elige secreto a revelar, y si hay comodín se roba
+  const isSatterwaite = (representacion_id) => representacion_id === 9;
 
   // Handler para el evento jugar-set del WebSocket
   const handleSetPlayedEvent = useCallback((payload, currentPlayerIdArg) => {
     const jugador_id = payload?.jugador_id;
     const representacion_id = payload?.representacion_id;
+    const cartas_ids = payload?.cartas_ids || [];
     const myId = currentPlayerIdArg ?? currentPlayerId;
     if (jugador_id === myId) {
       setLastRepId(representacion_id);
@@ -51,6 +55,13 @@ export default function useDetectiveSecretReveal(gameId, gameState, players) {
           setFlowMode(null);
           return;
         }
+        setIsPlayerSelectOpen(true);
+      } else if (isSatterwaite(representacion_id)) {
+        // Mr. Satterwaite: verificar si tiene comodín (ID 14)
+        const tieneComodin = cartas_ids.includes(14);
+        setHasWildcard(tieneComodin);
+        setFlowMode('satterwaite');
+        setTargetPlayer(null);
         setIsPlayerSelectOpen(true);
       }
     }
@@ -96,6 +107,30 @@ export default function useDetectiveSecretReveal(gameId, gameState, players) {
         setTargetPlayer(null);
         setFlowMode(null);
       }
+    } else if (flowMode === 'satterwaite') {
+      // Mr. Satterwaite: solicitar revelación al objetivo (como Lady Brent)
+      try {
+        // Si hay comodín, primero obtener los secretos actuales del objetivo para poder comparar después
+        if (hasWildcard) {
+          const secretsBefore = await apiService.getPlayerSecrets(gameId, player.id_jugador);
+          setTargetSecretsBeforeReveal(secretsBefore);
+        }
+        
+        await apiService.requestTargetToRevealSecret(gameId, currentPlayerId, player.id_jugador, 'satterwaite');
+        // Si no hay comodín, limpiar inmediatamente (como Lady Brent)
+        if (!hasWildcard) {
+          setTargetPlayer(null);
+          setFlowMode(null);
+        }
+        // Si hay comodín, el useEffect escuchará la revelación y robará el secreto
+      } catch (e) {
+        console.error('No se pudo solicitar revelación al objetivo:', e);
+        alert(e.message || 'No se pudo solicitar revelación');
+        setTargetPlayer(null);
+        setFlowMode(null);
+        setHasWildcard(false);
+        setTargetSecretsBeforeReveal([]);
+      }
     } else if (flowMode === 'parker') {
       // Cargar secretos del objetivo y permitir seleccionar SOLO los revelados para ocultar
       setIsLoadingSecrets(true);
@@ -125,7 +160,7 @@ export default function useDetectiveSecretReveal(gameId, gameState, players) {
         setIsLoadingSecrets(false);
       }
     }
-  }, [gameId, currentPlayerId, flowMode, lastRepId]);
+  }, [gameId, currentPlayerId, flowMode, lastRepId, hasWildcard]);
 
   const handlePlayerSelectionAdapter = useCallback((playerId) => {
     const playerList = flowMode === 'parker' ? parkerCandidates : others;
@@ -194,6 +229,53 @@ export default function useDetectiveSecretReveal(gameId, gameState, players) {
     websocketService.on('solicitar-revelacion-secreto', onPersonalRequest);
     return () => websocketService.off('solicitar-revelacion-secreto', onPersonalRequest);
   }, [gameId, currentPlayerId]);
+
+  // Satterwaite: escuchar cuando se revela un secreto para robarlo si hay comodín
+  const [revealedSecretId, setRevealedSecretId] = useState(null);
+  const [targetSecretsBeforeReveal, setTargetSecretsBeforeReveal] = useState([]);
+  
+  useEffect(() => {
+    const onSecretUpdate = (data) => {
+      // Cuando el objetivo revela su secreto, si estamos en modo Satterwaite con comodín, robarlo
+      if (flowMode === 'satterwaite' && hasWildcard && targetPlayer) {
+        const jugadorId = data?.['jugador-id'];
+        // Verificar si es el jugador objetivo quien reveló
+        if (jugadorId === targetPlayer.id_jugador) {
+          const listaSecretos = data?.['lista-secretos'] || [];
+          const cantidadRevelados = listaSecretos.filter(s => s.revelado).length;
+          
+          // Comparar con el estado anterior para detectar cuál secreto fue revelado
+          (async () => {
+            try {
+              const secretsWithIds = await apiService.getPlayerSecrets(gameId, jugadorId);
+              
+              // Encontrar el secreto que cambió de oculto a revelado
+              // comparando con targetSecretsBeforeReveal
+              const newlyRevealed = secretsWithIds.find(s => {
+                const wasHidden = targetSecretsBeforeReveal.find(prev => prev.id === s.id && !prev.bocaArriba);
+                return wasHidden && s.bocaArriba;
+              });
+              
+              if (newlyRevealed && newlyRevealed.id) {
+                // Robar el secreto recién revelado
+                await apiService.robSecret(gameId, currentPlayerId, currentPlayerId, newlyRevealed.id);
+              }
+            } catch (e) {
+              console.error('Error al robar secreto con Satterwaite:', e);
+            } finally {
+              // Limpiar el estado del flow
+              setTargetPlayer(null);
+              setFlowMode(null);
+              setHasWildcard(false);
+              setTargetSecretsBeforeReveal([]);
+            }
+          })();
+        }
+      }
+    };
+    websocketService.on('actualizacion-secreto', onSecretUpdate);
+    return () => websocketService.off('actualizacion-secreto', onSecretUpdate);
+  }, [gameId, currentPlayerId, flowMode, hasWildcard, targetPlayer, targetSecretsBeforeReveal]);
 
   const confirmRevealMySecret = useCallback(async () => {
     if (!mySelectedSecretId) return;
