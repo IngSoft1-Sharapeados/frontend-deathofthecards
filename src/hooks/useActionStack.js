@@ -3,7 +3,7 @@ import { apiService } from '@/services/apiService';
 
 const NOT_SO_FAST_WINDOW_MS = 5000;
 
-const useActionStack = (gameId, currentPlayerId) => {
+const useActionStack = (gameId, currentPlayerId, onSetEffectTrigger) => {
     const [accionEnProgreso, setAccionEnProgreso] = useState(null);
     const [actionResultMessage, setActionResultMessage] = useState(null);
 
@@ -28,10 +28,10 @@ const useActionStack = (gameId, currentPlayerId) => {
     }, []);
 
     const ejecutarAccionOriginal = useCallback(
-        (accion) => {
+        async (accion) => {
             const { tipo_accion, payload_original, cartas_originales_db_ids, id_carta_tipo_original } = accion;
 
-            const id_carta_jugada = cartas_originales_db_ids[0];
+            const id_instancia_carta = cartas_originales_db_ids[0];
             const id_tipo_carta = id_carta_tipo_original;
 
             switch (tipo_accion) {
@@ -52,13 +52,36 @@ const useActionStack = (gameId, currentPlayerId) => {
                     return apiService.playDelayTheMurdererEscape(gameId, currentPlayerId, id_tipo_carta, payload_original.cantidad);
                 case 'jugar_set_detective':
                     return apiService.playDetectiveSet(gameId, currentPlayerId, payload_original.set_cartas);
+                case 'agregar_a_set':
+                    const id_instancia_carta = cartas_originales_db_ids[0];
+
+                    const id_tipo_set = payload_original.representacion_id_carta;
+
+                    const id_jugador_set = accion.id_jugador_original;
+                    await apiService.agregarCartaASet(
+                        gameId,
+                        id_jugador_set,    
+                        id_tipo_set,
+                        id_instancia_carta
+                    );
+
+                    // Re-ejecutar el efecto del set (Frontend)
+                    onSetEffectTrigger?.({ // Llamar al callback de GamePage
+                        jugador_id: currentPlayerId,
+                        representacion_id: id_tipo_set
+                    });
+
+
+                    return;
                 case 'evento_point_your_suspicions':
                   return apiService.playPointYourSuspicions(gameId, currentPlayerId, id_tipo_carta);
+                case 'evento_card_trade':
+                    return apiService.cardTrade(gameId, currentPlayerId, id_carta_jugada,payload_original.id_objetivo);
                 default:
                     console.error(`Acción original no reconocida: ${tipo_accion}`);
             }
         },
-        [gameId, currentPlayerId]
+        [gameId, currentPlayerId, onSetEffectTrigger]
     );
 
     useEffect(() => {
@@ -71,10 +94,18 @@ const useActionStack = (gameId, currentPlayerId) => {
 
                 apiService
                     .resolverAccion(gameId)
-                    .then((respuesta) => {
-                        if (respuesta.decision === 'ejecutar' && somosElActor) {
-                            ejecutarAccionOriginal(accionAlIniciarTimer);
-                        } 
+                    .then(async (respuesta) => {
+                        if (
+                            respuesta.decision === 'ejecutar' &&
+                            somosElActor
+                        ) {
+                            await ejecutarAccionOriginal(accionAlIniciarTimer);
+                        } else {
+                            if (respuesta.decision !== 'ejecutar')
+                                console.log(`[useActionStack]         ...Razón: La decisión fue "${respuesta.decision}".`);
+                            if (accionAlIniciarTimer.id_jugador_original !== currentPlayerId)
+                                console.log('[useActionStack]         ...Razón: No somos el jugador original.');
+                        }
                     })
                     .catch((err) => {
                         if (err.message.includes('La acción ya fue resuelta')) {

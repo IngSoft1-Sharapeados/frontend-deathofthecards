@@ -49,6 +49,8 @@ const useGameData = (gameId, gameState) => {
           setTurnOrder(turnOrderData);
           setHostId(gameData.id_anfitrion);
           setPlayers(gameData.listaJugadores || []);
+          
+          gameState.setTurnStartedAt(Date.now()); 
 
           if (gameData.listaJugadores) {
             const initialSecrets = {};
