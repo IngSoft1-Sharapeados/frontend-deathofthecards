@@ -23,6 +23,7 @@ const useGameState = () => {
   const [playedSetsByPlayer, setPlayedSetsByPlayer] = useState({});
   // Track if player has played a set in the current turn
   const [hasPlayedSetThisTurn, setHasPlayedSetThisTurn] = useState(false);
+  const [turnStartedAt, setTurnStartedAt] = useState(false);
 
   // Estados para el fin de la partida
   const [winners, setWinners] = useState(null);
@@ -170,9 +171,10 @@ const useGameState = () => {
     discardPileSelection, setDiscardPileSelection,
     selectedDiscardCard, setSelectedDiscardCard,
     isPysVotingModalOpen, setIsPysVotingModalOpen,
+    turnStartedAt, setTurnStartedAt,
     pysActorId, setPysActorId,
     pysLoadingMessage, setPysLoadingMessage,
-    pysVotos, setPysVotos,
+    pysVotos, setPysVotos, isMyTurn
   };
 };
 
