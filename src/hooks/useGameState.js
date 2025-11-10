@@ -68,7 +68,8 @@ const useGameState = () => {
   const [pysLoadingMessage, setPysLoadingMessage] = useState(null); // "Esperando votos..."
   const [pysVotos, setPysVotos] = useState({});
 
-
+  const [isCardTradeModalOpen, setCardTradeModalOpen] = useState(false);
+  const [cardTradeContext, setCardTradeContext] = useState(null);
   // Derived state
   const isMyTurn = currentTurn === currentPlayerId;
   const isLocalPlayerDisgraced = disgracedPlayerIds.has(currentPlayerId);
@@ -173,6 +174,8 @@ const useGameState = () => {
     pysActorId, setPysActorId,
     pysLoadingMessage, setPysLoadingMessage,
     pysVotos, setPysVotos,
+    isCardTradeModalOpen, setCardTradeModalOpen,
+    cardTradeContext, setCardTradeContext,
   };
 };
 

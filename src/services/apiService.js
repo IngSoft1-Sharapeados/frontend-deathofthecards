@@ -281,7 +281,7 @@ const createHttpService = () => {
       method: "POST",
     });
   };
-
+  
   const playPointYourSuspicions = async (gameId, playerId, cardId) => {
     return request(`/partidas/${gameId}/evento/PointYourSuspicions?id_jugador=${playerId}&id_carta=${cardId}`, {
       method: "PUT",
@@ -296,6 +296,18 @@ const createHttpService = () => {
 
 
 
+  const cardTrade = async (gameId, playerId, cardId, targetPlayerId) => {
+    return request(`/partidas/${gameId}/evento/CardTrade?id_jugador=${playerId}&id_carta=${cardId}&id_objetivo=${targetPlayerId}`, {
+      method: "POST",
+    });
+  };
+  const sendCard = async (gameId, playerId, cardId, targetPlayerId) => {
+    const query = `?id_partida=${gameId}&id_jugador=${playerId}&id_carta=${cardId}&id_objetivo=${targetPlayerId}`;
+
+    return request(`/partidas/${gameId}/evento/sendCard${query}`, {
+      method: "POST",
+    });
+  };
 
   return {
     createGame,
@@ -338,7 +350,9 @@ const createHttpService = () => {
     resolverAccion,
     cancelarAccion,
     playPointYourSuspicions,
-    votePointYourSuspicions
+    votePointYourSuspicions,
+    cardTrade,
+    sendCard,
   };
 };
 

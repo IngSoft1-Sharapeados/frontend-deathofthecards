@@ -626,11 +626,105 @@ const useCardActions = (gameId, gameState, onSetEffectTrigger, iniciarAccionCanc
         setPlayerSelectionModalOpen(true);
         break;
       }
+      case CARD_IDS.CARD_TRADE: {
+        setPlayerSelectionModalOpen(true);
+        break;
+      }
       default:
         console.warn("Evento de carta no implementado:", cardId);
     }
   };
 
+  const handleCardTradeConfirm = async (targetPlayerId) => {
+    if (!eventCardToPlay) return;
+
+    const { id, id_instancia, instanceId } = eventCardToPlay;
+    const cardNombre = cardService.getCardNameById(id);
+    
+    try {
+        gameState.setHand(prev =>
+          prev.filter(c => c.id_instancia !== id_instancia)
+        );
+      // Guardar el contexto del trade ANTES de iniciar la acción
+      gameState.setCardTradeContext({ 
+        originId: currentPlayerId, 
+        targetPlayerId: targetPlayerId 
+      });
+      
+      await iniciarAccionCancelable({
+        tipo_accion: "evento_card_trade",
+        cartas_db_ids: [id_instancia],
+        nombre_accion: cardNombre,
+        payload_original: {
+          id_objetivo: targetPlayerId
+        },
+        id_carta_tipo_original: id
+      });
+
+      setPlayerSelectionModalOpen(false);
+      setEventCardToPlay(null);
+
+      console.log("Intercambio iniciado. Selecciona una carta para enviar...");
+
+    } catch (error) {
+      console.error("Error al iniciar Card Trade:", error);
+      alert(`Error: ${error.message}`);
+      gameState.setCardTradeContext(null);
+    }
+  };
+  
+  const handleSendCardTradeResponse = async (cardId) => {
+    try {
+      const { originId, targetPlayerId } = gameState.cardTradeContext || {};
+      
+      if (!originId || !targetPlayerId) {
+        throw new Error("Contexto de intercambio incompleto");
+      }
+
+      // Determinar el destino basado en quién es el jugador actual
+      const destinationId = (currentPlayerId === originId) ? targetPlayerId : originId;
+
+      console.log(`[useCardActions] Enviando carta ${cardId} de ${currentPlayerId} a ${destinationId}`);
+
+      const response = await apiService.sendCard(
+        gameId,
+        currentPlayerId,  // senderId
+        cardId,           // cardId
+        destinationId     // targetPlayerId
+      );
+
+      if (response?.status === "ok" || response?.detail?.includes("correctamente")) {
+        console.log("[useCardActions] Carta enviada correctamente");
+
+        //  Actualizar la mano inmediatamente 
+        try {
+          const freshHandData = await apiService.getHand(gameId, currentPlayerId, {
+            cache: "no-store",
+            headers: { "Cache-Control": "no-cache" },
+          });
+
+          const playingHand = [...cardService.getPlayingHand(freshHandData)];
+          const handWithInstanceIds = playingHand.map((card) => ({
+            ...card,
+            instanceId: `card-inst-${card.id_instancia}`,
+          }));
+
+          console.log("[DEBUG] Actualizando mano local:", handWithInstanceIds);
+          gameState.setHand([...handWithInstanceIds]);
+        } catch (err) {
+          console.warn("[useCardActions] No se pudo refrescar la mano:", err);
+        }
+
+        gameState.setCardTradeModalOpen(false);
+        gameState.setCardTradeContext(null);
+      } else {
+        console.error("[useCardActions] Respuesta inesperada del backend:", response);
+      }
+    } catch (err) {
+      console.error("[useCardActions] Error al enviar carta:", err);
+      alert(`Error al enviar carta: ${err.message}`);
+    }
+  };
   return {
     handleCardClick,
     handleDraftCardClick,
@@ -638,6 +732,8 @@ const useCardActions = (gameId, gameState, onSetEffectTrigger, iniciarAccionCanc
     handlePickUp,
     handlePlay,
     handleEventActionConfirm,
+    handleCardTradeConfirm,
+    handleSendCardTradeResponse,
     handleLookIntoTheAshesConfirm, // Exponer la función de Paso 2
     handleOneMoreSecretSelect: (secretId) => {
       if (oneMoreStep === 2) {
@@ -647,9 +743,8 @@ const useCardActions = (gameId, gameState, onSetEffectTrigger, iniciarAccionCanc
   };
 };
 
-// 'useSecrets' no necesita cambios
 export const useSecrets = (gameId, gameState) => {
-  // ... (código de useSecrets sin cambios)
+
   const {
     setIsSecretsModalOpen,
     setViewingSecretsOfPlayer,
@@ -692,6 +787,7 @@ export const useSecrets = (gameId, gameState) => {
 
   return { handleOpenSecretsModal, handleCloseSecretsModal };
 };
+export { CARD_IDS };
 
 export default useCardActions;
 
