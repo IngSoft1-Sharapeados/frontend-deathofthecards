@@ -265,7 +265,6 @@ const createHttpService = () => {
   };
 
   const playNotSoFast = async (gameId, playerId, cardId) => {
-    // cardId es el ID de tipo (ej: 16)
     return request(`/partidas/${gameId}/respuesta/not_so_fast?id_jugador=${playerId}&id_carta=${cardId}`, {
       method: "PUT",
     });
@@ -278,12 +277,24 @@ const createHttpService = () => {
   };
 
   const cancelarAccion = async (gameId) => {
-    // (Este es el endpoint que faltaba en el backend: Fase 3 - Opción A)
-    // Lo llamamos si el resolver nos dice "cancelar"
     return request(`/partidas/${gameId}/cancelar-accion`, {
       method: "POST",
     });
   };
+
+  const playPointYourSuspicions = async (gameId, playerId, cardId) => {
+    return request(`/partidas/${gameId}/evento/PointYourSuspicions?id_jugador=${playerId}&id_carta=${cardId}`, {
+      method: "PUT",
+    });
+  };
+
+  const votePointYourSuspicions = async (gameId, actorId, voterId, votedId) => {
+    return request(`/partidas/${gameId}/evento/PointYourSuspicions/votacion?id_partida=${gameId}&id_jugador=${actorId}&id_votante=${voterId}&id_votado=${votedId}`, {
+      method: "PUT",
+    });
+  };
+
+
 
   const agregarCartaASet = async (gameId, jugadorSetId, tipoSetId, cartaInstanciaId) => {
     return request(`/partidas/${gameId}/agregar-a-set`, {
@@ -320,6 +331,7 @@ const createHttpService = () => {
     pickUpCards,
     playDetectiveSet,
     playAriadneOliver,
+    playAriadneOliver,
     getPlayedSets,
     getPlayerSecrets,
     getDiscardPile,
@@ -337,6 +349,8 @@ const createHttpService = () => {
     playNotSoFast,
     resolverAccion,
     cancelarAccion,
+    playPointYourSuspicions,
+    votePointYourSuspicions
     agregarCartaASet
   };
 };

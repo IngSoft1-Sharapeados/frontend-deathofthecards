@@ -199,10 +199,6 @@ const useCardActions = (gameId, gameState, onSetEffectTrigger, iniciarAccionCanc
     }
 
     // --- FLUJO NO-CANCELABLE (Look Into The Ashes) ---
-    // ¡CORRECCIÓN! Lo sacamos del flujo cancelable.
-    // Este caso solo debería ser llamado desde handleOneMoreSecretSelect (Paso 2 de OneMore)
-    // Lo dejamos aquí como una salvaguarda, pero la lógica principal está en 
-    // handleEventPlay -> handleLookIntoTheAshes_START y handleLookIntoTheAshesConfirm
     if (cardId === CARD_IDS.LOOK_ASHES) {
       console.warn("Llamada inesperada a LOOK_ASHES en handleEventActionConfirm");
       return;
@@ -285,7 +281,7 @@ const useCardActions = (gameId, gameState, onSetEffectTrigger, iniciarAccionCanc
       } catch (error) {
         // ... (manejo de error)
       }
-    } // --- FIN DEL FLUJO 'ONE MORE' ---
+    }
 
 
     // ---  FLUJO CANCELABLE (Eventos Simples) ---
@@ -339,6 +335,11 @@ const useCardActions = (gameId, gameState, onSetEffectTrigger, iniciarAccionCanc
         case CARD_IDS.DELAY_ESCAPE: {
           tipo_accion = "evento_delay_escape";
           payload_original = { cantidad: payload };
+          break;
+        }
+        case CARD_IDS.POINT_SUSPICIONS: {
+          tipo_accion = "evento_point_your_suspicions";
+          payload_original = null; // No hay payload en el paso 1
           break;
         }
         case CARD_IDS.CARDS_OFF_THE_TABLE: {
@@ -648,6 +649,11 @@ const useCardActions = (gameId, gameState, onSetEffectTrigger, iniciarAccionCanc
         await handleEventActionConfirm(null, cardInstance);
         break;
       }
+      case CARD_IDS.POINT_SUSPICIONS: {
+        await handleEventActionConfirm(null, cardInstance);
+        break;
+      }
+
       case CARD_IDS.ONE_MORE: {
         const eligibleSources = players.filter(p => (gameState.playersSecrets[p.id_jugador]?.revealed ?? 0) > 0);
         if (eligibleSources.length === 0) {

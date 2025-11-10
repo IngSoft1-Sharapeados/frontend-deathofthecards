@@ -16,7 +16,6 @@ const useActionStack = (gameId, currentPlayerId, onSetEffectTrigger) => {
 
         const tipoIdParaMostrar = data.id_carta_tipo_original || 0;
 
-        console.log(`[useActionStack] Procesando WS. Mostrando TipoID: ${tipoIdParaMostrar}`, data);
         return {
             ...data,
             mensaje: message.mensaje,
@@ -30,7 +29,6 @@ const useActionStack = (gameId, currentPlayerId, onSetEffectTrigger) => {
 
     const ejecutarAccionOriginal = useCallback(
         async (accion) => {
-            console.log(`[useActionStack] 🟢 EJECUTANDO ACCIÓN: ${accion.tipo_accion}`, accion);
             const { tipo_accion, payload_original, cartas_originales_db_ids, id_carta_tipo_original } = accion;
 
             const id_instancia_carta = cartas_originales_db_ids[0];
@@ -40,7 +38,6 @@ const useActionStack = (gameId, currentPlayerId, onSetEffectTrigger) => {
                 case 'evento_another_victim':
                     return apiService.playAnotherVictim(gameId, currentPlayerId, id_tipo_carta, payload_original);
                 case 'evento_ariadne_oliver': {
-                    // Jugar Ariadne en el set objetivo y luego solicitar revelación al objetivo
                     const repId = payload_original?.id_representacion_carta;
                     const targetPlayerId = payload_original?.id_objetivo;
                     return apiService
@@ -76,6 +73,8 @@ const useActionStack = (gameId, currentPlayerId, onSetEffectTrigger) => {
 
 
                     return;
+                case 'evento_point_your_suspicions':
+                  return apiService.playPointYourSuspicions(gameId, currentPlayerId, id_tipo_carta);
                 default:
                     console.error(`Acción original no reconocida: ${tipo_accion}`);
             }
@@ -138,15 +137,12 @@ const useActionStack = (gameId, currentPlayerId, onSetEffectTrigger) => {
     const wsCallbacks = useMemo(
         () => ({
             onAccionEnProgreso: (message) => {
-                console.log('[useActionStack] ⚡️ Evento WebSocket "accion-en-progreso" RECIBIDO.', message);
                 setAccionEnProgreso(procesarAccionDesdeWS(message));
             },
             onPilaActualizada: (message) => {
-                console.log('[useActionStack] ⚡️ Evento WebSocket "pila-actualizada" RECIBIDO.', message);
                 setAccionEnProgreso(procesarAccionDesdeWS(message));
             },
             onAccionResuelta: (message) => {
-                console.log('[useActionStack] ⚡️ Evento WebSocket "accion-resuelta" RECIBIDO. Limpiando estado.', message);
                 setAccionEnProgreso(null);
                 setActionResultMessage(message.detail || 'Acción resuelta.');
             },
