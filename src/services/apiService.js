@@ -350,7 +350,7 @@ const createHttpService = () => {
     resolverAccion,
     cancelarAccion,
     playPointYourSuspicions,
-    votePointYourSuspicions
+    votePointYourSuspicions,
     agregarCartaASet
   };
 };
