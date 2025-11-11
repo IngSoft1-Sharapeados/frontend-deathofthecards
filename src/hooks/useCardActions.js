@@ -698,6 +698,10 @@ const useCardActions = (gameId, gameState, onSetEffectTrigger, iniciarAccionCanc
         setPlayerSelectionModalOpen(true);
         break;
       }
+      case CARD_IDS.DEAD_CARD_FOLLY: {
+        gameState.setDeadCardFollyModalOpen?.(true);
+        break;
+      }
       default:
         console.warn("Evento de carta no implementado:", cardId);
     }
@@ -740,7 +744,31 @@ const useCardActions = (gameId, gameState, onSetEffectTrigger, iniciarAccionCanc
       gameState.setCardTradeContext(null);
     }
   };
-  
+
+  const handleDeadCardFollyConfirm = async (direccion) => {
+    if (!eventCardToPlay) return;
+    try {
+      console.log(`[DeadCardFolly] Iniciando acción cancelable dead card folly con dirección: ${direccion}`);
+      gameState.setHand(prev =>
+        prev.filter(c => c.id_instancia !== eventCardToPlay.id_instancia)
+      );
+      await iniciarAccionCancelable({
+        tipo_accion: "evento_dead_card_folly",
+        cartas_db_ids: [eventCardToPlay.id_instancia],
+        nombre_accion: cardService.getCardNameById(eventCardToPlay.id),
+        id_carta_tipo_original: eventCardToPlay.id, 
+        payload_original: { direccion },
+      });
+        gameState.setDeadCardFollyModalOpen(false);
+        setEventCardToPlay(null);
+
+    } catch (error) {
+      console.error("Error al jugar Dead Card Folly:", error);
+      alert(`Error: ${error.message}`);
+    }
+  };
+
+
   const handleSendCardTradeResponse = async (cardId) => {
     try {
       const { originId, targetPlayerId } = gameState.cardTradeContext || {};
@@ -802,6 +830,7 @@ const useCardActions = (gameId, gameState, onSetEffectTrigger, iniciarAccionCanc
     handlePlay,
     handleEventActionConfirm,
     handleCardTradeConfirm,
+    handleDeadCardFollyConfirm,
     handleSendCardTradeResponse,
     handleLookIntoTheAshesConfirm, // Exponer la función de Paso 2
     handleOneMoreSecretSelect: (secretId) => {

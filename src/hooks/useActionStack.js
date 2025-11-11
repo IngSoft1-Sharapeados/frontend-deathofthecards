@@ -31,7 +31,7 @@ const useActionStack = (gameId, currentPlayerId, onSetEffectTrigger) => {
         async (accion) => {
             const { tipo_accion, payload_original, cartas_originales_db_ids, id_carta_tipo_original } = accion;
 
-            const id_instancia_carta = cartas_originales_db_ids[0];
+            const id_carta_jugada = cartas_originales_db_ids[0];
             const id_tipo_carta = id_carta_tipo_original;
 
             switch (tipo_accion) {
@@ -77,6 +77,8 @@ const useActionStack = (gameId, currentPlayerId, onSetEffectTrigger) => {
                   return apiService.playPointYourSuspicions(gameId, currentPlayerId, id_tipo_carta);
                 case 'evento_card_trade':
                     return apiService.cardTrade(gameId, currentPlayerId, id_carta_jugada,payload_original.id_objetivo);
+                case 'evento_dead_card_folly':
+                    return apiService.playDeadCardFolly(gameId, currentPlayerId, id_carta_jugada, payload_original.direccion);
                 default:
                     console.error(`Acción original no reconocida: ${tipo_accion}`);
             }

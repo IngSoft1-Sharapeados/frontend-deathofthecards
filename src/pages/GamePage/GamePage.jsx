@@ -38,7 +38,7 @@ import useEventLog from '@/hooks/useEventLog';
 import EventLogModal from '@/components/EventLog/EventLogModal';
 import { useTurnTimer, TURN_DURATION } from '@/hooks/useTurnTimer'; 
 import TurnTimer from '@/components/TurnTimer/TurnTimer';
-
+import DeadCardFollyModal from '@/components/EventModals/DeadCardFolly/DeadCardFollyModal';
 
 // Styles
 import styles from './GamePage.module.css';
@@ -473,6 +473,40 @@ const GamePage = () => {
     },
 
 
+  onDeadCardFollyPlayed: (message) => {
+    const { jugador_id: actorId, direccion, orden } = message;
+    const actorName = gameState.players.find(p => p.id_jugador === actorId)?.nombre_jugador || "Un jugador";
+
+    gameState.setEventCardInPlay({
+      imageName: cardService.getCardImageUrl(CARD_IDS.DEAD_CARD_FOLLY),
+      message: `${actorName} jugó "Dead Card Folly" (${direccion})`,
+    });
+
+    // Calcular a quién debe enviar carta el jugador actual
+    const myId = gameState.currentPlayerId;
+    const i = orden.indexOf(myId);
+    if (i === -1) return;
+    
+    const n = orden.length;
+    const targetPlayerId = direccion === "izquierda" 
+      ? orden[(i - 1 + n) % n] 
+      : orden[(i + 1) % n];
+
+    console.log(`[DeadCardFolly] Jugador ${myId} debe enviar carta a ${targetPlayerId}`, { orden, direccion });
+
+    // Abrir modal de Card Trade para que el jugador envíe una carta
+    if (targetPlayerId) {
+      const handSnapshot = [...(gameState.hand || [])]; // snapshot mano antes de abrir modal
+      gameState.setCardTradeContext({
+        originId: myId, 
+        targetPlayerId: targetPlayerId,
+        handSnapshot,
+      });
+      gameState.setCardTradeModalOpen(true);
+    }
+  },
+
+
     onDiscardUpdate: (discardPile) => gameState.setDiscardPile(discardPile),
   }), [gameState]);
 
@@ -495,7 +529,8 @@ const GamePage = () => {
     handleLookIntoTheAshesConfirm,
     handleOneMoreSecretSelect,
     handleAddToSetConfirm,
-    handleSendCardTradeResponse
+    handleSendCardTradeResponse,
+    handleDeadCardFollyConfirm
   } = useCardActions(
     gameId,
     gameState,
@@ -873,7 +908,11 @@ const GamePage = () => {
         playerName={currentPlayerName}
         websocketService={websocketService}
       />
-
+      <DeadCardFollyModal
+        isOpen={gameState.isDeadCardFollyModalOpen}
+        onClose={() => gameState.setDeadCardFollyModalOpen(false)}
+        onConfirm={(direccion) => handleDeadCardFollyConfirm(direccion)}
+      />
       <CardTradeModal
         isOpen={gameState.isCardTradeModalOpen}
         hand={gameState.cardTradeContext?.handSnapshot || hand}
