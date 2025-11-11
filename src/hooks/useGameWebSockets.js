@@ -110,6 +110,19 @@ const useWebSocket = (callbacks) => {
       callbacksRef.current.onPointYourSuspicionsPlayed?.(message);
     };
 
+    const onDeviusCard = (message) => {
+    console.log('Evento "Devius Card" recibido:', message);
+    
+    // Filtrar por tipo de carta
+      const cardType = message.data?.tipo || message.tipo;
+      
+      if (cardType === 27) { // Social Faux Pas
+        callbacksRef.current.onSocialFauxPasPlayed?.(message);
+      } 
+      else if (cardType === 26)
+        callbacksRef.current.onBlackmailedPlayed?.(message);
+    };
+
     const onVotoRegistrado = (message) => {
       console.log('Voto registrado:', message);
       callbacksRef.current.onVotoRegistrado?.(message);
@@ -156,6 +169,7 @@ const useWebSocket = (callbacks) => {
     websocketService.on('voto-registrado', onVotoRegistrado);
     websocketService.on('votacion-finalizada', onVotacionFinalizada);
 
+    websocketService.on('devius-card', onDeviusCard);
 
     // Función de limpieza - SOLO remover listeners, NO desconectar
     return () => {
@@ -183,6 +197,7 @@ const useWebSocket = (callbacks) => {
       websocketService.off('se-jugo-point-your-suspicions', onPointYourSuspicionsPlayed);
       websocketService.off('voto-registrado', onVotoRegistrado);
       websocketService.off('votacion-finalizada', onVotacionFinalizada);
+      websocketService.off('devius-card', onDeviusCard);
     };
   }, []);
 };
