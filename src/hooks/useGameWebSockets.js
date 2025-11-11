@@ -115,8 +115,8 @@ const useWebSocket = (callbacks) => {
       if (cardType === 27) { // Social Faux Pas
         callbacksRef.current.onSocialFauxPasPlayed?.(message);
       } 
-      //if (cardType===26)
-      //  callbacksRef.current.onBlackmailedPlayed?.(message);
+      else if (cardType === 26)
+        callbacksRef.current.onBlackmailedPlayed?.(message);
     };
 
     const onVotoRegistrado = (message) => {

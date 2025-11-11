@@ -443,7 +443,28 @@ const GamePage = () => {
         handleOpenSecretsModal(currentPlayer);
       }
     },
-    
+    onBlackmailedPlayed: async (message) => {
+      /* Nota: en realidad deberia mostrar el secreto, no revelarlo, pero por cuestion de tiempo
+       y para no dejarlo sin implementar el efecto va a ser igual que el de social faux*/
+      const { jugador_emisor: senderId, jugador_objetivo: targetId } = message.data;
+      const senderName = gameState.players.find(p => p.id_jugador === senderId)?.nombre_jugador || 'Un jugador';
+      const targetName = gameState.players.find(p => p.id_jugador === targetId)?.nombre_jugador || 'otro jugador';
+
+      gameState.setEventCardInPlay({
+        imageName: cardService.getCardImageUrl(27),
+        message: `${senderName} jugó "Blackmailed" sobre ${targetName}`
+      });
+
+      if (targetId === gameState.currentPlayerId) {
+        const currentPlayer = gameState.players.find(p => p.id_jugador === gameState.currentPlayerId);
+        
+        gameState.setCanRevealSecrets(true);
+        gameState.setCanHideSecrets(false);
+        gameState.setCanRobSecrets(false);
+        
+        handleOpenSecretsModal(currentPlayer);
+      }
+    },
     onDiscardUpdate: (discardPile) => gameState.setDiscardPile(discardPile),
   }), [gameState]);
 
