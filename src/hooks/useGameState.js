@@ -23,6 +23,7 @@ const useGameState = () => {
   const [playedSetsByPlayer, setPlayedSetsByPlayer] = useState({});
   // Track if player has played a set in the current turn
   const [hasPlayedSetThisTurn, setHasPlayedSetThisTurn] = useState(false);
+  const [turnStartedAt, setTurnStartedAt] = useState(false);
   const [isAddToSetModalOpen, setAddToSetModalOpen] = useState(false);
 
   // Estados para el fin de la partida
@@ -71,6 +72,7 @@ const useGameState = () => {
 
   const [isCardTradeModalOpen, setCardTradeModalOpen] = useState(false);
   const [cardTradeContext, setCardTradeContext] = useState(null);
+  const [isDeadCardFollyModalOpen, setDeadCardFollyModalOpen] = useState(false);
   // Derived state
   const isMyTurn = currentTurn === currentPlayerId;
   const isLocalPlayerDisgraced = disgracedPlayerIds.has(currentPlayerId);
@@ -205,11 +207,13 @@ const useGameState = () => {
     isAddToSetModalOpen, setAddToSetModalOpen,
     canPlaySingleDetective,
     isPysVotingModalOpen, setIsPysVotingModalOpen,
+    turnStartedAt, setTurnStartedAt,
     pysActorId, setPysActorId,
     pysLoadingMessage, setPysLoadingMessage,
-    pysVotos, setPysVotos,
+    pysVotos, setPysVotos, isMyTurn,
     isCardTradeModalOpen, setCardTradeModalOpen,
     cardTradeContext, setCardTradeContext,
+    isDeadCardFollyModalOpen, setDeadCardFollyModalOpen,
   };
 };
 

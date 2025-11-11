@@ -294,6 +294,13 @@ const createHttpService = () => {
     });
   };
 
+  const sendChatMessage = async (gameId, playerId, mensaje) => {
+    return request(`/partidas/${gameId}/envio-mensaje?id_jugador=${playerId}`, {
+      method: "POST",
+      body: JSON.stringify(mensaje),
+    });
+  };
+
 
 
   const agregarCartaASet = async (gameId, jugadorSetId, tipoSetId, cartaInstanciaId) => {
@@ -319,7 +326,12 @@ const createHttpService = () => {
       method: "POST",
     });
   };
-
+  const playDeadCardFolly = async (gameId, playerId, cardId, direccion) => {
+    const query = `?id_partida=${gameId}&id_jugador=${playerId}&id_carta=${cardId}&direccion=${direccion}`;
+    return request(`/partidas/${gameId}/evento/DeadCardFolly${query}`, {
+      method: "POST",
+    });
+  };
   return {
     createGame,
     listGames,
@@ -363,9 +375,11 @@ const createHttpService = () => {
     cancelarAccion,
     playPointYourSuspicions,
     votePointYourSuspicions,
+    sendChatMessage,
     agregarCartaASet,
     cardTrade,
     sendCard,
+    playDeadCardFolly,
   };
 };
 
