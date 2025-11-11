@@ -426,7 +426,7 @@ const GamePage = () => {
 
       // Mostrar notificación del evento
       gameState.setEventCardInPlay({
-        imageName: cardService.getCardImageUrl(27),
+        imageName: cardService.getCardImageUrl(CARD_IDS.SOCIAL_FAUX_PAS),
         message: `${senderName} jugó "Social Faux Pas" sobre ${targetName}`
       });
 
@@ -451,7 +451,7 @@ const GamePage = () => {
       const targetName = gameState.players.find(p => p.id_jugador === targetId)?.nombre_jugador || 'otro jugador';
 
       gameState.setEventCardInPlay({
-        imageName: cardService.getCardImageUrl(27),
+        imageName: cardService.getCardImageUrl(CARD_IDS.BLACKMAILED),
         message: `${senderName} jugó "Blackmailed" sobre ${targetName}`
       });
 

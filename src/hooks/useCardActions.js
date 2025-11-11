@@ -17,6 +17,9 @@ const CARD_IDS = {
   DELAY_ESCAPE: 23,
   EARLY_TRAIN: 24,
   POINT_SUSPICIONS: 25,
+  SOCIAL_FAUX_PAS : 27,
+  BLACKMAILED :26
+
 };
 
 const useCardActions = (gameId, gameState, onSetEffectTrigger, iniciarAccionCancelable) => {
