@@ -92,6 +92,10 @@ html, body {
 }
 
 
+.handOnTop {
+  position: relative; 
+  z-index: 2001;    
+}
 
 .mySetsContainer {
   display: flex;
@@ -227,6 +231,37 @@ html, body {
 
 .discardButton.pickup-enabled:hover {
   background-color: #ffb300;
+}
+
+.eventLogFloatingButton {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border: 3px solid #4f46e5;
+  background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+  color: white;
+  font-size: 28px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
+  transition: all 0.3s ease;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.eventLogFloatingButton:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 20px rgba(79, 70, 229, 0.6);
+  background: linear-gradient(135deg, #4338ca 0%, #4f46e5 100%);
+}
+
+.eventLogFloatingButton:active {
+  transform: scale(0.95);
 }
 
 

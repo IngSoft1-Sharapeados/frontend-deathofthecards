@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { cardService } from '@/services/cardService';
-import { useMemo } from 'react';
+import { useMemo, useEffect, useState, useCallback } from 'react';
 import { apiService } from '@/services/apiService';
 
 
@@ -19,17 +19,33 @@ import DisgraceOverlay from '@/components/UI/DisgraceOverlay';
 import ConfirmationModal from '@/components/EventModals/ConfirmationModal';
 import LookIntoAshesModal from '@/components/EventModals/LookIntoAshesModal';
 import DiscardDeck from '@/components/DiscardDeck/DiscardDeck.jsx';
+import Chat from '@/components/Chat/Chat.jsx';
 // Hooks
 import useWebSocket from '@/hooks/useGameWebSockets';
 import useGameState from '@/hooks/useGameState';
 import useGameData from '@/hooks/useGameData';
 import useCardActions, { useSecrets } from '@/hooks/useCardActions';
+import { CARD_IDS } from '@/hooks/useCardActions';
 import PlayerSelectionModal from '@/components/EventModals/PlayerSelectionModal';
 import EventDisplay from '@/components/EventModals/EventDisplay';
 import useSecretActions from '@/hooks/useSecretActions';
+import ActionStackModal from '@/components/EventModals/ActionStackModal';
+import ActionResultToast from '@/components/EventModals/ActionResultToast';
+import CardTradeModal from '@/components/EventModals/CardTrade/CardTradeModal';
+import useActionStack from '@/hooks/useActionStack';
+import websocketService from '@/services/websocketService';
+import useEventLog from '@/hooks/useEventLog';
+import EventLogModal from '@/components/EventLog/EventLogModal';
+import { useTurnTimer, TURN_DURATION } from '@/hooks/useTurnTimer'; 
+import TurnTimer from '@/components/TurnTimer/TurnTimer';
+import DeadCardFollyModal from '@/components/EventModals/DeadCardFolly/DeadCardFollyModal';
 
 // Styles
 import styles from './GamePage.module.css';
+
+const NOT_SO_FAST_ID = 16;
+const PYS_ID = 25;
+const NOT_SO_FAST_WINDOW_MS = 5000;
 
 const GamePage = () => {
 
@@ -38,10 +54,12 @@ const GamePage = () => {
 
   // --- State Management ---
   const gameState = useGameState();
+  const { events, logTurnStart, logEventCardPlayed, logSetPlayed, logCardAddedToSet, logAriadneOliverPlayed, logGameStart } = useEventLog();
+  const [isEventLogOpen, setIsEventLogOpen] = useState(false);
   const {
     hand, selectedCards, isLoading,
     deckCount, currentTurn, /* turnOrder */ players,
-    winners, asesinoGano,
+    winners, asesinoGano, isDisgraceVictory,
     isDiscardButtonEnabled, currentPlayerId,
     roles, displayedOpponents, draftCards, discardPile,
     playerTurnState, selectedDraftCards, isPickupButtonEnabled,
@@ -54,8 +72,41 @@ const GamePage = () => {
     disgracedPlayerIds, isLocalPlayerDisgraced, mySecretCards, isConfirmationModalOpen,
     lookIntoAshesModalOpen, setLookIntoAshesModalOpen,
     discardPileSelection, setDiscardPileSelection,
-    selectedDiscardCard, setSelectedDiscardCard,  setEventCardToPlay
+    selectedDiscardCard, setSelectedDiscardCard, setEventCardToPlay,
+    isPysVotingModalOpen, setIsPysVotingModalOpen, setTurnStartedAt, turnStartedAt,
+    pysActorId, setPysActorId,
+    pysLoadingMessage, setPysLoadingMessage,
+    pysVotos, setPysVotos, isMyTurn,
+    isAddToSetModalOpen, setAddToSetModalOpen,
   } = gameState;
+
+  const { handleSetPlayedEvent, modals: detectiveModals } = useDetectiveSecretReveal(gameId, gameState, players);
+
+  const {
+    accionEnProgreso,
+    actionResultMessage,
+    setActionResultMessage,
+    iniciarAccionCancelable,
+    wsCallbacks: actionStackCallbacks,
+  } = useActionStack(gameId, gameState.currentPlayerId, handleSetPlayedEvent);
+
+  gameState.accionEnProgreso = accionEnProgreso;
+
+  
+
+
+
+  // Log de inicio de partida (solo una vez cuando hay jugadores y turno)
+  useEffect(() => {
+    if (players.length > 0 && currentTurn && events.length === 0) {
+      logGameStart();
+      // Log del primer turno
+      const firstPlayer = players.find(p => p.id_jugador === currentTurn);
+      if (firstPlayer) {
+        logTurnStart(firstPlayer.nombre_jugador);
+      }
+    }
+  }, [players, currentTurn, events.length, logGameStart, logTurnStart]);
 
   // Desarrollo solamente
 
@@ -64,12 +115,11 @@ const GamePage = () => {
   }
 
   const { handleOpenSecretsModal, handleCloseSecretsModal } = useSecrets(gameId, gameState);
-  const { handleSetPlayedEvent, modals: detectiveModals } = useDetectiveSecretReveal(gameId, gameState, players);
   // Secret actions handlers used by SecretsModal
   const { handleSecretCardClick, handleRevealSecret, handleHideSecret, handleRobSecret } = useSecretActions(gameId, gameState);
 
 
-  const webSocketCallbacks = {
+  const baseWebSocketCallbacks = useMemo(() => ({
     onDeckUpdate: (count) => gameState.setDeckCount(count),
 
     onCardsOffTheTablePlayed: (message) => {
@@ -81,10 +131,17 @@ const GamePage = () => {
         imageName: '17-event_cardsonthetable.png',
         message: `${actorName} jugó "Cards off the Table" sobre ${targetName}`,
       });
+      
+      logEventCardPlayed(actorName, 17);
     },
 
     onAnotherVictimPlayed: async (message) => {
-      const { jugador_id: actorId, objetivo_id: targetId } = message;
+
+      const {
+        jugador_id: actorId,
+        objetivo_id: targetId,
+        representacion_id: repId
+      } = message;
       const actorName = gameState.players.find(p => p.id_jugador === actorId)?.nombre_jugador || 'Un jugador';
       const targetName = gameState.players.find(p => p.id_jugador === targetId)?.nombre_jugador || 'otro jugador';
 
@@ -92,8 +149,9 @@ const GamePage = () => {
         imageName: '18-event_anothervictim.png',
         message: `${actorName} robó un set de ${targetName}`
       });
+      
+      logEventCardPlayed(actorName, 18);
 
-      // Refrescar los sets para todos los jugadores
       try {
         const allSets = await apiService.getPlayedSets(gameId);
         const groupedSets = {};
@@ -103,6 +161,22 @@ const GamePage = () => {
           groupedSets[item.jugador_id] = arr;
         });
         gameState.setPlayedSetsByPlayer(groupedSets);
+
+        // If we stole the set, find it and trigger its effect with full card info
+        if (actorId === gameState.currentPlayerId) {
+          
+
+          // Find the stolen set in the fetched data to get cartas_ids
+          const stolenSet = (allSets || []).find(
+            set => set.jugador_id === actorId && set.representacion_id_carta === repId
+          );
+
+          handleSetPlayedEvent?.({
+            jugador_id: actorId,
+            representacion_id: repId,
+            cartas_ids: stolenSet?.cartas_ids || []
+          });
+        }
       } catch (error) {
         console.error("Error al refrescar sets tras Another Victim:", error);
       }
@@ -118,20 +192,21 @@ const GamePage = () => {
         imageName: '22-event_onemore.png',
         message: `${actorName} robó un secreto de ${sourceName} y se lo dio a ${destName}`
       });
+      
+      logEventCardPlayed(actorName, 22);
     },
-
-
 
     onHandUpdate: (message) => {
       console.log("Mensaje completo de WS:", message);
-      const nuevaMano = message.data;
+      const nuevaManoRaw = message.data;
 
-      const handWithInstanceIds = nuevaMano.map((card, index) => {
-        console.log("Procesando carta:", card);
+      const nuevaManoProcesada = cardService.getPlayingHand(nuevaManoRaw);
+
+      const handWithInstanceIds = nuevaManoProcesada.map((card, index) => {
         return {
           ...card,
-          instanceId: `${card.id}-update-${Date.now()}-${index}`,
-          url: cardService.getCardImageUrl(card.id) // <--- agregar URL
+          instanceId: `card-inst-${card.id_instancia}`,
+          id_instancia: card.id_instancia
         };
       });
 
@@ -143,6 +218,15 @@ const GamePage = () => {
       gameState.setCurrentTurn(turn);
       gameState.setPlayerTurnState('discarding');
       gameState.setHasPlayedSetThisTurn(false);
+      
+      // Log del inicio de turno
+      const player = gameState.players.find(p => p.id_jugador === turn);
+      if (player) {
+        logTurnStart(player.nombre_jugador);
+      }
+      
+      // Iniciar el timer del turno
+      setTurnStartedAt(Date.now());
     },
 
     onDraftUpdate: (newDraftData) => {
@@ -159,9 +243,20 @@ const GamePage = () => {
       gameState.setAsesinoGano(asesinoGano);
     },
 
-
     onSetPlayed: async (payload) => {
       try {
+        const { jugador_id: actorId, representacion_id: repId, cartas_ids: cardsIds } = payload;
+        const actorName = gameState.players.find(p => p.id_jugador === actorId)?.nombre_jugador || 'Un jugador';
+        const setImageUrl = cardService.getCardImageUrl(repId);
+
+        gameState.setEventCardInPlay({
+          imageName: setImageUrl,
+          message: `${actorName} jugó un Set de Detectives`
+        });
+        
+        logSetPlayed(actorName, repId, cardsIds || []);
+
+        // --- FIN DE LA MODIFICACIÓN ---
         const allSets = await apiService.getPlayedSets(gameId);
 
         const groupedSets = {};
@@ -181,10 +276,13 @@ const GamePage = () => {
     },
 
     onDelayEscapePlayed: async (message) => {
+      const actorName = gameState.players.find(p => p.id_jugador === message.jugador_id)?.nombre_jugador || 'Un jugador';
       gameState.setEventCardInPlay({
         imageName: '23-event_delayescape.png',
         message: `Se jugó "Delay The Murderer Escape"`
       });
+      
+      logEventCardPlayed(actorName, 23);
       // Forzar a todos los clientes a refrescar los datos afectados
       try {
         const [deckData, discardData] = await Promise.all([
@@ -203,6 +301,8 @@ const GamePage = () => {
       const revealedCount = secrets.filter(s => s.revelado).length;
       const hiddenCount = secrets.length - revealedCount;
 
+      let updatedDisgracedSet = new Set();
+
       gameState.setDisgracedPlayerIds(prevSet => {
         const newSet = new Set(prevSet);
         if (isNowDisgraced) {
@@ -210,6 +310,7 @@ const GamePage = () => {
         } else {
           newSet.delete(playerId);
         }
+        updatedDisgracedSet = newSet;
         return newSet;
       });
 
@@ -240,39 +341,271 @@ const GamePage = () => {
           });
           gameState.setPlayerSecretsData(processedModalSecrets);
         }
+
+        // Verificar victoria por desgracia social
+        // Esperar un momento para que el estado se actualice completamente
+        setTimeout(() => {
+          // Si ya hay ganadores, no hacer nada
+          if (gameState.winners) return;
+
+          // Necesitamos tener la información de roles y jugadores
+          if (!gameState.roles.murdererId || !gameState.players || gameState.players.length === 0) return;
+
+          // Determinar qué jugadores no están en desgracia
+          const playersNotDisgraced = gameState.players.filter(player => !updatedDisgracedSet.has(player.id_jugador));
+
+          // Verificar si solo quedan el asesino (y cómplice si existe)
+          const expectedSurvivors = [gameState.roles.murdererId];
+          if (gameState.roles.accompliceId) {
+            expectedSurvivors.push(gameState.roles.accompliceId);
+          }
+
+          // Todos los jugadores no en desgracia deben ser exactamente el asesino y/o cómplice
+          const allDisgracedExceptMurderers =
+            playersNotDisgraced.length === expectedSurvivors.length &&
+            playersNotDisgraced.every(player => expectedSurvivors.includes(player.id_jugador));
+
+          if (allDisgracedExceptMurderers) {
+            // Activar el modal de fin de partida
+            gameState.setWinners([]);
+            gameState.setAsesinoGano(true);
+            gameState.setIsDisgraceVictory(true);
+          }
+        }, 100);
       } catch (error) {
         console.error("Error al refrescar secretos vía WebSocket:", error);
       }
     },
     onEarlyTrainPlayed: (message) => {
+      const actorName = gameState.players.find(p => p.id_jugador === message.jugador_id)?.nombre_jugador || 'Un jugador';
       gameState.setEventCardInPlay({
         imageName: '24-event_earlytrain.png',
         message: `Se jugó "Early Train To Paddington"`
       });
+      
+      logEventCardPlayed(actorName, 24);
     },
+
     onLookIntoTheAshesPlayed: (message) => {
       const { playerId } = message;
       const playerName = players.find(p => p.id_jugador === playerId)?.nombre_jugador || 'Alguien';
-      
+
       // Mostrar notificación automáticamente cuando se recibe el WebSocket
       setEventCardInPlay({
         imageName: cardService.getCardImageUrl(20), // URL de la carta "Look Into The Ashes"
         message: `${playerName} jugó "Look Into The Ashes"!`
       });
+      
+      logEventCardPlayed(playerName, 20);
 
       // Auto-ocultar después de 3 segundos
       setTimeout(() => {
         setEventCardInPlay(null);
       }, 3000);
     },
+
+    onPointYourSuspicionsPlayed: (message) => {
+      const actorName = gameState.players.find(p => p.id_jugador === message.jugador_id)?.nombre_jugador || 'Un jugador';
+      gameState.setPysActorId(message.jugador_id);
+      gameState.setIsPysVotingModalOpen(true);
+      gameState.setPysLoadingMessage(null); // Limpiar mensaje de "esperando"
+      gameState.setPysVotos({}); // Limpiar votos
+      
+      logEventCardPlayed(actorName, 25);
+    },
+
+    onVotoRegistrado: (message) => {
+      gameState.setPysVotos(prev => ({
+        ...prev,
+        [message.votante_id]: true
+      }));
+    },
+
+    onVotacionFinalizada: (message) => {
+      gameState.setIsPysVotingModalOpen(false); // Cerrar el modal de votación
+      gameState.setPysLoadingMessage(null); // Limpiar
+
+      const sospechoso = gameState.players.find(p => p.id_jugador === message.sospechoso_id);
+      const sospechosoNombre = sospechoso?.nombre_jugador || `Jugador ${message.sospechoso_id}`;
+
+      gameState.setEventCardInPlay({
+        imageName: cardService.getCardImageUrl(PYS_ID),
+        message: `${sospechosoNombre} fue el más sospechado y debe revelar una carta.`
+      });
+
+      if (gameState.currentPlayerId === gameState.pysActorId) {
+        console.log("Somos el actor, solicitando revelación...");
+        apiService.requestTargetToRevealSecret(
+          gameId,
+          gameState.pysActorId,
+          message.sospechoso_id,
+          'point-your-suspicions'
+        );
+      }
+    },  
+    onCardTradePlayed: (message) => {
+      const { jugador_id: actorId, objetivo_id: targetId } = message;
+      const actorName =
+        gameState.players.find(p => p.id_jugador === actorId)?.nombre_jugador || 'Un jugador';
+      const targetName =
+        gameState.players.find(p => p.id_jugador === targetId)?.nombre_jugador || 'otro jugador';
+
+      // Mostrar efecto visual
+      gameState.setEventCardInPlay({
+        imageName: cardService.getCardImageUrl(CARD_IDS.CARD_TRADE),
+        message: `${actorName} inició un intercambio de cartas con ${targetName}`,
+      });
+      
+      logEventCardPlayed(actorName, CARD_IDS.CARD_TRADE);
+
+      // Si este cliente es el actor o el objetivo, abrir modal
+      if (targetId === gameState.currentPlayerId || actorId === gameState.currentPlayerId) {
+        const handSnapshot = [...(gameState.hand || [])]; // snapshot mano antes de abrir modal
+
+        gameState.setCardTradeContext({
+          originId: actorId,
+          targetPlayerId: targetId,
+          handSnapshot,
+        });
+
+        gameState.setCardTradeModalOpen(true);
+      }
+    },
+
+
+
+
+  onDeadCardFollyPlayed: (message) => {
+    const { jugador_id: actorId, direccion, orden } = message;
+    const actorName = gameState.players.find(p => p.id_jugador === actorId)?.nombre_jugador || "Un jugador";
+
+    gameState.setEventCardInPlay({
+      imageName: cardService.getCardImageUrl(CARD_IDS.DEAD_CARD_FOLLY),
+      message: `${actorName} jugó "Dead Card Folly" (${direccion})`,
+    });
+
+    // Calcular a quién debe enviar carta el jugador actual
+    const myId = gameState.currentPlayerId;
+    const i = orden.indexOf(myId);
+    if (i === -1) return;
     
+    const n = orden.length;
+    const targetPlayerId = direccion === "izquierda" 
+      ? orden[(i - 1 + n) % n] 
+      : orden[(i + 1) % n];
+
+    console.log(`[DeadCardFolly] Jugador ${myId} debe enviar carta a ${targetPlayerId}`, { orden, direccion });
+
+    // Abrir modal de Card Trade para que el jugador envíe una carta
+    if (targetPlayerId) {
+      const handSnapshot = [...(gameState.hand || [])]; // snapshot mano antes de abrir modal
+      gameState.setCardTradeContext({
+        originId: myId, 
+        targetPlayerId: targetPlayerId,
+        handSnapshot,
+      });
+      gameState.setCardTradeModalOpen(true);
+    }
+  },
+
+    onSocialFauxPasPlayed: async (message) => {
+      const { jugador_emisor: senderId, jugador_objetivo: targetId } = message.data;
+      const senderName = gameState.players.find(p => p.id_jugador === senderId)?.nombre_jugador || 'Un jugador';
+      const targetName = gameState.players.find(p => p.id_jugador === targetId)?.nombre_jugador || 'otro jugador';
+
+      // Mostrar notificación del evento
+      gameState.setEventCardInPlay({
+        imageName: cardService.getCardImageUrl(CARD_IDS.SOCIAL_FAUX_PAS),
+        message: `${senderName} jugó "Social Faux Pas" sobre ${targetName}`
+      });
+
+      // Si somos el objetivo, abrir nuestros secretos para revelar uno
+      if (targetId === gameState.currentPlayerId) {
+        const currentPlayer = gameState.players.find(p => p.id_jugador === gameState.currentPlayerId);
+        
+        // Configurar el modal de secretos para Social Faux Pas
+        gameState.setCanRevealSecrets(true);
+        gameState.setCanHideSecrets(false);
+        gameState.setCanRobSecrets(false);
+        
+        // Abrir el modal de nuestros propios secretos
+        handleOpenSecretsModal(currentPlayer);
+      }
+    },
+    onBlackmailedPlayed: async (message) => {
+      /* Nota: en realidad deberia mostrar el secreto, no revelarlo, pero por cuestion de tiempo
+       y para no dejarlo sin implementar el efecto va a ser igual que el de social faux*/
+      const { jugador_emisor: senderId, jugador_objetivo: targetId } = message.data;
+      const senderName = gameState.players.find(p => p.id_jugador === senderId)?.nombre_jugador || 'Un jugador';
+      const targetName = gameState.players.find(p => p.id_jugador === targetId)?.nombre_jugador || 'otro jugador';
+
+      gameState.setEventCardInPlay({
+        imageName: cardService.getCardImageUrl(CARD_IDS.BLACKMAILED),
+        message: `${senderName} jugó "Blackmailed" sobre ${targetName}`
+      });
+
+      if (targetId === gameState.currentPlayerId) {
+        const currentPlayer = gameState.players.find(p => p.id_jugador === gameState.currentPlayerId);
+        
+        gameState.setCanRevealSecrets(true);
+        gameState.setCanHideSecrets(false);
+        gameState.setCanRobSecrets(false);
+        
+        handleOpenSecretsModal(currentPlayer);
+      }
+    },
     onDiscardUpdate: (discardPile) => gameState.setDiscardPile(discardPile),
-  };
+  }), [gameState]);
+
+  const webSocketCallbacks = useMemo(() => ({
+    ...baseWebSocketCallbacks,
+    ...actionStackCallbacks,
+  }), [baseWebSocketCallbacks, actionStackCallbacks]);
 
   useWebSocket(webSocketCallbacks);
   useGameData(gameId, gameState);
-  const { handleCardClick, handleDraftCardClick, handleDiscard,
-     handlePickUp, handlePlay, handleEventActionConfirm, handleLookIntoAshesConfirm , handleOneMoreSecretSelect } = useCardActions(gameId, gameState, handleSetPlayedEvent);
+
+  const {
+    handleCardClick,
+    handleDraftCardClick,
+    handleDiscard,
+    handlePickUp,
+    handlePlay,
+    handleEventActionConfirm,
+    handleCardTradeConfirm,
+    handleLookIntoTheAshesConfirm,
+    handleOneMoreSecretSelect,
+    handleAddToSetConfirm,
+    handleSendCardTradeResponse,
+    handleDeadCardFollyConfirm
+  } = useCardActions(
+    gameId,
+    gameState,
+    () => { },
+    iniciarAccionCancelable,
+    logCardAddedToSet,
+    logEventCardPlayed,
+    logAriadneOliverPlayed
+  );
+
+  const { timeLeft } = useTurnTimer({
+    gameId,
+    currentPlayerId,
+    currentTurn,
+    hand,
+    setHand: gameState.setHand,
+    turnStartedAt,
+    isMyTurn,
+    playerTurnState: playerTurnState
+  });
+
+  const handleEventDisplayComplete = useCallback(() => {
+    gameState.setEventCardInPlay(null);
+  }, [gameState.setEventCardInPlay]); 
+  
+  const handleActionResultToastClose = useCallback(() => {
+    setActionResultMessage(null);
+  }, [setActionResultMessage]); 
 
   const sortedHand = useMemo(() => {
     return [...hand].sort((a, b) => a.id - b.id);
@@ -284,6 +617,7 @@ const GamePage = () => {
       revelada: Boolean(s.revelada || s.bocaArriba || s.revelado),
     }));
   }, [mySecretCards]);
+
   const getPlayerEmoji = gameState.getPlayerEmoji;
   const isDrawingPhase = playerTurnState === 'drawing' && gameState.isMyTurn;
 
@@ -302,10 +636,38 @@ const GamePage = () => {
     return sets;
   }, [playedSetsByPlayer, currentPlayerId]);
 
+  // Para Ariadne (id 15), no se pueden elegir sets propios; solo de oponentes
+  const setsForSelection = useMemo(() => {
+    return opponentSets;
+  }, [opponentSets]);
+
+  const myMatchingSets = useMemo(() => {
+    const cardToPlay = gameState.eventCardToPlay;
+    if (!isAddToSetModalOpen || !cardToPlay) return {};
+
+    const myPlayer = players.find(p => p.id_jugador === currentPlayerId);
+    const mySets = playedSetsByPlayer[currentPlayerId] || [];
+
+    // Filtramos solo los sets que coinciden con el TIPO de la carta seleccionada
+    const matching = mySets.filter(set => set.representacion_id_carta === cardToPlay.id);
+
+    // El modal espera un objeto { [playerId]: [sets] }
+    return myPlayer ? { [myPlayer.id_jugador]: matching } : {};
+  }, [isAddToSetModalOpen, playedSetsByPlayer, currentPlayerId, players, gameState.eventCardToPlay]);
+
+  const myPlayerObject = useMemo(() => {
+    return players.filter(p => p.id_jugador === currentPlayerId);
+  }, [players, currentPlayerId]);
+
 
   if (isLoading) {
     return <div className={styles.loadingSpinner}></div>;
   }
+
+  const isResponseWindowOpen = !!accionEnProgreso;
+
+  const currentPlayer = players.find(p => p.id_jugador === currentPlayerId);
+  const currentPlayerName = currentPlayer?.nombre_jugador || 'Jugador';
 
   return (
     <div className={styles.gameContainer}>
@@ -313,6 +675,7 @@ const GamePage = () => {
         <GameOverScreen
           winners={winners}
           asesinoGano={asesinoGano}
+          isDisgraceVictory={isDisgraceVictory}
           players={players}
           roles={roles}
           setRoles={gameState.setRoles}
@@ -320,9 +683,18 @@ const GamePage = () => {
           onReturnToMenu={() => navigate("/")}
         />
       )}
+      <TurnTimer timeLeft={timeLeft} maxTime={TURN_DURATION} />
       <EventDisplay
         card={gameState.eventCardInPlay}
-        onDisplayComplete={() => gameState.setEventCardInPlay(null)}
+        onDisplayComplete={handleEventDisplayComplete}
+      />
+      <ActionStackModal
+        accion={accionEnProgreso}
+        durationSeconds={NOT_SO_FAST_WINDOW_MS / 1000}
+      />
+      <ActionResultToast
+        message={actionResultMessage}
+        onClose={handleActionResultToastClose}
       />
 
       <div className={styles.opponentsContainer} data-player-count={players.length}>
@@ -355,7 +727,7 @@ const GamePage = () => {
         />
       </div>
 
-      <div className={`${styles.bottomContainer} ${(gameState.isMyTurn && !isDrawingPhase) ? styles.myTurn : ''}`}>
+      <div className={`${styles.bottomContainer} ${(gameState.isMyTurn && !isDrawingPhase) ? styles.myTurn : ''} ${isResponseWindowOpen ? styles.handOnTop : ''}`}>
         {isLocalPlayerDisgraced && <DisgraceOverlay />}
         <div className={styles.playerArea}>
           {/* Secret cards carousel */}
@@ -363,15 +735,37 @@ const GamePage = () => {
 
           <div>
             <div data-testid="hand-container" className={styles.handContainer}>
-              {sortedHand.map((card) => (
-                <Card
-                  key={card.instanceId}
-                  imageName={card.url}
-                  isSelected={selectedCards.includes(card.instanceId)}
-                  onCardClick={() => handleCardClick(card.instanceId)}
-                  subfolder="game-cards"
-                />
-              ))}
+              {sortedHand.map((card) => {
+                const isNSF = card.id === NOT_SO_FAST_ID;
+                const isSelectableInTurn = gameState.isMyTurn && playerTurnState === 'discarding';
+
+                let isDisabled = true;
+                let isGlowing = false;
+
+                if (isResponseWindowOpen) {
+                  if (isNSF) {
+                    isDisabled = false; // Se puede jugar NSF
+                    isGlowing = true;
+                  }
+                } else if (isSelectableInTurn) {
+                  isDisabled = false;
+                }
+
+                return (
+                  <Card
+                    key={card.instanceId}
+                    imageName={card.url}
+                    isSelected={selectedCards.includes(card.instanceId)}
+                    onCardClick={() => {
+                      handleCardClick(card.instanceId)
+                      console.log(`[GamePage] Clickeado instanceId: ${card.instanceId}`);
+                    }}
+                    subfolder="game-cards"
+                    isGlowing={isGlowing}
+                    isDisabled={isDisabled}
+                  />
+                );
+              })}
             </div>
           </div>
 
@@ -410,7 +804,7 @@ const GamePage = () => {
             {(playerTurnState !== 'discarding' || (gameState.hasPlayedSetThisTurn && gameState.isMyTurn && hand.length < 6)) && (
               <button
                 onClick={handlePickUp}
-                disabled={!isPickupButtonEnabled}
+                disabled={!isPickupButtonEnabled || isResponseWindowOpen}
                 className={`${styles.discardButton} ${isPickupButtonEnabled ? styles['pickup-enabled'] : ''}`}
               >
                 Levantar
@@ -457,28 +851,46 @@ const GamePage = () => {
           }
         }}
         players={
-          gameState.oneMoreStep === 1 
+          gameState.oneMoreStep === 1
             ? players.filter(p => (playersSecrets[p.id_jugador]?.revealed ?? 0) > 0) // Step 1: Only players with revealed secrets
             : gameState.oneMoreStep === 3
-            ? players // Step 3: Allow choosing any player, including source
-            : opponentPlayers // Other events: only opponents
+              ? players // Step 3: Allow choosing any player, including source
+              : opponentPlayers // Other events: only opponents
         }
-        onPlayerSelect={handleEventActionConfirm}
+        onPlayerSelect={(playerId) => {
+          if (gameState.eventCardToPlay?.id === CARD_IDS.CARD_TRADE) {
+            handleCardTradeConfirm(playerId);
+          } else {
+            handleEventActionConfirm(playerId);
+          }
+        }}
         title={
-          gameState.oneMoreStep === 1 
-            ? "And Then There Was One More: Elige un jugador con secretos revelados" 
+          gameState.eventCardToPlay?.id === CARD_IDS.CARD_TRADE
+            ? "Card Trade: selecciona un jugador para intercambiar cartas"
+            :gameState.oneMoreStep === 1
+              ? "And Then There Was One More: Elige un jugador con secretos revelados"
             : gameState.oneMoreStep === 3
-            ? "And Then There Was One More: Elige el jugador destino"
-            : "Cards off the Table: Elige un jugador"
+              ? "And Then There Was One More: Elige el jugador destino"
+              : "Cards off the Table: Elige un jugador"
         }
       />
       <SetSelectionModal
         isOpen={isSetSelectionModalOpen}
         onClose={() => gameState.setSetSelectionModalOpen(false)}
-        opponentSets={opponentSets}
+        opponentSets={setsForSelection}
         players={players}
         onSetSelect={handleEventActionConfirm}
-        title="Another Victim: Elige un set para robar"
+        title={gameState.eventCardToPlay?.id === 15 ? 'Ariadne Oliver: Elige un set donde agregarla' : 'Another Victim: Elige un set para robar'}
+        data-testid="another-victim-modal"
+      />
+      <SetSelectionModal
+        isOpen={isAddToSetModalOpen}
+        onClose={() => setAddToSetModalOpen(false)}
+        opponentSets={myMatchingSets} // Usar los sets filtrados
+        players={myPlayerObject}      // Solo nosotros
+        onSetSelect={handleAddToSetConfirm}
+        title="Añadir a Set Existente"
+        data-testid="add-to-set-modal"
       />
       <ConfirmationModal
         isOpen={isConfirmationModalOpen}
@@ -500,8 +912,75 @@ const GamePage = () => {
         discardCards={discardPileSelection}
         selectedCard={selectedDiscardCard}
         onCardSelect={setSelectedDiscardCard}
-        onConfirm={() => handleLookIntoAshesConfirm()}
+        onConfirm={() => handleLookIntoTheAshesConfirm()}
       />
+      <PlayerSelectionModal
+        isOpen={isPysVotingModalOpen}
+        onClose={() => {
+          // No permitir cerrar
+          if (!pysLoadingMessage) {
+            alert("Debes votar para continuar.");
+          }
+        }}
+        players={players} // Mostrar todos los jugadores
+        onPlayerSelect={async (targetPlayerId) => {
+          try {
+            // Poner el modal en estado "cargando"
+            gameState.setPysLoadingMessage("Esperando a que los demás jugadores voten...");
+
+            // Enviar nuestro voto
+            await apiService.votePointYourSuspicions(
+              gameId,
+              pysActorId, // El actor que inició PYS
+              currentPlayerId, // Nosotros 
+              targetPlayerId   // El objetivo
+            );
+
+            //  El modal NO se cierra. Se queda en "Esperando..."
+            //    hasta que llegue el WS 'votacion-finalizada'.
+
+          } catch (error) {
+            console.error("Error al votar PYS:", error);
+            alert(`Error al votar: ${error.message}`);
+            gameState.setPysLoadingMessage(null);
+          }
+        }}
+        title="¿A quién sospechás como el asesino?"
+        loadingMessage={pysLoadingMessage}
+        hideCloseButton={true}
+      />
+      <Chat 
+        gameId={gameId}
+        playerId={currentPlayerId}
+        playerName={currentPlayerName}
+        websocketService={websocketService}
+      />
+      <DeadCardFollyModal
+        isOpen={gameState.isDeadCardFollyModalOpen}
+        onClose={() => gameState.setDeadCardFollyModalOpen(false)}
+        onConfirm={(direccion) => handleDeadCardFollyConfirm(direccion)}
+      />
+      <CardTradeModal
+        isOpen={gameState.isCardTradeModalOpen}
+        hand={gameState.cardTradeContext?.handSnapshot || hand}
+        onClose={() => gameState.setCardTradeModalOpen(false)}
+        onConfirm={(cardId) => handleSendCardTradeResponse(cardId)}
+      />
+
+      <EventLogModal
+        isOpen={isEventLogOpen}
+        onClose={() => setIsEventLogOpen(false)}
+        events={events}
+      />
+
+      {/* Botón flotante para abrir el log de eventos */}
+      <button
+        onClick={() => setIsEventLogOpen(true)}
+        className={styles.eventLogFloatingButton}
+        title="Ver log de eventos"
+      >
+        📋
+      </button>
     </div>
   );
 };

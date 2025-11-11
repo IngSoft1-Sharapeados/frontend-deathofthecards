@@ -299,4 +299,105 @@ describe('useWebSocket', () => {
       expect(websocketCards[0].id).toBe(20);
     });
   });
+
+  describe('Secret update event', () => {
+    test('should call onSecretUpdate with player ID and secrets', () => {
+      const mockCallbacks = {
+        onSecretUpdate: vi.fn()
+      };
+
+      let secretUpdateHandler;
+      websocketService.on.mockImplementation((event, handler) => {
+        if (event === 'actualizacion-secreto') secretUpdateHandler = handler;
+      });
+
+      renderHook(() => useWebSocket(mockCallbacks));
+
+      const secretMessage = {
+        'jugador-id': 1,
+        'lista-secretos': [
+          { revelado: true },
+          { revelado: false },
+          { revelado: false }
+        ]
+      };
+
+      secretUpdateHandler(secretMessage);
+
+      expect(mockCallbacks.onSecretUpdate).toHaveBeenCalledWith({
+        playerId: 1,
+        secrets: [
+          { revelado: true },
+          { revelado: false },
+          { revelado: false }
+        ]
+      });
+    });
+
+    test('should handle all secrets revealed (disgrace state)', () => {
+      const mockCallbacks = {
+        onSecretUpdate: vi.fn()
+      };
+
+      let secretUpdateHandler;
+      websocketService.on.mockImplementation((event, handler) => {
+        if (event === 'actualizacion-secreto') secretUpdateHandler = handler;
+      });
+
+      renderHook(() => useWebSocket(mockCallbacks));
+
+      const allRevealedMessage = {
+        'jugador-id': 2,
+        'lista-secretos': [
+          { revelado: true },
+          { revelado: true },
+          { revelado: true }
+        ]
+      };
+
+      secretUpdateHandler(allRevealedMessage);
+
+      expect(mockCallbacks.onSecretUpdate).toHaveBeenCalledWith({
+        playerId: 2,
+        secrets: [
+          { revelado: true },
+          { revelado: true },
+          { revelado: true }
+        ]
+      });
+    });
+
+    test('should handle no secrets revealed', () => {
+      const mockCallbacks = {
+        onSecretUpdate: vi.fn()
+      };
+
+      let secretUpdateHandler;
+      websocketService.on.mockImplementation((event, handler) => {
+        if (event === 'actualizacion-secreto') secretUpdateHandler = handler;
+      });
+
+      renderHook(() => useWebSocket(mockCallbacks));
+
+      const noRevealedMessage = {
+        'jugador-id': 3,
+        'lista-secretos': [
+          { revelado: false },
+          { revelado: false },
+          { revelado: false }
+        ]
+      };
+
+      secretUpdateHandler(noRevealedMessage);
+
+      expect(mockCallbacks.onSecretUpdate).toHaveBeenCalledWith({
+        playerId: 3,
+        secrets: [
+          { revelado: false },
+          { revelado: false },
+          { revelado: false }
+        ]
+      });
+    });
+  });
 });

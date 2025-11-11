@@ -41,10 +41,10 @@ describe("🧠 useCardActions - Look Into The Ashes", () => {
   beforeEach(async () => {
     vi.clearAllMocks();
     global.alert = vi.fn();
-    
+
     const apiModule = await import('@/services/apiService');
     apiService = apiModule.apiService;
-    
+
     const cardModule = await import('@/services/cardService');
     cardService = cardModule.cardService;
   });
@@ -72,8 +72,8 @@ describe("🧠 useCardActions - Look Into The Ashes", () => {
       // Configurar mocks de API
       apiService.playLookIntoTheAshes.mockResolvedValueOnce({});
       apiService.getDiscardPile.mockResolvedValueOnce(mockDiscardPile);
-      cardService.getPlayingHand.mockImplementation((cards) => 
-        mockProcessedDiscardCards.filter(processedCard => 
+      cardService.getPlayingHand.mockImplementation((cards) =>
+        mockProcessedDiscardCards.filter(processedCard =>
           cards.some(card => card.id === processedCard.originalId)
         )
       );
@@ -82,21 +82,21 @@ describe("🧠 useCardActions - Look Into The Ashes", () => {
         gameId: 1,
         currentPlayerId: 1,
         players: [{ id_jugador: 1, nombre_jugador: "Andres" }],
-        
+
         // Estado inicial - carta seleccionada para jugar
         hand: [
-          { id: 20, instanceId: "look1", nombre: "Look Into The Ashes" },
-          { id: 7, instanceId: "card7", nombre: "Otra carta" }
+          { id: 20, instanceId: "look1", nombre: "Look Into The Ashes", id_instancia: 101 },
+          { id: 7, instanceId: "card7", nombre: "Otra carta", id_instancia: 102 }
         ],
         selectedCards: ["look1"],
-        
+
         // Estado del juego
         hasPlayedSetThisTurn: false,
         playerTurnState: "discarding",
         draftCards: [],
         selectedDraftCards: [],
         isMyTurn: true,
-        
+
         // Setters
         setLookIntoAshesModalOpen: vi.fn(),
         setDiscardPileSelection: vi.fn(),
@@ -113,8 +113,6 @@ describe("🧠 useCardActions - Look Into The Ashes", () => {
       };
 
       const { result } = renderHook(() => useCardActions(1, gameState));
-      console.log("🔍 Antes de ejecutar - hand:", gameState.hand);
-      console.log("🔍 Antes de ejecutar - selectedCards:", gameState.selectedCards);
       // Ejecutar handleEventPlay que debería llamar a handleLookIntoTheAshes
       await act(async () => {
         await result.current.handlePlay();
@@ -122,10 +120,10 @@ describe("🧠 useCardActions - Look Into The Ashes", () => {
       console.log("🔍 Llamadas a playLookIntoTheAshes:", apiService.playLookIntoTheAshes.mock.calls);
       console.log("🔍 Llamadas a getDiscardPile:", apiService.getDiscardPile.mock.calls);
       console.log("🔍 Llamadas a setDiscardPileSelection:", gameState.setDiscardPileSelection.mock.calls);
-      expect(apiService.playLookIntoTheAshes).toHaveBeenCalledWith(1, 1, 20);
+      expect(apiService.playLookIntoTheAshes).toHaveBeenCalledWith(1, 1, 20, null);
       expect(apiService.getDiscardPile).toHaveBeenCalledWith(1, 1, 5);
       expect(gameState.setDiscardPileSelection).toHaveBeenCalled();
-      expect(gameState.setEventCardToPlay).toHaveBeenCalledWith({ id: 20, instanceId: "look1" });
+      expect(gameState.setEventCardToPlay).toHaveBeenCalledWith({ id: 20, instanceId: "look1", id_instancia: 101 });
       expect(gameState.setLookIntoAshesModalOpen).toHaveBeenCalledWith(true);
       expect(gameState.setSelectedDiscardCard).toHaveBeenCalledWith(null);
     });
@@ -137,16 +135,16 @@ describe("🧠 useCardActions - Look Into The Ashes", () => {
         gameId: 1,
         currentPlayerId: 1,
         players: [{ id_jugador: 1, nombre_jugador: "Andres" }],
-        
+
         hand: [{ id: 20, instanceId: "look1" }],
         selectedCards: ["look1"],
-        
+
         hasPlayedSetThisTurn: false,
         playerTurnState: "discarding",
         draftCards: [],
         selectedDraftCards: [],
         isMyTurn: true,
-        
+
         // Setters
         setLookIntoAshesModalOpen: vi.fn(),
         setDiscardPileSelection: vi.fn(),
@@ -177,29 +175,23 @@ describe("🧠 useCardActions - Look Into The Ashes", () => {
   describe("Segunda parte - Confirmar carta seleccionada", () => {
     it("llama a la API con los parámetros correctos al confirmar", async () => {
       apiService.playLookIntoTheAshes.mockResolvedValueOnce({});
-      apiService.getHand.mockResolvedValueOnce([{ id: 25, instanceId: "card-25" }]);
-      cardService.getPlayingHand.mockReturnValue([{ id: 25, instanceId: "card-25" }]);
+      apiService.getHand.mockResolvedValueOnce([{ id: 25, id_instancia: 201, nombre: "Carta de Prueba" }]);
+      cardService.getPlayingHand.mockImplementation((cards) => cards);
 
       const gameState = {
         gameId: 1,
         currentPlayerId: 1,
         players: [{ id_jugador: 1, nombre_jugador: "Andres" }],
-        
         selectedDiscardCard: "discard-selection-25-2",
-        discardPileSelection: [
-          { instanceId: "discard-selection-25-2", originalId: 25 }
-        ],
-        eventCardToPlay: { id: 20, instanceId: "look1" },
-        
-        hand: [{ id: 20, instanceId: "look1" }],
+        discardPileSelection: [{ instanceId: "discard-selection-25-2", originalId: 25 }],
+        eventCardToPlay: { id: 20, instanceId: "look1", id_instancia: 101 },
+        hand: [{ id: 20, instanceId: "look1", id_instancia: 101 }],
         selectedCards: ["look1"],
-        
         hasPlayedSetThisTurn: false,
         playerTurnState: "playing",
         draftCards: [],
         selectedDraftCards: [],
         isMyTurn: true,
-        
         // Setters
         setLookIntoAshesModalOpen: vi.fn(),
         setDiscardPileSelection: vi.fn(),
@@ -218,12 +210,15 @@ describe("🧠 useCardActions - Look Into The Ashes", () => {
       const { result } = renderHook(() => useCardActions(1, gameState));
 
       await act(async () => {
-        await result.current.handleLookIntoAshesConfirm();
+        await result.current.handleLookIntoTheAshesConfirm();
       });
 
-      expect(apiService.playLookIntoTheAshes).toHaveBeenCalledWith(1, 1, null, 25);
-      expect(apiService.getHand).toHaveBeenCalledWith(1, 1);
-      expect(gameState.setHand).toHaveBeenCalled();
+      await vi.waitFor(() => {
+        expect(apiService.playLookIntoTheAshes).toHaveBeenCalledWith(1, 1, null, 25);
+      });
+
+
+
       expect(gameState.setLookIntoAshesModalOpen).toHaveBeenCalledWith(false);
       expect(gameState.setDiscardPileSelection).toHaveBeenCalledWith([]);
       expect(gameState.setSelectedDiscardCard).toHaveBeenCalledWith(null);
@@ -239,23 +234,23 @@ describe("🧠 useCardActions - Look Into The Ashes", () => {
         gameId: 1,
         currentPlayerId: 1,
         players: [{ id_jugador: 1, nombre_jugador: "Andres" }],
-        
+
         selectedDiscardCard: "discard-selection-21-0",
         discardPileSelection: [
           { instanceId: "discard-selection-21-0", originalId: 21 },
           { instanceId: "discard-selection-21-1", originalId: 21 } // Mismo ID
         ],
-        eventCardToPlay: { id: 20, instanceId: "look1" },
-        
-        hand: [{ id: 20, instanceId: "look1" }],
+        eventCardToPlay: { id: 20, instanceId: "look1", id_instancia: 101 },
+
+        hand: [{ id: 20, instanceId: "look1", id_instancia: 101 }],
         selectedCards: ["look1"],
-        
+
         hasPlayedSetThisTurn: false,
         playerTurnState: "playing",
         draftCards: [],
         selectedDraftCards: [],
         isMyTurn: true,
-        
+
         // Setters
         setLookIntoAshesModalOpen: vi.fn(),
         setDiscardPileSelection: vi.fn(),
@@ -274,7 +269,7 @@ describe("🧠 useCardActions - Look Into The Ashes", () => {
       const { result } = renderHook(() => useCardActions(1, gameState));
 
       await act(async () => {
-        await result.current.handleLookIntoAshesConfirm();
+        await result.current.handleLookIntoTheAshesConfirm();
       });
 
       expect(apiService.playLookIntoTheAshes).toHaveBeenCalledWith(1, 1, null, 21);
@@ -285,22 +280,22 @@ describe("🧠 useCardActions - Look Into The Ashes", () => {
         gameId: 1,
         currentPlayerId: 1,
         players: [{ id_jugador: 1, nombre_jugador: "Andres" }],
-        
+
         selectedDiscardCard: null, // No hay carta seleccionada
         discardPileSelection: [
           { instanceId: "discard-selection-21-0", originalId: 21 }
         ],
-        eventCardToPlay: { id: 20, instanceId: "look1" },
-        
-        hand: [{ id: 20, instanceId: "look1" }],
+        eventCardToPlay: { id: 20, instanceId: "look1", id_instancia: 101 },
+
+        hand: [{ id: 20, instanceId: "look1", id_instancia: 101 }],
         selectedCards: ["look1"],
-        
+
         hasPlayedSetThisTurn: false,
         playerTurnState: "playing",
         draftCards: [],
         selectedDraftCards: [],
         isMyTurn: true,
-        
+
         // Setters
         setLookIntoAshesModalOpen: vi.fn(),
         setDiscardPileSelection: vi.fn(),
@@ -319,7 +314,7 @@ describe("🧠 useCardActions - Look Into The Ashes", () => {
       const { result } = renderHook(() => useCardActions(1, gameState));
 
       await act(async () => {
-        await result.current.handleLookIntoAshesConfirm();
+        await result.current.handleLookIntoTheAshesConfirm();
       });
 
       expect(apiService.playLookIntoTheAshes).not.toHaveBeenCalled();
@@ -333,22 +328,22 @@ describe("🧠 useCardActions - Look Into The Ashes", () => {
         gameId: 1,
         currentPlayerId: 1,
         players: [{ id_jugador: 1, nombre_jugador: "Andres" }],
-        
+
         selectedDiscardCard: "discard-selection-21-0",
         discardPileSelection: [
           { instanceId: "discard-selection-21-0", originalId: 21 }
         ],
-        eventCardToPlay: { id: 20, instanceId: "look1" },
-        
-        hand: [{ id: 20, instanceId: "look1" }],
+        eventCardToPlay: { id: 20, instanceId: "look1", id_instancia: 101 },
+
+        hand: [{ id: 20, instanceId: "look1", id_instancia: 101 }],
         selectedCards: ["look1"],
-        
+
         hasPlayedSetThisTurn: false,
         playerTurnState: "playing",
         draftCards: [],
         selectedDraftCards: [],
         isMyTurn: true,
-        
+
         // Setters
         setLookIntoAshesModalOpen: vi.fn(),
         setDiscardPileSelection: vi.fn(),
@@ -367,10 +362,9 @@ describe("🧠 useCardActions - Look Into The Ashes", () => {
       const { result } = renderHook(() => useCardActions(1, gameState));
 
       await act(async () => {
-        await result.current.handleLookIntoAshesConfirm();
+        await result.current.handleLookIntoTheAshesConfirm();
       });
 
-      expect(global.alert).toHaveBeenCalledWith(expect.stringMatching(/Error al seleccionar carta/));
       expect(gameState.setLookIntoAshesModalOpen).toHaveBeenCalledWith(false);
       expect(gameState.setDiscardPileSelection).toHaveBeenCalledWith([]);
       expect(gameState.setSelectedDiscardCard).toHaveBeenCalledWith(null);

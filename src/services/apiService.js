@@ -142,10 +142,17 @@ const createHttpService = () => {
   };
 
   const playDetectiveSet = async (gameId, playerId, cardIds) => {
-    // Backend expects: POST /partidas/{id_partida}/Jugar-set?id_jugador=... body: [int, int, int]
-    return request(`/partidas/${gameId}/Jugar-set?id_jugador=${playerId}`, {
+    return request(`/partidas/${gameId}/Jugar-set?id_jugador=${playerId}&set_destino_id=0`, {
       method: "POST",
       body: JSON.stringify(cardIds),
+    });
+  };
+
+  // Ariadne Oliver (id 15): se juega sola y debe agregarse a un set existente (set_destino_id)
+  const playAriadneOliver = async (gameId, playerId, targetRepresentacionId) => {
+    return request(`/partidas/${gameId}/Jugar-set?id_jugador=${playerId}&set_destino_id=${targetRepresentacionId}`, {
+      method: 'POST',
+      body: JSON.stringify([15]),
     });
   };
 
@@ -187,9 +194,9 @@ const createHttpService = () => {
 
   const robSecret = async (gameId, playerIdTurno, targetPlayerId, secretUniqueId) => {
     return request(`/partidas/${gameId}/robo-secreto?id_jugador_turno=${playerIdTurno}&id_jugador_destino=${targetPlayerId}&id_unico_secreto=${secretUniqueId}`,
-    { method: 'PATCH' });
+      { method: 'PATCH' });
   };
-  
+
 
 
   const playCardsOffTheTable = async (gameId, playerId, targetId, cardId) => {
@@ -201,11 +208,7 @@ const createHttpService = () => {
   const playAnotherVictim = async (gameId, playerId, cardId, targetSet) => {
     return request(`/partidas/${gameId}/evento/AnotherVictim?id_jugador=${playerId}&id_carta=${cardId}`, {
       method: "PUT",
-      body: JSON.stringify({
-        id_objetivo: targetSet.jugador_id,
-        id_representacion_carta: targetSet.representacion_id_carta,
-        ids_cartas: targetSet.cartas_ids
-      }),
+      body: JSON.stringify(targetSet),
     });
   };
 
@@ -247,11 +250,88 @@ const createHttpService = () => {
     }
 
     return request(`${url}${params.toString()}`, {
-        method: 'PUT'
-      });
+      method: 'PUT'
+    });
   };
-      
 
+  const iniciarAccion = async (gameId, playerId, accionData) => {
+    return request(`/partidas/${gameId}/iniciar-accion?id_jugador=${playerId}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(accionData),
+    });
+  };
+
+  const playNotSoFast = async (gameId, playerId, cardId) => {
+    return request(`/partidas/${gameId}/respuesta/not_so_fast?id_jugador=${playerId}&id_carta=${cardId}`, {
+      method: "PUT",
+    });
+  };
+
+  const resolverAccion = async (gameId) => {
+    return request(`/partidas/${gameId}/resolver-accion`, {
+      method: "POST",
+    });
+  };
+
+  const cancelarAccion = async (gameId) => {
+    return request(`/partidas/${gameId}/cancelar-accion`, {
+      method: "POST",
+    });
+  };
+  
+  const playPointYourSuspicions = async (gameId, playerId, cardId) => {
+    return request(`/partidas/${gameId}/evento/PointYourSuspicions?id_jugador=${playerId}&id_carta=${cardId}`, {
+      method: "PUT",
+    });
+  };
+
+  const votePointYourSuspicions = async (gameId, actorId, voterId, votedId) => {
+    return request(`/partidas/${gameId}/evento/PointYourSuspicions/votacion?id_partida=${gameId}&id_jugador=${actorId}&id_votante=${voterId}&id_votado=${votedId}`, {
+      method: "PUT",
+    });
+  };
+
+  const sendChatMessage = async (gameId, playerId, mensaje) => {
+    return request(`/partidas/${gameId}/envio-mensaje?id_jugador=${playerId}`, {
+      method: "POST",
+      body: JSON.stringify(mensaje),
+    });
+  };
+
+
+
+  const agregarCartaASet = async (gameId, jugadorSetId, tipoSetId, cartaInstanciaId) => {
+    return request(`/partidas/${gameId}/agregar-a-set`, {
+      method: "POST",
+      body: JSON.stringify({
+        id_jugador_set: jugadorSetId,
+        id_tipo_set: tipoSetId,
+        id_carta_instancia: cartaInstanciaId
+      }),
+    });
+  };
+
+  const cardTrade = async (gameId, playerId, cardId, targetPlayerId) => {
+    return request(`/partidas/${gameId}/evento/CardTrade?id_jugador=${playerId}&id_carta=${cardId}&id_objetivo=${targetPlayerId}`, {
+      method: "POST",
+    });
+  };
+  const sendCard = async (gameId, playerId, cardId, targetPlayerId) => {
+    const query = `?id_partida=${gameId}&id_jugador=${playerId}&id_carta=${cardId}&id_objetivo=${targetPlayerId}`;
+
+    return request(`/partidas/${gameId}/evento/sendCard${query}`, {
+      method: "POST",
+    });
+  };
+  const playDeadCardFolly = async (gameId, playerId, cardId, direccion) => {
+    const query = `?id_partida=${gameId}&id_jugador=${playerId}&id_carta=${cardId}&direccion=${direccion}`;
+    return request(`/partidas/${gameId}/evento/DeadCardFolly${query}`, {
+      method: "POST",
+    });
+  };
   return {
     createGame,
     listGames,
@@ -274,6 +354,8 @@ const createHttpService = () => {
     takeDraftCard,
     pickUpCards,
     playDetectiveSet,
+    playAriadneOliver,
+    playAriadneOliver,
     getPlayedSets,
     getPlayerSecrets,
     getDiscardPile,
@@ -286,7 +368,18 @@ const createHttpService = () => {
     playLookIntoTheAshes,
     playOneMore,
     playDelayTheMurdererEscape,
-    playEarlyTrainToPaddington
+    playEarlyTrainToPaddington,
+    iniciarAccion,
+    playNotSoFast,
+    resolverAccion,
+    cancelarAccion,
+    playPointYourSuspicions,
+    votePointYourSuspicions,
+    sendChatMessage,
+    agregarCartaASet,
+    cardTrade,
+    sendCard,
+    playDeadCardFolly,
   };
 };
 

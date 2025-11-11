@@ -49,6 +49,8 @@ const useGameData = (gameId, gameState) => {
           setTurnOrder(turnOrderData);
           setHostId(gameData.id_anfitrion);
           setPlayers(gameData.listaJugadores || []);
+          
+          gameState.setTurnStartedAt(Date.now()); 
 
           if (gameData.listaJugadores) {
             const initialSecrets = {};
@@ -114,8 +116,8 @@ const useGameData = (gameId, gameState) => {
           const playingHand = cardService.getPlayingHand(handData);
           const handWithInstanceIds = playingHand.map((card, index) => ({
             ...card,
-            instanceId: `${card.id}-${index}`
-          }));
+            instanceId: `card-inst-${card.id_instancia}`
+            }));
           setHand(handWithInstanceIds);
 
           // Conectar WebSocket solo una vez

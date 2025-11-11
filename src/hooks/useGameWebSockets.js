@@ -96,6 +96,53 @@ const useWebSocket = (callbacks) => {
         playerId: message.jugador_id
       });
     };
+    const onCardTradePlayed = (message) => {
+      console.log('Evento "Card Trade" jugado:', message);
+      callbacksRef.current.onCardTradePlayed?.(message);
+    };
+    const onDeadCardFollyPlayed = (message) => {
+      console.log('Evento "Dead Card Folly" jugado:', message);
+      callbacksRef.current.onDeadCardFollyPlayed?.(message);
+    };
+    
+    const onPointYourSuspicionsPlayed = (message) => {
+      console.log('Evento "Point Your Suspicions" jugado:', message);
+      callbacksRef.current.onPointYourSuspicionsPlayed?.(message);
+    };
+
+    const onDeviusCard = (message) => {
+    console.log('Evento "Devius Card" recibido:', message);
+    
+    // Filtrar por tipo de carta
+      const cardType = message.data?.tipo || message.tipo;
+      
+      if (cardType === 27) { // Social Faux Pas
+        callbacksRef.current.onSocialFauxPasPlayed?.(message);
+      } 
+      else if (cardType === 26)
+        callbacksRef.current.onBlackmailedPlayed?.(message);
+    };
+
+    const onVotoRegistrado = (message) => {
+      console.log('Voto registrado:', message);
+      callbacksRef.current.onVotoRegistrado?.(message);
+    };
+
+    const onVotacionFinalizada = (message) => {
+      console.log('Votación finalizada:', message);
+      callbacksRef.current.onVotacionFinalizada?.(message);
+    };
+
+    const onAccionEnProgreso = (message) => {
+      callbacksRef.current.onAccionEnProgreso?.(message);
+    };
+    const onPilaActualizada = (message) => {
+      callbacksRef.current.onPilaActualizada?.(message);
+    };
+    const onAccionResuelta = (message) => {
+      callbacksRef.current.onAccionResuelta?.(message);
+    };
+
     // Suscribirse a eventos
     websocketService.on('actualizacion-mazo', onDeckUpdate);
     websocketService.on('turno-actual', onTurnUpdate);
@@ -111,7 +158,18 @@ const useWebSocket = (callbacks) => {
     websocketService.on('se-jugo-look-into-the-ashes', onLookIntoTheAshesPlayed);
     websocketService.on('se-jugo-early-train', onEarlyTrainPlayed);
     websocketService.on('actualizacion-secreto', onSecretUpdate);
+    websocketService.on('se-jugo-card-trade', onCardTradePlayed);
+    websocketService.on('se-jugo-dead-card-folly', onDeadCardFollyPlayed);
+    websocketService.on('accion-en-progreso', onAccionEnProgreso);
+    websocketService.on('pila-actualizada', onPilaActualizada);
+    websocketService.on('accion-resuelta-exitosa', onAccionResuelta);
+    websocketService.on('accion-resuelta-cancelada', onAccionResuelta);
+    websocketService.on('accion-resuelta-fallida', onAccionResuelta);
+    websocketService.on('se-jugo-point-your-suspicions', onPointYourSuspicionsPlayed);
+    websocketService.on('voto-registrado', onVotoRegistrado);
+    websocketService.on('votacion-finalizada', onVotacionFinalizada);
 
+    websocketService.on('devius-card', onDeviusCard);
 
     // Función de limpieza - SOLO remover listeners, NO desconectar
     return () => {
@@ -122,12 +180,24 @@ const useWebSocket = (callbacks) => {
       websocketService.off('se-jugo-cards-off-the-table', onCardsOffTheTablePlayed);
       websocketService.off('se-jugo-another-victim', onAnotherVictimPlayed);
       websocketService.off('se-jugo-one-more', onOneMorePlayed);
+      websocketService.off('carta-descartada', onDiscardUpdate);
       websocketService.off('actualizacion-mano', onHandUpdate);
       websocketService.off('jugar-set', onSetPlayed);
       websocketService.off('se-jugo-delay-escape', onDelayEscapePlayed);
       websocketService.off('se-jugo-look-into-the-ashes', onLookIntoTheAshesPlayed);
       websocketService.off('se-jugo-early-train', onEarlyTrainPlayed);
       websocketService.off('actualizacion-secreto', onSecretUpdate);
+      websocketService.off('se-jugo-card-trade', onCardTradePlayed);
+      websocketService.off('se-jugo-dead-card-folly', onDeadCardFollyPlayed);
+      websocketService.off('accion-en-progreso', onAccionEnProgreso);
+      websocketService.off('pila-actualizada', onPilaActualizada);
+      websocketService.off('accion-resuelta-exitosa', onAccionResuelta);
+      websocketService.off('accion-resuelta-cancelada', onAccionResuelta);
+      websocketService.off('accion-resuelta-fallida', onAccionResuelta);
+      websocketService.off('se-jugo-point-your-suspicions', onPointYourSuspicionsPlayed);
+      websocketService.off('voto-registrado', onVotoRegistrado);
+      websocketService.off('votacion-finalizada', onVotacionFinalizada);
+      websocketService.off('devius-card', onDeviusCard);
     };
   }, []);
 };

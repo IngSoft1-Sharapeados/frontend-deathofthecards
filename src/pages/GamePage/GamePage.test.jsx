@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { describe, test, expect, beforeEach, vi } from 'vitest';
 import GamePage from './GamePage';
@@ -54,11 +54,15 @@ vi.mock('@/hooks/useGameState', () => ({ default: () => mockUseGameState }));
 vi.mock('@/hooks/useGameData', () => ({ default: vi.fn() }));
 vi.mock('@/hooks/useGameWebSockets', () => ({ default: vi.fn() }));
 
-// FIX: Update the mock to export both the default (useCardActions) and named (useSecrets) hooks
-vi.mock('@/hooks/useCardActions', () => ({
-  default: () => mockUseCardActions,
-  useSecrets: () => mockUseSecrets,
-}));
+vi.mock('@/hooks/useCardActions', async () => {
+  const actual = await vi.importActual('@/hooks/useCardActions');
+  return {
+    CARD_IDS: actual.CARD_IDS, 
+    default: () => mockUseCardActions,
+    useSecrets: () => mockUseSecrets,
+  };
+});
+
 
 vi.mock('react-router-dom', async (importOriginal) => {
   const actual = await importOriginal();
@@ -83,6 +87,14 @@ vi.mock('@/components/Card/Card', () => ({
       role="button"
     >
       {imageName}
+    </div>
+  ),
+}));
+
+vi.mock('@/components/EventModals/SetSelectionModal', () => ({
+  default: ({ title, ...props }) => (
+    <div {...props}>
+      <div data-testid="modal-title">{title}</div>
     </div>
   ),
 }));
@@ -274,7 +286,7 @@ describe('GamePage', () => {
       mockUseGameState.isLoading = false;
       const { rerender } = render(<GamePage />);
       expect(screen.getByTestId('deck')).toHaveTextContent('Deck: 30');
-      
+
       mockUseGameState.deckCount = 25;
       rerender(<GamePage />);
       expect(screen.getByTestId('deck')).toHaveTextContent('Deck: 25');
@@ -305,7 +317,7 @@ describe('GamePage', () => {
       render(<GamePage />);
       const pod2 = screen.getByTestId('pod-2');
       const pod3 = screen.getByTestId('pod-3');
-      
+
       expect(pod2).toBeInTheDocument();
       expect(pod3).toBeInTheDocument();
       expect(pod2).toHaveTextContent('Opponent');
@@ -318,7 +330,7 @@ describe('GamePage', () => {
       mockUseGameState.isLoading = false;
       updateDerivedMockState();
       render(<GamePage />);
-      
+
       expect(screen.queryByTestId('pod-2')).not.toBeInTheDocument();
       expect(screen.queryByTestId('pod-3')).not.toBeInTheDocument();
     });
@@ -330,7 +342,7 @@ describe('GamePage', () => {
       };
       mockUseGameState.isLoading = false;
       render(<GamePage />);
-      
+
       // The mocked PlayerPod receives playerSecrets prop
       expect(screen.getByTestId('pod-2')).toBeInTheDocument();
       expect(screen.getByTestId('pod-3')).toBeInTheDocument();
@@ -433,7 +445,7 @@ describe('GamePage', () => {
       };
       mockUseGameState.isLoading = false;
       render(<GamePage />);
-      
+
       // PlayerPod should receive sets
       expect(screen.getByTestId('pod-2')).toBeInTheDocument();
       expect(screen.getByTestId('pod-3')).toBeInTheDocument();
@@ -446,9 +458,45 @@ describe('GamePage', () => {
       };
       mockUseGameState.isLoading = false;
       render(<GamePage />);
-      
+
       expect(screen.getByTestId('pod-2')).toBeInTheDocument();
       expect(screen.getByTestId('pod-3')).toBeInTheDocument();
+    });
+  });
+
+  describe('Ariadne Set Selection', () => {
+    test('when eventCardToPlay.id === 15, shows set selection modal with Ariadne title', () => {
+      mockUseGameState.playedSetsByPlayer = {
+        1: [{ jugador_id: 1, representacion_id_carta: 100, cartas_ids: [1, 2, 3] }],
+        2: [{ jugador_id: 2, representacion_id_carta: 200, cartas_ids: [4, 5, 6] }],
+      };
+      mockUseGameState.eventCardToPlay = { id: 15, instanceId: 'a-1' };
+      mockUseGameState.isSetSelectionModalOpen = true;
+      mockUseGameState.isLoading = false;
+      render(<GamePage />);
+      const modal = screen.getByTestId('another-victim-modal');
+      expect(modal).toBeInTheDocument();
+      
+      const modalTitle = within(modal).getByTestId('modal-title');
+
+      expect(modalTitle.textContent).toMatch(/Ariadne Oliver/i);
+    });
+
+    test('when eventCardToPlay.id !== 15, shows set selection modal with Another Victim title', () => {
+      mockUseGameState.playedSetsByPlayer = {
+        1: [{ jugador_id: 1, representacion_id_carta: 100, cartas_ids: [1, 2, 3] }],
+        2: [{ jugador_id: 2, representacion_id_carta: 200, cartas_ids: [4, 5, 6] }],
+      };
+      mockUseGameState.eventCardToPlay = { id: 18, instanceId: 'ev-1' };
+      mockUseGameState.isSetSelectionModalOpen = true;
+      mockUseGameState.isLoading = false;
+      render(<GamePage />);
+      const modal = screen.getByTestId('another-victim-modal');
+      expect(modal).toBeInTheDocument();
+
+      const modalTitle = within(modal).getByTestId('modal-title');
+
+      expect(modalTitle.textContent).toMatch(/Another Victim/i);
     });
   });
 

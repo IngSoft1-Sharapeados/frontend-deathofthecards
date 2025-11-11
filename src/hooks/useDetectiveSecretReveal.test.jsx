@@ -12,6 +12,8 @@ vi.mock('@/services/apiService', () => ({
     revealSecret: vi.fn(),
     hideSecret: vi.fn(),
     requestTargetToRevealSecret: vi.fn(),
+    revealOwnSecret: vi.fn(),
+    robSecret: vi.fn(),
   }
 }));
 
@@ -120,5 +122,83 @@ describe('useDetectiveSecretReveal', () => {
   // Ahora el backend espera id_jugador_turno (quien ejecuta la acción)
   expect(apiService.hideSecret).toHaveBeenCalledWith('1', 1, 101);
   });
+
+  it('flujo satterwaite sin comodín: solicita revelación', async () => {
+    const gameState = { currentPlayerId: 1, playersSecrets: {} };
+    const players = [ { id_jugador: 1, nombre_jugador: 'Yo' }, { id_jugador: 2, nombre_jugador: 'Bob' }];
+    apiService.requestTargetToRevealSecret.mockResolvedValueOnce({});
+
+    function HostSatterwaite({ players, gameState }) {
+      const { modals, handleSetPlayedEvent } = useDetectiveSecretReveal('1', gameState, players);
+      return (
+        <div>
+          <button onClick={() => handleSetPlayedEvent({ 
+            jugador_id: gameState.currentPlayerId, 
+            representacion_id: 9,
+            cartas_ids: [9, 9] // Sin comodín
+          })}>
+            trigger-satterwaite
+          </button>
+          {modals}
+        </div>
+      );
+    }
+
+    render(<HostSatterwaite players={players} gameState={gameState} />);
+    fireEvent.click(screen.getByText('trigger-satterwaite'));
+    
+    // Debe abrir modal de selección
+    expect(screen.getByText('Bob')).toBeInTheDocument();
+    
+    // Seleccionar Bob
+    fireEvent.click(screen.getByText('Bob'));
+
+    // Debe llamar a requestTargetToRevealSecret con motivo 'satterwaite'
+    await waitFor(() => {
+      expect(apiService.requestTargetToRevealSecret).toHaveBeenCalledWith('1', 1, 2, 'satterwaite');
+    });
+  });
+
+  it('flujo satterwaite con comodín: detecta comodín y mantiene estado activo', async () => {
+    const gameState = { currentPlayerId: 1, playersSecrets: {} };
+    const players = [ { id_jugador: 1, nombre_jugador: 'Yo' }, { id_jugador: 2, nombre_jugador: 'Bob' }];
+    apiService.requestTargetToRevealSecret.mockResolvedValueOnce({});
+    apiService.getPlayerSecrets.mockResolvedValueOnce([
+      { id: 200, bocaArriba: true, carta_id: 3 },
+    ]);
+
+    function HostSatterwaiteWildcard({ players, gameState }) {
+      const { modals, handleSetPlayedEvent } = useDetectiveSecretReveal('1', gameState, players);
+      return (
+        <div>
+          <button onClick={() => handleSetPlayedEvent({ 
+            jugador_id: gameState.currentPlayerId, 
+            representacion_id: 9,
+            cartas_ids: [9, 14] // Con comodín (14 = Harley Quin)
+          })}>
+            trigger-satterwaite-wildcard
+          </button>
+          {modals}
+        </div>
+      );
+    }
+
+    render(<HostSatterwaiteWildcard players={players} gameState={gameState} />);
+    fireEvent.click(screen.getByText('trigger-satterwaite-wildcard'));
+    
+    // Debe abrir modal de selección
+    expect(screen.getByText('Bob')).toBeInTheDocument();
+    
+    // Seleccionar Bob
+    fireEvent.click(screen.getByText('Bob'));
+
+    // Debe llamar a requestTargetToRevealSecret
+    await waitFor(() => {
+      expect(apiService.requestTargetToRevealSecret).toHaveBeenCalledWith('1', 1, 2, 'satterwaite');
+    });
+    
+  });
+
+
   
 });

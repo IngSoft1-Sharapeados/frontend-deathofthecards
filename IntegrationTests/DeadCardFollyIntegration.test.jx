@@ -1,0 +1,331 @@
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { describe, it, vi, expect, beforeEach, afterEach } from 'vitest';
+import React from 'react';
+import GamePage from '@/pages/GamePage';
+import { apiService } from '@/services/apiService';
+import websocketService from '@/services/websocketService';
+import { cardService } from '@/services/cardService';
+import '@testing-library/jest-dom';
+
+// --- Mocks --- //
+vi.mock('@/services/apiService');
+vi.mock('@/services/websocketService');
+vi.mock('@/services/cardService');
+vi.mock('react-router-dom', () => ({
+  useParams: () => ({ id: 'test-game-id' }),
+  useNavigate: () => vi.fn(),
+}));
+
+describe('Dead Card Folly - Flujo General y Cálculo de Destinatarios', () => {
+  const mockPlayers = [
+    { id_jugador: 1, nombre_jugador: 'Jugador 1' },
+    { id_jugador: 2, nombre_jugador: 'Jugador 2' }, 
+    { id_jugador: 3, nombre_jugador: 'Jugador 3' },
+    { id_jugador: 4, nombre_jugador: 'Jugador 4' },
+  ];
+
+  const mockHand = [
+    { 
+      id: 19, // DEAD_CARD_FOLLY
+      id_instancia: 1001,
+      instanceId: 'card-inst-1001',
+      url: '19-event_deadcardfolly.png'
+    },
+    { 
+      id: 1, 
+      id_instancia: 1002,
+      instanceId: 'card-inst-1002', 
+      url: '1-card1.png'
+    }
+  ];
+
+  let webSocketHandlers = {};
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    webSocketHandlers = {};
+
+    // Mock API responses básicas
+    apiService.getHand.mockResolvedValue(mockHand);
+    apiService.getTurn.mockResolvedValue(1);
+    apiService.getDeckCount.mockResolvedValue(20);
+    apiService.getTurnOrder.mockResolvedValue([1, 2, 3, 4]);
+    apiService.getGameDetails.mockResolvedValue({
+      id_anfitrion: 1,
+      listaJugadores: mockPlayers
+    });
+    apiService.getRoles.mockResolvedValue({});
+    apiService.getMySecrets.mockResolvedValue([]);
+    apiService.getDraftCards.mockResolvedValue([]);
+    apiService.getDiscardPile.mockResolvedValue([]);
+    apiService.getPlayedSets.mockResolvedValue([]);
+    
+    // Mocks para acciones
+    apiService.iniciarAccion.mockResolvedValue({ status: 'ok' });
+    apiService.resolverAccion.mockResolvedValue({ decision: 'ejecutar' });
+    apiService.playDeadCardFolly.mockResolvedValue({ status: 'ok' });
+    apiService.sendCard.mockResolvedValue({ status: 'ok' });
+
+    // Mock WebSocket
+    websocketService.connect.mockImplementation(() => {});
+    websocketService.on.mockImplementation((event, handler) => {
+      webSocketHandlers[event] = handler;
+    });
+    websocketService.off.mockImplementation(() => {});
+
+    // Mock card service
+    cardService.getPlayingHand.mockImplementation((hand) => hand);
+    cardService.getDraftCards.mockImplementation((draft) => draft);
+    cardService.getSecretCards.mockImplementation((secrets) => secrets);
+    cardService.getCardNameById.mockImplementation((id) => 'Dead Card Folly');
+    cardService.getCardImageUrl.mockImplementation((id) => `${id}-card.png`);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  const simulateWebSocketEvent = (event, data) => {
+    if (webSocketHandlers[event]) {
+      webSocketHandlers[event](data);
+    }
+  };
+  
+  it('debería completar flujo completo con dirección izquierda y calcular destinatario correcto', async () => {
+    /*Prueba que :
+      Jugador selecciona y juega Dead Card Folly
+      Selecciona dirección "izquierda"
+      Se inicia y resuelve la acción cancelable
+      Se abre automáticamente el modal de Card Trade
+      El cálculo del destinatario es CORRECTO
+      Cálculo específico:
+      Orden de turno: [1, 2, 3, 4]
+      Jugador actual: 1
+      Dirección: "izquierda"
+      Resultado esperado: Jugador 1 envía carta a Jugador 4*/
+    vi.useFakeTimers();
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+
+    // 1. Renderizar juego
+    render(<GamePage />);
+
+    // 2. Esperar carga y seleccionar Dead Card Folly
+    await waitFor(() => {
+      expect(screen.getByTestId('hand-container')).toBeInTheDocument();
+    });
+
+    const deadCardFolly = screen.getByAltText(/dead card folly/i);
+    await user.click(deadCardFolly);
+
+    // 3. Hacer clic en "Jugar"  
+    const playButton = screen.getByText('Jugar');
+    await user.click(playButton);
+
+    // 4. Verificar que se abre modal de dirección
+    await waitFor(() => {
+      expect(screen.getByText(/dead card folly/i)).toBeInTheDocument();
+    });
+
+    // 5. Seleccionar dirección "izquierda"
+    const leftButton = screen.getByText('Izquierda');
+    await user.click(leftButton);
+
+    const confirmButton = screen.getByText('Confirmar');
+    await user.click(confirmButton);
+
+    // 6. Verificar que se inició acción cancelable
+    await waitFor(() => {
+      expect(apiService.iniciarAccion).toHaveBeenCalledWith(
+        'test-game-id',
+        1,
+        {
+          tipo_accion: "evento_dead_card_folly",
+          cartas_db_ids: [1001],
+          nombre_accion: "Dead Card Folly", 
+          id_carta_tipo_original: 19,
+          payload_original: { direccion: "izquierda" }
+        }
+      );
+    });
+
+    // 7. Simular WebSocket de acción en progreso
+    simulateWebSocketEvent('accion-en-progreso', {
+      data: {
+        tipo_accion: "evento_dead_card_folly",
+        id_jugador_original: 1,
+        nombre_accion: "Dead Card Folly",
+        carta_original: {
+          id_jugador: 1,
+          nombre: "Dead Card Folly", 
+          id_carta_tipo: 19
+        }
+      }
+    });
+
+    // 8. Avanzar tiempo para resolver acción (5 segundos + buffer)
+    vi.advanceTimersByTime(6000);
+
+    // 9. Simular WebSocket de Dead Card Folly jugado
+    simulateWebSocketEvent('se-jugo-dead-card-folly', {
+      jugador_id: 1,
+      direccion: "izquierda", 
+      orden: [1, 2, 3, 4] // Orden de turno
+    });
+
+    // 10. Verificar que se abre modal de Card Trade
+    await waitFor(() => {
+      expect(screen.getByText(/selecciona una carta para enviar/i)).toBeInTheDocument();
+    });
+
+    // 11. Seleccionar carta para enviar
+    const cardToSend = screen.getByAltText(/carta 1/i);
+    await user.click(cardToSend);
+
+    // 12. Confirmar envío
+    const sendButton = screen.getByText(/enviar carta/i);
+    await user.click(sendButton);
+
+    // 13. Verificar llamada a API con destinatario CORRECTO
+    // Orden: [1, 2, 3, 4], dirección izquierda → jugador 1 envía a jugador 4
+    await waitFor(() => {
+      expect(apiService.sendCard).toHaveBeenCalledWith(
+        'test-game-id',
+        1,  // currentPlayerId
+        1,  // cardId (primera carta)
+        4   // targetPlayerId CORRECTO (izquierda de 1 en [1,2,3,4] es 4)
+      );
+    });
+  });
+
+  it('debería calcular destinatario derecho correctamente en orden [1,2,3,4]', async () => {
+    vi.useFakeTimers();
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+
+    render(<GamePage />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('hand-container')).toBeInTheDocument();
+    });
+
+    // Flujo rápido hasta el WebSocket final
+    const deadCardFolly = screen.getByAltText(/dead card folly/i);
+    await user.click(deadCardFolly);
+    await user.click(screen.getByText('Jugar'));
+    
+    await waitFor(() => {
+      expect(screen.getByText(/dead card folly/i)).toBeInTheDocument();
+    });
+
+    // Seleccionar dirección DERECHA
+    await user.click(screen.getByText('Derecha'));
+    await user.click(screen.getByText('Confirmar'));
+
+    simulateWebSocketEvent('se-jugo-dead-card-folly', {
+      jugador_id: 1,
+      direccion: "derecha",
+      orden: [1, 2, 3, 4] // Orden de turno
+    });
+
+    // Verificar que se abre modal para jugador 1
+    await waitFor(() => {
+      expect(screen.getByText(/selecciona una carta para enviar/i)).toBeInTheDocument();
+    });
+
+    // Seleccionar y enviar carta
+    await user.click(screen.getByAltText(/carta 1/i));
+    await user.click(screen.getByText(/enviar carta/i));
+
+    // Verificar destinatario CORRECTO: derecha de 1 en [1,2,3,4] es 2
+    await waitFor(() => {
+      expect(apiService.sendCard).toHaveBeenCalledWith(
+        'test-game-id',
+        1,  // currentPlayerId  
+        1,  // cardId
+        2   // targetPlayerId CORRECTO (derecha de 1 es 2)
+      );
+    });
+  });
+
+  it('debería calcular correctamente cuando el jugador es el último en el orden', async () => {
+    vi.useFakeTimers();
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+
+    // Mock para que el jugador actual sea el 4 (último en orden)
+    apiService.getTurn.mockResolvedValue(4);
+    apiService.getTurnOrder.mockResolvedValue([1, 2, 3, 4]);
+
+    render(<GamePage />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('hand-container')).toBeInTheDocument();
+    });
+
+    // Simular que jugador 4 recibe el evento de Dead Card Folly
+    simulateWebSocketEvent('se-jugo-dead-card-folly', {
+      jugador_id: 2, // Otro jugador jugó la carta
+      direccion: "izquierda", 
+      orden: [1, 2, 3, 4] // Orden de turno
+    });
+
+    // Verificar que se abre modal para jugador 4
+    await waitFor(() => {
+      expect(screen.getByText(/selecciona una carta para enviar/i)).toBeInTheDocument();
+    });
+
+    // Seleccionar y enviar carta
+    await user.click(screen.getByAltText(/carta 1/i));
+    await user.click(screen.getByText(/enviar carta/i));
+
+    // Verificar destinatario CORRECTO: 
+    // Jugador 4, dirección izquierda, orden [1,2,3,4] → envía a jugador 3
+    await waitFor(() => {
+      expect(apiService.sendCard).toHaveBeenCalledWith(
+        'test-game-id',
+        4,  // currentPlayerId (último en orden)
+        1,  // cardId
+        3   // targetPlayerId CORRECTO (izquierda de 4 es 3)
+      );
+    });
+  });
+
+  it('debería calcular correctamente cuando el jugador es el primero en el orden', async () => {
+    vi.useFakeTimers();
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+
+    // Mock para que el jugador actual sea el 1 (primero en orden)
+    apiService.getTurn.mockResolvedValue(1);
+    apiService.getTurnOrder.mockResolvedValue([1, 2, 3, 4]);
+
+    render(<GamePage />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('hand-container')).toBeInTheDocument();
+    });
+
+    // Simular que jugador 1 recibe el evento con dirección derecha
+    simulateWebSocketEvent('se-jugo-dead-card-folly', {
+      jugador_id: 3, // Otro jugador jugó la carta
+      direccion: "derecha",
+      orden: [1, 2, 3, 4] // Orden de turno  
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText(/selecciona una carta para enviar/i)).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByAltText(/carta 1/i));
+    await user.click(screen.getByText(/enviar carta/i));
+
+    // Verificar destinatario CORRECTO:
+    // Jugador 1, dirección derecha, orden [1,2,3,4] → envía a jugador 2
+    await waitFor(() => {
+      expect(apiService.sendCard).toHaveBeenCalledWith(
+        'test-game-id',
+        1,  // currentPlayerId (primero en orden)
+        1,  // cardId
+        2   // targetPlayerId CORRECTO (derecha de 1 es 2)
+      );
+    });
+  });
+});

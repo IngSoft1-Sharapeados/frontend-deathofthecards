@@ -361,7 +361,7 @@ describe('apiService', () => {
       expect(result).toEqual(mockResponse);
     });
 
-    it('playDetectiveSet juega un set de detectives', async () => {
+    it('playDetectiveSet juega un set de detectives (set_destino_id=0)', async () => {
       const mockResponse = { success: true };
       vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
         ok: true,
@@ -369,8 +369,25 @@ describe('apiService', () => {
       }));
       const result = await apiService.playDetectiveSet(1, 2, [7, 8, 9]);
       expect(fetch).toHaveBeenCalledWith(
-        expect.stringContaining('/partidas/1/Jugar-set?id_jugador=2'),
+        expect.stringContaining('/partidas/1/Jugar-set?id_jugador=2&set_destino_id=0'),
         expect.objectContaining({ method: 'POST' })
+      );
+      expect(result).toEqual(mockResponse);
+    });
+
+    it('playAriadneOliver envía POST a Jugar-set con set_destino_id del set objetivo y cuerpo [15]', async () => {
+      const mockResponse = { success: true };
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(mockResponse)
+      }));
+      const result = await apiService.playAriadneOliver(1, 2, 999);
+      expect(fetch).toHaveBeenCalledWith(
+        expect.stringContaining('/partidas/1/Jugar-set?id_jugador=2&set_destino_id=999'),
+        expect.objectContaining({ 
+          method: 'POST',
+          body: JSON.stringify([15])
+        })
       );
       expect(result).toEqual(mockResponse);
     });
@@ -440,23 +457,22 @@ describe('apiService', () => {
         ok: true,
         json: () => Promise.resolve(mockResponse)
       }));
+      
       const targetSet = {
-        jugador_id: 3,
-        representacion_id_carta: 1,
-        cartas_ids: [7, 8, 9]
+        id_objetivo: 3,
+        id_representacion_carta: 1,
+        ids_cartas: [7, 8, 9]
       };
       const result = await apiService.playAnotherVictim(1, 2, 18, targetSet);
+
       expect(fetch).toHaveBeenCalledWith(
         expect.stringContaining('/partidas/1/evento/AnotherVictim?id_jugador=2&id_carta=18'),
         expect.objectContaining({ 
           method: 'PUT',
-          body: JSON.stringify({
-            id_objetivo: targetSet.jugador_id,
-            id_representacion_carta: targetSet.representacion_id_carta,
-            ids_cartas: targetSet.cartas_ids
-          })
+          body: JSON.stringify(targetSet) 
         })
       );
+
       expect(result).toEqual(mockResponse);
     });
 

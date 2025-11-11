@@ -46,7 +46,7 @@ const useSecretActions = (gameId, gameState) => {
       setPlayerSecretsData(processSecrets(freshSecrets));
       
       setSelectedSecretCard(null);
-  setCanRevealSecrets(true); // luego de revelar, mantener estado según reglas
+  setCanRevealSecrets(false); // luego de revelar, mantener estado según reglas
     } catch (error) {
       alert(`Error: ${error.message}`);
     }
